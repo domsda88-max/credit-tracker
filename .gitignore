@@ -1,0 +1,22 @@
+# ——— зависимости и сборка ———
+node_modules/
+dist/
+dist-ssr/
+build/
+coverage/
+.vite/
+dev-dist/
+
+# ——— секреты и локальные настройки ———
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ——— логи и мусор ———
+*.log
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+*.tsbuildinfo

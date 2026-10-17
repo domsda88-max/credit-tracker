@@ -1,0 +1,181 @@
+// Prisma schema — Credit Tracker
+// Деньги храним в Decimal(12,2), даты платежей — в @db.Date (UTC-полночь).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // Supabase Session pooler (порт 5432) — для запросов приложения
+  directUrl = env("DIRECT_URL")   // прямое подключение (порт 5432) — для Prisma Migrate
+}
+
+// ————————————————————————— Пользователи —————————————————————————
+
+model User {
+  id            String              @id @default(uuid())
+  email         String              @unique
+  passwordHash  String
+  name          String?
+  timezone      String              @default("Europe/Moscow") // часовой пояс для времени пушей
+  createdAt     DateTime            @default(now())
+  credits       Credit[]
+  subscriptions PushSubscription[]
+  notifications NotificationLog[]
+}
+
+// ————————————————————————— Перечисления —————————————————————————
+
+enum CreditType {
+  CREDIT_CARD  // кредитная карта (льготный период / минимальный платёж)
+  CONSUMER     // потребительский кредит
+  MORTGAGE     // ипотека
+  INSTALLMENT  // рассрочка / сплит
+  MICROLOAN    // займ (МФО)
+}
+
+enum PaymentType {
+  ANNUITY      // аннуитетный
+  DIFFERENTIAL // дифференцированный
+  MIN_PAYMENT  // кредитка: минимальный платёж / пополнение для продления льготного периода
+}
+
+enum PrepaymentMode {
+  REDUCE_TERM    // досрочка сокращает срок
+  REDUCE_PAYMENT // досрочка уменьшает платёж
+}
+
+enum CreditStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum InstallmentStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+enum PaymentEventKind {
+  SCHEDULED     // платёж по графику («Я оплатил»)
+  EARLY_PARTIAL // досрочное частичное погашение
+  EARLY_FULL    // досрочное полное погашение
+  MIN_PAYMENT   // оплата минимума по кредитке
+}
+
+// ————————————————————————— Кредиты —————————————————————————
+
+model Credit {
+  id             String         @id @default(uuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name           String // «Альфа-Банк», «Халва», «Займер»
+  type           CreditType
+  paymentType    PaymentType
+  prepaymentMode PrepaymentMode @default(REDUCE_PAYMENT)
+
+  principal      Decimal        @db.Decimal(12, 2) // сумма при выдаче
+  outstanding    Decimal        @db.Decimal(12, 2) // текущий остаток долга
+  annualRate     Decimal        @db.Decimal(5, 2) // годовая ставка, %
+
+  startDate      DateTime       @db.Date // дата выдачи
+  termMonths     Int // срок в месяцах
+  paymentDay     Int? // день месяца платежа (9, 20, 25, 30...)
+
+  // ——— Кредитка: льготный период ———
+  minPayment        Decimal?  @db.Decimal(12, 2) // ежемесячный минимальный платёж
+  gracePeriodEnds   DateTime? @db.Date // конец льготного периода
+  graceReplenishSum Decimal?  @db.Decimal(12, 2) // сумма пополнения для продления периода
+  graceReplenishDay Int? // день месяца пополнения
+
+  // ——— Цикл заморозки («снежинка» 🧊) ———
+  frozen             Boolean   @default(false)
+  freezeCycleDays    Int? // «каждые 7 дней»
+  freezeStartedAt    DateTime?
+  nextFreezeCheckAt  DateTime?
+
+  status     CreditStatus @default(ACTIVE)
+  closedAt   DateTime?
+  totalPaid  Decimal      @default(0) @db.Decimal(12, 2) // для milestone-уведомлений
+
+  schedule      PaymentSchedule[]
+  events        PaymentEvent[]
+  notifications NotificationLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+}
+
+// ————————————————————————— График платежей —————————————————————————
+
+model PaymentSchedule {
+  id            String            @id @default(uuid())
+  creditId      String
+  credit        Credit            @relation(fields: [creditId], references: [id], onDelete: Cascade)
+
+  dueDate       DateTime          @db.Date
+  amount        Decimal           @db.Decimal(12, 2) // полный платёж
+  principalPart Decimal           @db.Decimal(12, 2) // часть основного долга
+  interestPart  Decimal           @db.Decimal(12, 2) // часть процентов
+
+  status        InstallmentStatus @default(PENDING)
+  paidAt        DateTime?
+  paidAmount    Decimal?          @db.Decimal(12, 2) // поддержка частичной оплаты
+
+  @@unique([creditId, dueDate])
+  @@index([dueDate, status])
+}
+
+// ————————————————————————— Журнал фактических платежей —————————————————————————
+
+model PaymentEvent {
+  id        String           @id @default(uuid())
+  creditId  String
+  credit    Credit           @relation(fields: [creditId], references: [id], onDelete: Cascade)
+
+  kind      PaymentEventKind
+  amount    Decimal          @db.Decimal(12, 2)
+  paidAt    DateTime         @default(now())
+  note      String?
+  createdAt DateTime         @default(now())
+
+  @@index([creditId, paidAt])
+}
+
+// ————————————————————————— Push-подписки —————————————————————————
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ————————————————————————— Журнал уведомлений (идемпотентность) —————————————————————————
+
+model NotificationLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditId  String?
+  credit    Credit?  @relation(fields: [creditId], references: [id], onDelete: Cascade)
+
+  type      String // DIGEST | FREEZE_ENDING | MILESTONE_50 ...
+  dedupKey  String // «{userId}:{type}:{date}» — защита от дублей
+  payload   Json
+  sentAt    DateTime @default(now())
+
+  @@unique([dedupKey])
+  @@index([userId, sentAt])
+}

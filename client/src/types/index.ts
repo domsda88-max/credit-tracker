@@ -1,0 +1,106 @@
+export type CreditType = 'CREDIT_CARD' | 'CONSUMER' | 'MORTGAGE' | 'INSTALLMENT' | 'MICROLOAN';
+export type PaymentType = 'ANNUITY' | 'DIFFERENTIAL' | 'MIN_PAYMENT';
+export type PrepaymentMode = 'REDUCE_TERM' | 'REDUCE_PAYMENT';
+export type CreditStatus = 'ACTIVE' | 'CLOSED';
+export type InstallmentStatus = 'PENDING' | 'PAID' | 'OVERDUE';
+export type PaymentEventKind = 'SCHEDULED' | 'EARLY_PARTIAL' | 'EARLY_FULL' | 'MIN_PAYMENT';
+
+export interface User {
+  id: string;
+  email: string;
+  name: string | null;
+  timezone: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+}
+
+/** Денежные поля приходят с бэка как строки (Prisma Decimal). */
+export type Money = string | number;
+
+export interface PaymentScheduleItem {
+  id: string;
+  creditId: string;
+  dueDate: string;
+  amount: Money;
+  principalPart: Money;
+  interestPart: Money;
+  status: InstallmentStatus;
+  paidAt: string | null;
+  paidAmount: Money | null;
+}
+
+export interface PaymentEvent {
+  id: string;
+  creditId: string;
+  kind: PaymentEventKind;
+  amount: Money;
+  paidAt: string;
+  note: string | null;
+}
+
+export interface Credit {
+  id: string;
+  name: string;
+  type: CreditType;
+  paymentType: PaymentType;
+  prepaymentMode: PrepaymentMode;
+  principal: Money;
+  outstanding: Money;
+  annualRate: Money;
+  startDate: string;
+  termMonths: number;
+  paymentDay: number | null;
+  minPayment: Money | null;
+  gracePeriodEnds: string | null;
+  graceReplenishSum: Money | null;
+  graceReplenishDay: number | null;
+  frozen: boolean;
+  freezeCycleDays: number | null;
+  freezeStartedAt: string | null;
+  nextFreezeCheckAt: string | null;
+  status: CreditStatus;
+  closedAt: string | null;
+  totalPaid: Money;
+  createdAt: string;
+}
+
+export interface CreditListItem extends Credit {
+  nextPayment: PaymentScheduleItem | null;
+}
+
+export interface CreditDetail extends Credit {
+  schedule: PaymentScheduleItem[];
+  events: PaymentEvent[];
+}
+
+export interface CreateCreditPayload {
+  name: string;
+  type: CreditType;
+  paymentType: PaymentType;
+  prepaymentMode?: PrepaymentMode;
+  principal: number;
+  annualRate: number;
+  startDate: string;
+  termMonths: number;
+  paymentDay?: number | null;
+  minPayment?: number | null;
+  gracePeriodEnds?: string | null;
+  graceReplenishSum?: number | null;
+  graceReplenishDay?: number | null;
+  frozen?: boolean;
+  freezeCycleDays?: number | null;
+}
+
+export interface EarlyRepaymentPayload {
+  amount: number;
+  mode?: PrepaymentMode;
+  note?: string;
+}
+
+export interface SubscribePayload {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}
