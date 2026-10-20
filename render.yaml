@@ -1,14 +1,15 @@
-# Render Blueprint — описывает оба сервиса сразу.
+# Render Blueprint — ОДИН сервис: Express раздаёт и API (/api/*), и собранный клиент (PWA).
+# Однодоменный вариант: нет CORS, нет отдельного статик-сайта, нет VITE_API_URL.
 # Секреты (sync: false) задаются в панели Render и в репозиторий не попадают.
 services:
-  # ——————————————————— API: Express + Prisma + node-cron ———————————————————
   - type: web
     name: credit-tracker-api
     runtime: node
     plan: free
-    region: frankfurt
+    region: oregon
     rootDir: server
-    buildCommand: npm ci && npx prisma generate && npx prisma migrate deploy && npm run build
+    # --include=dev обязателен: NODE_ENV=production иначе отрежет typescript/prisma/vite
+    buildCommand: npm ci --include=dev && npx prisma generate && npx prisma migrate deploy && npm run build && cd ../client && npm ci --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
@@ -16,10 +17,10 @@ services:
         value: "20"
       - key: NODE_ENV
         value: production
-      # Supabase: Session pooler (порт 5432) — запросы приложения
+      # Supabase: session pooler (порт 5432) — приложение и миграции.
+      # Прямой хост db.<ref>.supabase.co — IPv6-only, поэтому DIRECT_URL тоже на пулере.
       - key: DATABASE_URL
         sync: false
-      # Supabase: прямое подключение (порт 5432) — prisma migrate deploy
       - key: DIRECT_URL
         sync: false
       - key: JWT_SECRET
@@ -32,23 +33,6 @@ services:
         sync: false
       - key: VAPID_SUBJECT
         sync: false
-      # адрес статики клиента — задать после первого деплоя клиента
+      # Совпадает с адресом сервиса (same-origin)
       - key: CLIENT_ORIGIN
         sync: false
-
-  # ——————————————————— Клиент: React + PWA (статика) ———————————————————
-  - type: web
-    name: credit-tracker-client
-    runtime: static
-    plan: free
-    rootDir: client
-    buildCommand: npm ci && npm run build
-    staticPublishPath: ./dist
-    envVars:
-      - key: VITE_API_URL
-        sync: false
-    routes:
-      # SPA: прямые ссылки вида /credits/<id> должны отдавать index.html
-      - type: rewrite
-        source: /*
-        destination: /index.html
