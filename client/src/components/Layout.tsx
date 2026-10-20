@@ -3,8 +3,8 @@ import { useAuthStore } from '../store/auth';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
-    'rounded-lg px-3 py-2 text-sm font-medium transition',
-    isActive ? 'bg-sky-500/15 text-sky-300' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200',
+    'flex flex-col items-center gap-0.5 rounded-lg px-3 py-1.5 text-xs font-medium transition',
+    isActive ? 'bg-sky-500/15 text-sky-300' : 'text-slate-400 active:bg-slate-800/60',
   ].join(' ');
 
 export function Layout() {
@@ -18,38 +18,43 @@ export function Layout() {
   };
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-4 pb-24 pt-6 sm:px-6">
-      <header className="mb-6 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/15 text-xl font-bold text-sky-400">
+    // h-full + overflow-hidden: экран не двигается, скроллится только <main>
+    <div className="mx-auto flex h-full w-full max-w-3xl flex-col overflow-hidden px-4 sm:px-6">
+      <header className="flex shrink-0 items-center justify-between gap-3 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-xl font-bold text-sky-400">
             ₽
           </div>
-          <div>
-            <p className="text-sm font-semibold text-slate-100">Credit Tracker</p>
-            <p className="text-xs text-slate-500">{user?.email}</p>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-slate-100">Credit Tracker</p>
+            <p className="truncate text-xs text-slate-500">{user?.email}</p>
           </div>
         </div>
 
-        <nav className="flex items-center gap-1">
-          <NavLink to="/" end className={navLinkClass}>
-            Дашборд
-          </NavLink>
-          <NavLink to="/credits/new" className={navLinkClass}>
-            Добавить
-          </NavLink>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded-lg px-3 py-2 text-sm font-medium text-slate-400 transition hover:bg-slate-800/60 hover:text-rose-300"
-          >
-            Выйти
-          </button>
-        </nav>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="shrink-0 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-400 transition active:bg-slate-800/60"
+        >
+          Выйти
+        </button>
       </header>
 
-      <main className="flex-1">
+      {/* Единственная прокручиваемая область приложения */}
+      <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2 [-webkit-overflow-scrolling:touch]">
         <Outlet />
       </main>
+
+      <nav className="flex shrink-0 items-center justify-center gap-2 border-t border-slate-800 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
+        <NavLink to="/" end className={navLinkClass}>
+          <span className="text-base leading-none">📊</span>
+          Обзор
+        </NavLink>
+        <NavLink to="/credits/new" className={navLinkClass}>
+          <span className="text-base leading-none">➕</span>
+          Добавить
+        </NavLink>
+      </nav>
     </div>
   );
 }

@@ -7,6 +7,16 @@ import { z } from 'zod';
 import { extractErrorMessage } from '../api/client';
 import { creditsApi } from '../api/credits';
 
+/** Необязательное числовое поле: '' → undefined (иначе coerce('') даёт 0 и ломает min). */
+const optionalNumber = (min: number, max: number) =>
+  z
+    .union([z.literal(''), z.coerce.number()])
+    .optional()
+    .transform((v) => (v === '' || v == null ? undefined : v))
+    .refine((v) => v === undefined || (v >= min && v <= max), {
+      message: `Значение от ${min} до ${max}`,
+    });
+
 /** Схема формы. Числа приходят строками из input → coerce. */
 const schema = z.object({
   name: z.string().min(1, 'Укажите название банка или продукта'),
@@ -17,13 +27,17 @@ const schema = z.object({
   annualRate: z.coerce.number().min(0).max(100),
   startDate: z.string().min(1, 'Укажите дату выдачи'),
   termMonths: z.coerce.number().int().min(1, 'Минимум 1 месяц').max(600),
-  paymentDay: z.coerce.number().int().min(1).max(31).optional(),
-  minPayment: z.coerce.number().min(0).optional(),
+  paymentDay: optionalNumber(1, 31),
+  minPayment: optionalNumber(0, Number.MAX_SAFE_INTEGER),
   gracePeriodEnds: z.string().optional(),
-  graceReplenishSum: z.coerce.number().min(0).optional(),
-  graceReplenishDay: z.coerce.number().int().min(1).max(31).optional(),
+  graceReplenishSum: optionalNumber(0, Number.MAX_SAFE_INTEGER),
+  graceReplenishDay: optionalNumber(1, 31),
   frozen: z.boolean().default(false),
-  freezeCycleDays: z.coerce.number().int().min(1).max(365).optional().nullable(),
+  freezeCycleDays: z
+    .union([z.literal(''), z.coerce.number().int().min(1, 'Минимум 1 день').max(365, 'Максимум 365 дней')])
+    .optional()
+    .nullable()
+    .transform((v) => (v === '' || v == null ? null : v)),
 });
 
 type FormValues = z.input<typeof schema>;
@@ -85,6 +99,11 @@ export function AddCreditPage() {
       <p className="mt-1 text-sm text-slate-500">
         График платежей будет построен автоматически по выбранному типу
       </p>
+      {Object.keys(errors).length > 0 && (
+        <p className="mt-3 rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+          Проверьте выделенные поля — форма не отправится, пока они не заполнены верно.
+        </p>
+      )}
 
       <form
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
@@ -159,10 +178,14 @@ export function AddCreditPage() {
               type="number"
               min={1}
               max={31}
+              inputMode="numeric"
               placeholder="напр. 20"
               {...register('paymentDay')}
               className={inputClass}
             />
+            {errors.paymentDay && (
+              <p className="mt-1 text-xs text-rose-400">{errors.paymentDay.message}</p>
+            )}
           </label>
         </div>
 
@@ -221,23 +244,25 @@ export function AddCreditPage() {
           </label>
 
           {frozen && (
-            <label className="flex items-center gap-2 text-sm text-slate-400">
-              Продлевать каждые
-              <input
-                type="number"
-                min={1}
-                max={365}
-                placeholder="7"
-                {...register('freezeCycleDays', {
-                  setValueAs: (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
-                })}
-                className="w-20 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-slate-100 outline-none focus:border-sky-500"
-              />
-              дней
-              <span className="text-xs text-slate-500">
-                (необязательно — оставьте пустым, если заморозка без цикла)
-              </span>
-            </label>
+            <div>
+              <label className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
+                Продлевать каждые
+                <input
+                  type="number"
+                  min={1}
+                  max={365}
+                  inputMode="numeric"
+                  placeholder="7"
+                  {...register('freezeCycleDays')}
+                  className="w-20 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-slate-100 outline-none focus:border-sky-500"
+                />
+                дней
+                <span className="text-xs text-slate-500">необязательно</span>
+              </label>
+              {errors.freezeCycleDays && (
+                <p className="mt-1 text-xs text-rose-400">{errors.freezeCycleDays.message}</p>
+              )}
+            </div>
           )}
         </div>
 

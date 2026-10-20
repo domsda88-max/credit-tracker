@@ -7,13 +7,23 @@
 }
 
 html,
-body,
-#root {
-  min-height: 100%;
+body {
+  /* Приложение, а не сайт: страница не «резинится» и не двигается в стороны */
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   @apply bg-slate-950 text-slate-100 antialiased;
+  /* Убираем «двойной тап-зум» и выделение текста по долгому тапу */
+  touch-action: manipulation;
+}
+
+/* Скролл живёт только внутри контейнера приложения */
+#root {
+  height: 100%;
 }
 
 /* Крупные цифры сумм — табличные, чтобы не «прыгали» */
