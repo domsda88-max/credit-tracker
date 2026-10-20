@@ -23,7 +23,7 @@ const schema = z.object({
   graceReplenishSum: z.coerce.number().min(0).optional(),
   graceReplenishDay: z.coerce.number().int().min(1).max(31).optional(),
   frozen: z.boolean().default(false),
-  freezeCycleDays: z.coerce.number().int().min(1).max(365).optional(),
+  freezeCycleDays: z.coerce.number().int().min(1).max(365).optional().nullable(),
 });
 
 type FormValues = z.input<typeof schema>;
@@ -53,6 +53,7 @@ export function AddCreditPage() {
 
   const paymentType = watch('paymentType');
   const isCard = paymentType === 'MIN_PAYMENT';
+  const frozen = watch('frozen');
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) => {
@@ -68,6 +69,7 @@ export function AddCreditPage() {
         graceReplenishSum: parsed.graceReplenishSum ?? null,
         graceReplenishDay: parsed.graceReplenishDay ?? null,
         freezeCycleDays: parsed.freezeCycleDays ?? null,
+        frozen: parsed.frozen,
       });
     },
     onSuccess: async (credit) => {
@@ -212,22 +214,31 @@ export function AddCreditPage() {
           </select>
         </label>
 
-        <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+        <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
           <label className="flex items-center gap-2 text-sm text-slate-300">
             <input type="checkbox" {...register('frozen')} className="h-4 w-4 accent-sky-500" />
             🧊 Цикл заморозки (деньги заморожены)
           </label>
 
-          <label className="flex items-center gap-2 text-sm text-slate-400">
-            Каждые
-            <input
-              type="number"
-              placeholder="7"
-              {...register('freezeCycleDays')}
-              className="w-20 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-slate-100 outline-none focus:border-sky-500"
-            />
-            дней
-          </label>
+          {frozen && (
+            <label className="flex items-center gap-2 text-sm text-slate-400">
+              Продлевать каждые
+              <input
+                type="number"
+                min={1}
+                max={365}
+                placeholder="7"
+                {...register('freezeCycleDays', {
+                  setValueAs: (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+                })}
+                className="w-20 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-slate-100 outline-none focus:border-sky-500"
+              />
+              дней
+              <span className="text-xs text-slate-500">
+                (необязательно — оставьте пустым, если заморозка без цикла)
+              </span>
+            </label>
+          )}
         </div>
 
         {error && <p className="text-sm text-rose-400">{error}</p>}
