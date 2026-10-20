@@ -1,126 +1,56 @@
-# Деплой в облаке (Render + Supabase)
+# Деплой Credit Tracker (Render + Supabase)
 
-Публичная установка приложения: React-PWA на Render Static Site, Express API на Render Web Service,
-PostgreSQL в Supabase. Код хранится в этом публичном репозитории.
+Актуально на 21.10.2026. **Один сервис на Render**: Express раздаёт и API (`/api/*`), и собранный клиент (React-PWA) с того же домена. Отдельного Static Site нет — нет CORS, нет `VITE_API_URL`, нет SPA-реврайтов.
 
-> ⚠️ В этом репозитории **нет** секретов. `.env` входит в `.gitignore`.
-> Все пароли/ключи живут в Render → Environment и в локальном файле вне репозитория.
+- **Публичный адрес:** https://credit-tracker-api.onrender.com
+- **Сервис:** `credit-tracker-api` (`srv-dbbv4j5pkucs73bpips0`), Node, free, region oregon
+- **Health-check:** `/api/health`
+- **БД:** Supabase, проект SOBP (`ycxoqwjvtjydiyvhvmaa`) через **session pooler** (IPv4)
 
----
+## Как устроена сборка
 
-## 1. База данных (Supabase)
-
-1. Создайте проект на <https://supabase.com> (бесплатный тариф, регион **eu-west-1**).
-2. **Project Settings → Database → Reset database password** — задайте пароль и запишите его.
-   Пароль в панели посмотреть нельзя, только сбросить.
-3. **Connect → ORM → Prisma** — там две готовые строки:
-
-| Переменная | Что это | Порт |
-|---|---|---|
-| `DATABASE_URL` | **Session pooler** (работа приложения) | `5432` |
-| `DIRECT_URL` | прямое подключение / миграции | `5432` |
-
-> Для Prisma из браузера Supabase предлагает транзакционный пулер на `6543` с `?pgbouncer=true`.
-> Так тоже можно — значение `DATABASE_URL` допустимо и такое.
-
-4. Применение схемы (один раз, локально):
-
-```bash
-cd server
-npx prisma migrate deploy
+```
+rootDir: server
+buildCommand: npm ci --include=dev && npx prisma generate && npx prisma migrate deploy \
+              && npm run build && cd ../client && npm ci --include=dev && npm run build
+startCommand: npm start          # node dist/index.js
 ```
 
-На медленных/перебоистых сетях `migrate deploy` может упасть с `P1002` (advisory lock timeout).
-Решение — применить SQL по одному оператору за соединение (см. `prisma/migrations/*/migration.sql`)
-и вручную вставить строку в `_prisma_migrations`. После этого последующие `migrate deploy` — no-op.
+- `cd ../client` работает, потому что Render клонирует весь репозиторий.
+- `npm run build` клиента кладёт статику в `client/dist`; Express отдаёт её и делает SPA-фолбэк на `index.html` (`server/src/app.ts`).
+- Миграции применяются **автоматически при каждом деплое** (`prisma migrate deploy`).
 
----
+## Переменные окружения (Render → Environment)
 
-## 2. GitHub
-
-Репозиторий публичный: `github.com/domsda88-max/credit-tracker`.
-
-```bash
-git add -A
-git commit -m "change"
-git push
-```
-
-Render пересобирает сервисы автоматически при каждом push в `main`.
-
----
-
-## 3. Render
-
-1. Зарегистрируйтесь: <https://render.com> → **Sign up with GitHub** (бесплатно).
-2. Dashboard → **New + → Blueprint** → подключите репозиторий `credit-tracker`
-   (или просто создайте два сервиса вручную).
-3. `render.yaml` в корне уже описывает оба сервиса:
-
-| Сервис | Тип | Root dir | Build | Start |
-|---|---|---|---|---|
-| `credit-tracker-api` | Web Service | `server` | `npm ci && npx prisma generate && npx prisma migrate deploy && npm run build` | `npm start` |
-| `credit-tracker-client` | Static Site | `client` | `npm ci && npm run build` | — (публикуется `dist/`) |
-
-4. Заполните переменные окружения (Dashboard → сервис → **Environment**):
-
-| Переменная | Сервис | Откуда взять |
-|---|---|---|
-| `DATABASE_URL` | api | Supabase → Connect → ORM → `DATABASE_URL` |
-| `DIRECT_URL` | api | Supabase → Connect → ORM → `DIRECT_URL` |
-| `JWT_SECRET` | api | Render генерирует сам (`generateValue: true`) |
-| `JWT_EXPIRES_IN` | api | `7d` |
-| `VAPID_PUBLIC_KEY` | api | `npm run vapid:gen` в `server/` |
-| `VAPID_PRIVATE_KEY` | api | `npm run vapid:gen` в `server/` |
-| `VAPID_SUBJECT` | api | `mailto:<ваша почта>` |
-| `CLIENT_ORIGIN` | api | `https://<client>.onrender.com` |
-| `VITE_API_URL` | client | `https://<api>.onrender.com` (без `/api`) |
-| `NODE_VERSION` | api | `20` |
-
-> `VITE_API_URL` подставляется в бандл **на этапе сборки** — меняете переменную → нажимаете
-> **Manual Deploy → Clear build cache & deploy**.
-
-5. После первого деплоя откройте `<client>.onrender.com` — должен открыться экран входа.
-
----
-
-## 4. Проверка продакшена
-
-1. Регистрация нового пользователя на `https://<client>.onrender.com`.
-2. Добавить кредит → убедиться, что график платежей посчитался.
-3. Оплатить платёж → остаток изменился.
-4. Раннее погашение → пересчёт графика.
-5. Разрешить уведомления → подписка ушла в БД (`PushSubscription`).
-
----
-
-## 5. Особенности бесплатного тарифа
-
-- **Render Free** засыпает после ~15 мин простоя → первый запрос после простоя ждёт ~50 с
-  (холодный старт). Включите **Always On** (платно) или держите трафик постоянным.
-- **Supabase Free** ставит проект в паузу после 7 дней простоя → пробуждение тоже долгое.
-- Render Free: 512 MB RAM, 90 дней работы сервиса подряд — потом нужен редеплой.
-- Push-уведомления: подписки хранятся в `PushSubscription`, они переживут перезапуски.
-  `node-cron` запускается при старте процесса API — после сна сервиса задачи выполняются заново.
-
----
-
-## 6. Если что-то пошло не так
-
-| Симптом | Что смотреть |
+| Ключ | Значение |
 |---|---|
-| `P1001/P1002` на билде | доступность Supabase из сети Render, корректность `DATABASE_URL` |
-| Пустой экран на клиенте | `VITE_API_URL` указан без `/api` и со схемой `https://` |
-| CORS-ошибка в консоли | `CLIENT_ORIGIN` должен совпадать с хостом клиента, включая `https://` |
-| 401 на всех запросах | время суток/часы на сервере, `JWT_SECRET` установлен |
-| Уведомления не приходят | `VAPID_*` установлены, разрешения браузера, `VAPID_SUBJECT` корректен |
-| Ошибка при первом запросе после простоя | это холодный старт — подождите ~50 с |
+| `NODE_VERSION` | `20` |
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | `postgresql://postgres.ycxoqwjvtjydiyvhvmaa:<пароль>@aws-0-eu-west-1.pooler.supabase.com:5432/postgres` |
+| `DIRECT_URL` | то же самое (см. подводные камни) |
+| `JWT_SECRET` | случайные 48 hex |
+| `JWT_EXPIRES_IN` | `7d` |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | из `render-secrets.txt` |
+| `CLIENT_ORIGIN` | `https://credit-tracker-api.onrender.com` |
 
----
+Менять переменные — только через API: `PUT /v1/services/{id}/env-vars/{KEY}` с телом `{"value": "..."}` (PATCH не поддерживается, при создании сервиса `envVars` игнорируются).
 
-## 7. Безопасность
+## Подводные камни (проверено на практике)
 
-- Отзыв временного GitHub-токена: Settings → Developer settings → Personal access tokens → Delete.
-- Смена пароля БД: Supabase → Project Settings → Database → Reset database password
-  (не забудьте обновить `DATABASE_URL`/`DIRECT_URL` в Render).
-- Все секреты в репозиторий не попадают: проверьте `git ls-files | grep -i env`.
+1. **Прямой хост Supabase IPv6-only.** `db.<ref>.supabase.co` имеет только AAAA-запись; на IPv4-окружениях Prisma падает с `P1001`/`P1002`. Поэтому и `DATABASE_URL`, и `DIRECT_URL` указывают на пулер.
+2. **`NODE_ENV=production` отрезает devDependencies** при `npm ci`. Без `--include=dev` не будет `typescript`, `prisma`, `vite` → падения сборки (`TS5108` и т.п.).
+3. **Free-инстанс засыпает через ~15 минут простоя**, cold start ~50 с. Для cron-напоминаний о платежах сервис должен быть разбужен: UptimeRobot пингует `/api/health` каждые 5–10 минут (730 ч/мес < лимита 750 ч).
+4. **Service worker** кэширует только статику (workbox precache), API не кэшируется. После деплоя PWA обновляется сама (`registerType: 'autoUpdate'`), иногда нужно закрыть/открыть приложение дважды.
+
+## Локальная разработка
+
+```powershell
+# БД
+& "C:\Users\pupup\pgsql\pgsql\bin\pg_ctl.exe" start -D "C:\Users\pupup\pgsql\data" -l "C:\Users\pupup\pgsql\postgres.log" -w
+# backend :4000
+cd server; npm run dev
+# frontend :5173 (проксирует /api на :4000)
+cd client; npm run dev
+```
+
+`server/.env` для локалки указывает на `127.0.0.1:5432/credit_tracker`.
