@@ -195,6 +195,27 @@ export const creditsService = {
     return credit;
   },
 
+  /**
+   * Полный экспорт данных пользователя: кредиты с графиками и журналом платежей.
+   * Не привязан к формату — клиент превращает это в JSON-файл (бэкап) или CSV.
+   */
+  async exportData(userId: string) {
+    const credits = await prisma.credit.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        schedule: { orderBy: { dueDate: 'asc' } },
+        events: { orderBy: { paidAt: 'asc' } },
+      },
+    });
+
+    return {
+      exportedAt: new Date().toISOString(),
+      version: 1,
+      credits,
+    };
+  },
+
   /** Обновление. Если меняются финансовые условия — график пересобирается. */
   async update(userId: string, creditId: string, dto: UpdateCreditDto) {
     const current = await getOwnedCredit(userId, creditId);

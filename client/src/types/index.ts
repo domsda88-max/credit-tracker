@@ -72,8 +72,7 @@ export interface CreditListItem extends Credit {
 }
 
 /** Сводка по всем кредитам (GET /credits/summary). */
-export interface CreditSummary {
-  activeCount: number;
+export interface CreditSummary {  activeCount: number;
   closedCount: number;
   principalSum: number;
   outstandingSum: number;
@@ -87,6 +86,13 @@ export interface CreditSummary {
 export interface CreditDetail extends Credit {
   schedule: PaymentScheduleItem[];
   events: PaymentEvent[];
+}
+
+/** Экспорт всех данных пользователя (GET /credits/export). */
+export interface ExportData {
+  exportedAt: string;
+  version: number;
+  credits: Array<Credit & { schedule: PaymentScheduleItem[]; events: PaymentEvent[] }>;
 }
 
 export interface CreateCreditPayload {

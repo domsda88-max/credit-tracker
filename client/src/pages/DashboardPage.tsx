@@ -2,7 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { creditsApi } from '../api/credits';
 import { CreditRow } from '../components/CreditRow';
+import { DataExport } from '../components/DataExport';
 import { DebtOverview } from '../components/DebtOverview';
+import { PayoffStrategy } from '../components/PayoffStrategy';
 import { PushSettings } from '../components/PushSettings';
 import { SummaryCards } from '../components/SummaryCards';
 import { UpcomingPayments } from '../components/UpcomingPayments';
@@ -53,6 +55,8 @@ export function DashboardPage() {
         <>
           <UpcomingPayments credits={list} />
 
+          <PayoffStrategy credits={list} />
+
           <section className="space-y-3">
             <h2 className="text-sm font-medium uppercase tracking-wide text-slate-500">
               Активные ({active.length})
@@ -72,6 +76,8 @@ export function DashboardPage() {
               ))}
             </section>
           )}
+
+          <DataExport />
         </>
       )}
     </div>

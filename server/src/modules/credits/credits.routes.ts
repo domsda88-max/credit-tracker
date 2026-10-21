@@ -11,6 +11,7 @@ creditsRouter.use(requireAuth);
 
 creditsRouter.get('/', asyncHandler(creditsController.list));
 creditsRouter.get('/summary', asyncHandler(creditsController.summary));
+creditsRouter.get('/export', asyncHandler(creditsController.exportData));
 creditsRouter.post('/', validate(createCreditSchema), asyncHandler(creditsController.create));
 creditsRouter.get('/:id', asyncHandler(creditsController.getById));
 creditsRouter.put('/:id', validate(updateCreditSchema), asyncHandler(creditsController.update));

@@ -11,6 +11,10 @@ export const creditsController = {
     res.json(await creditsService.summary(req.user!.sub));
   },
 
+  async exportData(req: Request, res: Response) {
+    res.json(await creditsService.exportData(req.user!.sub));
+  },
+
   async create(req: Request, res: Response) {
     const credit = await creditsService.create(req.user!.sub, req.body as CreateCreditDto);
     res.status(201).json(credit);
