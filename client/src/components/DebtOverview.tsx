@@ -84,6 +84,16 @@ export function DebtOverview() {
           <span className="tabular text-amber-300">{formatMoney(data.overpay)}</span> процентов
         </p>
       )}
+
+      {data.paidLast12Months > 0 && (
+        <p className="mt-2 text-xs text-slate-500">
+          За последние 12 месяцев внесено{' '}
+          <span className="tabular text-slate-300">{formatMoney(data.paidLast12Months)}</span>
+          {data.paymentsLast12Months > 0 && (
+            <> · {data.paymentsLast12Months} платежей</>
+          )}
+        </p>
+      )}
     </section>
   );
 }

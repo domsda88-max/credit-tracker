@@ -4,6 +4,7 @@ import { creditsApi } from '../api/credits';
 import { CreditRow } from '../components/CreditRow';
 import { DataExport } from '../components/DataExport';
 import { DebtOverview } from '../components/DebtOverview';
+import { OverdueAlert } from '../components/OverdueAlert';
 import { PayoffStrategy } from '../components/PayoffStrategy';
 import { PushSettings } from '../components/PushSettings';
 import { SummaryCards } from '../components/SummaryCards';
@@ -33,6 +34,7 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-4">
+      <OverdueAlert credits={list} />
       {list.length > 0 && <DebtOverview />}
       {list.length > 0 && <SummaryCards credits={list} />}
 

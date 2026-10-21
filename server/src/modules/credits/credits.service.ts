@@ -168,6 +168,15 @@ export const creditsService = {
     // Переплата: сколько процентов сверх тела уйдёт банку, если платить строго по графику.
     const overpay = scheduledTotal - principalSum;
 
+    // Сколько реально внесено за последние 12 месяцев (по журналу платежей).
+    const since = new Date();
+    since.setUTCFullYear(since.getUTCFullYear() - 1);
+    const yearAgg = await prisma.paymentEvent.aggregate({
+      where: { credit: { userId }, paidAt: { gte: since } },
+      _sum: { amount: true },
+      _count: true,
+    });
+
     return {
       activeCount: active.length,
       closedCount: credits.length - active.length,
@@ -178,6 +187,8 @@ export const creditsService = {
       scheduledTotal: round2(scheduledTotal),
       overpay: round2(Math.max(0, overpay)),
       debtFreeDate: lastDueDate ? lastDueDate.toISOString() : null,
+      paidLast12Months: round2(toNumber(yearAgg._sum.amount ?? 0)),
+      paymentsLast12Months: yearAgg._count,
     };
   },
 

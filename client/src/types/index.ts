@@ -81,6 +81,8 @@ export interface CreditSummary {  activeCount: number;
   scheduledTotal: number;
   overpay: number;
   debtFreeDate: string | null;
+  paidLast12Months: number;
+  paymentsLast12Months: number;
 }
 
 export interface CreditDetail extends Credit {
