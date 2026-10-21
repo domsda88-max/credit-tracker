@@ -41,7 +41,20 @@ export function describeDueDate(value: string | Date): string {
   return `просрочка ${overdue} дн.`;
 }
 
-/** Процент погашения от первоначальной суммы. */
+/** Процент погашения по ТЕЛУ долга: сколько долга уже закрыто.
+ *  Раньше считали от totalPaid (вместе с процентами) — это давало завышенный процент. */
+export function debtPaidPercent(
+  principal: string | number,
+  outstanding: string | number,
+): number {
+  const p = Number(principal);
+  if (p <= 0) return 100;
+  const left = Number(outstanding);
+  const paid = Math.max(0, p - left);
+  return Math.min(100, Math.round((paid / p) * 100));
+}
+
+/** Процент погашения от первоначальной суммы (оставлен для совместимости). */
 export function paidPercent(totalPaid: string | number, principal: string | number): number {
   const p = Number(principal);
   if (p <= 0) return 100;

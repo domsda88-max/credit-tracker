@@ -2,6 +2,7 @@ import { createApp } from './app';
 import { env } from './config/env';
 import { prisma } from './config/prisma';
 import { ensureVapidConfigured } from './config/vapid';
+import { runReminderJob } from './cron/jobs/reminder.job';
 import { registerCronJobs } from './cron/scheduler';
 
 async function bootstrap(): Promise<void> {
@@ -15,6 +16,14 @@ async function bootstrap(): Promise<void> {
   });
 
   registerCronJobs();
+
+  // Free-инстанс Render засыпает и может пропустить плановый запуск в 10:00.
+  // Догоняем напоминания сразу при старте; повторную отправку отсекает журнал.
+  setTimeout(() => {
+    void runReminderJob().catch((error) =>
+      console.error('[cron] Сбой догоняющего запуска напоминаний:', error),
+    );
+  }, 10_000);
 
   const shutdown = async (signal: string): Promise<void> => {
     console.log(`\n${signal}: останавливаю сервер...`);

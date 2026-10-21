@@ -47,7 +47,7 @@ export const paymentsService = {
     const amount = toNumber(installment.amount);
     const principalPart = toNumber(installment.principalPart);
     const credit = installment.credit;
-    const prevPercent = paidPercent(toNumber(credit.totalPaid), toNumber(credit.principal));
+    const prevPercent = paidPercent(toNumber(credit.principal), toNumber(credit.outstanding));
 
     const result = await prisma.$transaction(async (tx) => {
       const updatedInstallment = await tx.paymentSchedule.update({
@@ -84,8 +84,8 @@ export const paymentsService = {
     });
 
     const newPercent = paidPercent(
-      toNumber(result.updatedCredit.totalPaid),
       toNumber(result.updatedCredit.principal),
+      toNumber(result.updatedCredit.outstanding),
     );
     await notifyMilestone(userId, credit.id, credit.name, prevPercent, newPercent);
 
@@ -108,7 +108,7 @@ export const paymentsService = {
     const newOutstanding = round2(outstanding - dto.amount);
     const isFull = newOutstanding <= CLOSE_THRESHOLD;
     const mode = (dto.mode ?? credit.prepaymentMode) as PrepaymentMode;
-    const prevPercent = paidPercent(toNumber(credit.totalPaid), toNumber(credit.principal));
+    const prevPercent = paidPercent(toNumber(credit.principal), toNumber(credit.outstanding));
 
     const result = await prisma.$transaction(async (tx) => {
       await tx.paymentEvent.create({
@@ -175,8 +175,8 @@ export const paymentsService = {
     });
 
     const newPercent = paidPercent(
-      toNumber(result.credit.totalPaid),
       toNumber(result.credit.principal),
+      toNumber(result.credit.outstanding),
     );
     await notifyMilestone(userId, creditId, credit.name, prevPercent, newPercent);
 

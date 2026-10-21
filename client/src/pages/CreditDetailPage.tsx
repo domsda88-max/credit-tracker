@@ -8,13 +8,14 @@ import { extractErrorMessage } from '../api/client';
 import { creditsApi } from '../api/credits';
 import { paymentsApi } from '../api/payments';
 import { StatusBadge } from '../components/StatusBadge';
+import { EditCreditForm } from '../components/EditCreditForm';
 import type { PaymentEvent } from '../types';
 import {
   CREDIT_TYPE_LABELS,
   PAYMENT_TYPE_LABELS,
+  debtPaidPercent,
   formatDate,
   formatMoney,
-  paidPercent,
 } from '../utils/format';
 
 const earlySchema = z.object({
@@ -38,6 +39,8 @@ export function CreditDetailPage() {
   const { id = '' } = useParams();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [showAllPaid, setShowAllPaid] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const { data: credit, isLoading, error: loadError } = useQuery({
     queryKey: ['credit', id],
@@ -93,9 +96,13 @@ export function CreditDetailPage() {
     );
   }
 
-  const percent = paidPercent(credit.totalPaid, credit.principal);
+  const percent = debtPaidPercent(credit.principal, credit.outstanding);
+  const principalPaid = Math.max(0, Number(credit.principal) - Number(credit.outstanding));
+  const interestPaid = Math.max(0, Number(credit.totalPaid) - principalPaid);
   const pending = credit.schedule.filter((item) => item.status !== 'PAID');
-
+  const paid = credit.schedule.filter((item) => item.status === 'PAID');
+  const visible = showAllPaid ? credit.schedule : pending;
+  const collapsedCount = showAllPaid ? 0 : paid.length;
   return (
     <div className="space-y-4">
       <Link to="/" className="inline-block text-sm text-slate-500 hover:text-slate-300">
@@ -116,14 +123,23 @@ export function CreditDetailPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => freezeMutation.mutate(!credit.frozen)}
-            disabled={freezeMutation.isPending}
-            className="shrink-0 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-sky-500/50 disabled:opacity-50"
-          >
-            {credit.frozen ? 'Разморозить' : '🧊 Заморозить'}
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setEditing((v) => !v)}
+              className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-sky-500/50"
+            >
+              {editing ? 'Закрыть' : 'Изменить'}
+            </button>
+            <button
+              type="button"
+              onClick={() => freezeMutation.mutate(!credit.frozen)}
+              disabled={freezeMutation.isPending}
+              className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-sky-500/50 disabled:opacity-50"
+            >
+              {credit.frozen ? 'Разморозить' : '🧊 Заморозить'}
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -154,7 +170,22 @@ export function CreditDetailPage() {
             style={{ width: `${percent}%` }}
           />
         </div>
-        <p className="mt-1 text-xs text-slate-500">Погашено {percent}%</p>
+        <div className="mt-2 space-y-0.5">
+          <p className="text-xs text-slate-400">
+            Долг погашен на <span className="font-medium text-slate-200">{percent}%</span>
+            {' — '}
+            <span className="tabular text-slate-300">{formatMoney(principalPaid)}</span> из{' '}
+            <span className="tabular text-slate-300">{formatMoney(credit.principal)}</span>
+          </p>
+          <p className="text-xs text-slate-500">
+            Всего выплачено <span className="tabular text-slate-400">{formatMoney(credit.totalPaid)}</span>
+            {' '}(тело {formatMoney(principalPaid)} + проценты {formatMoney(interestPaid)})
+          </p>
+          <p className="text-xs text-slate-500">
+            Остаток долга <span className="tabular text-slate-300">{formatMoney(credit.outstanding)}</span>
+            {' '}(<span className="tabular">{100 - percent}%</span> от первоначальной суммы)
+          </p>
+        </div>
 
         {credit.frozen && credit.nextFreezeCheckAt && (
           <p className="mt-3 rounded-xl bg-sky-500/10 px-3 py-2 text-xs text-sky-300">
@@ -163,6 +194,8 @@ export function CreditDetailPage() {
           </p>
         )}
       </header>
+
+      {editing && <EditCreditForm credit={credit} onClose={() => setEditing(false)} />}
 
       {credit.status === 'ACTIVE' && (
         <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
@@ -205,12 +238,30 @@ export function CreditDetailPage() {
       {error && <p className="text-sm text-rose-400">{error}</p>}
 
       <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-        <h2 className="font-medium text-slate-100">
-          График платежей {pending.length > 0 && <span className="text-slate-500">· к оплате {pending.length}</span>}
-        </h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-medium text-slate-100">
+            График платежей{' '}
+            {pending.length > 0 && <span className="text-slate-500">· к оплате {pending.length}</span>}
+          </h2>
+          {paid.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowAllPaid((v) => !v)}
+              className="shrink-0 rounded-lg border border-slate-700 px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-sky-500/50"
+            >
+              {showAllPaid ? 'Свернуть оплаченные' : `Показать оплаченные (${paid.length})`}
+            </button>
+          )}
+        </div>
+
+        {collapsedCount > 0 && (
+          <p className="mt-3 rounded-xl bg-slate-800/40 px-3 py-2 text-xs text-slate-400">
+            {collapsedCount} прошедших платежей уже учтены как оплаченные. Нажмите «Показать оплаченные», чтобы посмотреть.
+          </p>
+        )}
 
         <div className="mt-3 divide-y divide-slate-800">
-          {credit.schedule.map((item) => (
+          {visible.map((item) => (
             <div key={item.id} className="flex items-center justify-between gap-3 py-3">
               <div className="min-w-0">
                 <p className="text-sm text-slate-200">{formatDate(item.dueDate)}</p>

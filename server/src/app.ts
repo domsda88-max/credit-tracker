@@ -5,6 +5,7 @@ import path from 'node:path';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { env } from './config/env';
+import { prisma } from './config/prisma';
 import { errorHandler } from './middlewares/errorHandler';
 import { authRouter } from './modules/auth/auth.routes';
 import { creditsRouter } from './modules/credits/credits.routes';
@@ -20,8 +21,14 @@ export function createApp(): express.Express {
   app.use(express.json({ limit: '1mb' }));
   if (env.NODE_ENV === 'development') app.use(morgan('dev'));
 
-  app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', time: new Date().toISOString() });
+  // Мониторинг: лёгкая проверка, что сервер жив И база данных отвечает.
+  app.get('/api/health', async (_req, res) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      res.json({ status: 'ok', db: 'ok', time: new Date().toISOString() });
+    } catch {
+      res.status(503).json({ status: 'degraded', db: 'down', time: new Date().toISOString() });
+    }
   });
 
   app.use('/api/auth', authRouter);

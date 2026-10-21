@@ -120,11 +120,13 @@ async function sendFreezeAlerts(userId: string): Promise<void> {
 
 /**
  * Основная задача напоминаний.
- * Запускается каждый час; фактическую отправку делает только для тех
- * пользователей, у кого сейчас 10:00 по их локальному времени.
+     * Запускается каждый час; фактическую отправку делает для тех пользователей,
+ * у кого напоминание на сегодня ещё не отправлено и локальное время уже
+ * наступило (≥ 10:00). Так пропущенный из-за сна сервера запуск «догоняется»
+ * при первом же пробуждении: повторную отправку отсекает уникальный ключ в журнале.
  * Экспортируется для ручного запуска и тестов.
  */
-export async function runReminderJob(): Promise<{ processedUsers: number; pushed: number }> {
+export async function runReminderJob(force = false): Promise<{ processedUsers: number; pushed: number }> {
   const users = await prisma.user.findMany({ select: { id: true, timezone: true } });
 
   let processedUsers = 0;
@@ -132,7 +134,7 @@ export async function runReminderJob(): Promise<{ processedUsers: number; pushed
 
   for (const user of users) {
     try {
-      if (localHour(user.timezone) !== REMINDER_HOUR) continue;
+      if (!force && localHour(user.timezone) < REMINDER_HOUR) continue;
       processedUsers += 1;
 
       const before = await prisma.notificationLog.count({

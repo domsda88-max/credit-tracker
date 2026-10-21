@@ -38,6 +38,10 @@ const schema = z.object({
     .optional()
     .nullable()
     .transform((v) => (v === '' || v == null ? null : v)),
+  /** Кредит оформлен раньше — прошедшие платежи пометить оплаченными. */
+  markPastAsPaid: z.boolean().default(true),
+  /** Фактический остаток долга (необязательно — уточняет расчёт). */
+  outstanding: optionalNumber(0, Number.MAX_SAFE_INTEGER),
 });
 
 type FormValues = z.input<typeof schema>;
@@ -62,12 +66,18 @@ export function AddCreditPage() {
       paymentType: 'ANNUITY',
       prepaymentMode: 'REDUCE_PAYMENT',
       frozen: false,
+      markPastAsPaid: true,
     },
   });
 
   const paymentType = watch('paymentType');
   const isCard = paymentType === 'MIN_PAYMENT';
   const frozen = watch('frozen');
+  const markPast = watch('markPastAsPaid');
+  const startDate = watch('startDate');
+
+  // Дата в прошлом → приложение само посчитает прошедшие платежи.
+  const startInPast = Boolean(startDate) && new Date(startDate) < new Date();
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) => {
@@ -84,6 +94,8 @@ export function AddCreditPage() {
         graceReplenishDay: parsed.graceReplenishDay ?? null,
         freezeCycleDays: parsed.freezeCycleDays ?? null,
         frozen: parsed.frozen,
+        markPastAsPaid: parsed.markPastAsPaid,
+        outstanding: parsed.outstanding ?? null,
       });
     },
     onSuccess: async (credit) => {
@@ -236,6 +248,46 @@ export function AddCreditPage() {
             <option value="REDUCE_TERM">Сокращать срок</option>
           </select>
         </label>
+
+        <div className="space-y-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+          <label className="flex items-start gap-2 text-sm text-slate-300">
+            <input
+              type="checkbox"
+              {...register('markPastAsPaid')}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-500"
+            />
+            <span>
+              Кредит оформлен раньше — платежи, срок которых уже прошёл, считать внесёнными
+              <span className="mt-0.5 block text-xs text-slate-500">
+                {startInPast
+                  ? 'Дата выдачи в прошлом: график будет построен целиком, прошедшие платежи отметятся оплаченными, а остаток долга уменьшится на их «тело».'
+                  : 'Укажите прошедшую дату выдачи, чтобы это сработало.'}
+              </span>
+            </span>
+          </label>
+
+          {markPast && (
+            <label className="block">
+              <span className="text-sm text-slate-400">
+                Остаток долга сейчас, ₽ <span className="text-xs text-slate-500">необязательно</span>
+              </span>
+              <input
+                type="number"
+                step="0.01"
+                inputMode="decimal"
+                placeholder="оставьте пустым — посчитаю сам"
+                {...register('outstanding')}
+                className={inputClass}
+              />
+              <span className="mt-1 block text-xs text-slate-500">
+                Если знаете точный остаток из приложения банка — введите его, и он заменит расчёт.
+              </span>
+              {errors.outstanding && (
+                <p className="mt-1 text-xs text-rose-400">{errors.outstanding.message}</p>
+              )}
+            </label>
+          )}
+        </div>
 
         <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
           <label className="flex items-center gap-2 text-sm text-slate-300">

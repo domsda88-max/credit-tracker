@@ -2,6 +2,7 @@ import type { Credit, PaymentType, Prisma, PrepaymentMode } from '@prisma/client
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middlewares/errorHandler';
 import { addMonths, addUTCDays, monthsBetween, utcToday } from '../../utils/finance/date';
+import { planPastPayments } from '../../utils/finance/pastPayments';
 import { rebuildSchedule } from '../../utils/finance/earlyRepayment';
 import { generateSchedule } from '../../utils/finance/schedule';
 import { toNumber } from '../../utils/finance/round';
@@ -45,6 +46,13 @@ export const creditsService = {
 
     const frozen = dto.frozen ?? false;
 
+    // Кредит, оформленный раньше: платежи, дата которых уже прошла,
+    // сразу помечаем внесёнными и вычитаем их тело из остатка долга.
+    const markPast =
+      dto.markPastAsPaid ??
+      (dto.startDate.getTime() < utcToday().getTime() && dto.paymentType !== 'MIN_PAYMENT');
+    const past = markPast ? planPastPayments(schedule) : null;
+
     return prisma.$transaction(async (tx) => {
       const credit = await tx.credit.create({
         data: {
@@ -54,7 +62,7 @@ export const creditsService = {
           paymentType: dto.paymentType,
           prepaymentMode: (dto.prepaymentMode ?? 'REDUCE_PAYMENT') as PrepaymentMode,
           principal: dto.principal,
-          outstanding: dto.principal,
+          outstanding: dto.outstanding ?? past?.outstanding ?? dto.principal,
           annualRate: dto.annualRate,
           startDate: dto.startDate,
           termMonths: dto.termMonths,
@@ -67,18 +75,39 @@ export const creditsService = {
           freezeCycleDays: dto.freezeCycleDays ?? null,
           freezeStartedAt: frozen ? new Date() : null,
           nextFreezeCheckAt: frozen && dto.freezeCycleDays ? addUTCDays(new Date(), dto.freezeCycleDays) : null,
+          totalPaid: past?.paidTotal ?? 0,
         },
       });
 
       await tx.paymentSchedule.createMany({
-        data: schedule.map((item) => ({
-          creditId: credit.id,
-          dueDate: item.dueDate,
-          amount: item.amount,
-          principalPart: item.principalPart,
-          interestPart: item.interestPart,
-        })),
+        data: schedule.map((item, index) => {
+          const isPast = past !== null && index < past.paidCount;
+          return {
+            creditId: credit.id,
+            dueDate: item.dueDate,
+            amount: item.amount,
+            principalPart: item.principalPart,
+            interestPart: item.interestPart,
+            status: isPast ? 'PAID' : 'PENDING',
+            paidAt: isPast ? item.dueDate : null,
+            paidAmount: isPast ? item.amount : null,
+          };
+        }),
       });
+
+      // Журнал: оплаченные ранее платежи отражаются в истории.
+      if (past && past.paidCount > 0) {
+        const kind = dto.paymentType === 'MIN_PAYMENT' ? 'MIN_PAYMENT' : 'SCHEDULED';
+        await tx.paymentEvent.createMany({
+          data: schedule.slice(0, past.paidCount).map((item) => ({
+            creditId: credit.id,
+            kind,
+            amount: item.amount,
+            paidAt: item.dueDate,
+            note: 'Учтён как оплаченный при добавлении',
+          })),
+        });
+      }
 
       return credit;
     });
@@ -123,13 +152,19 @@ export const creditsService = {
     const current = await getOwnedCredit(userId, creditId);
 
     const data: Prisma.CreditUpdateInput = {};
+    // Служебные поля создания не пишем напрямую в кредит.
+    const SKIP_FIELDS = new Set(['markPastAsPaid', 'outstanding']);
     for (const [key, value] of Object.entries(dto)) {
-      if (value !== undefined) {
+      if (value !== undefined && !SKIP_FIELDS.has(key)) {
         (data as Record<string, unknown>)[key] = value;
       }
     }
 
-    const financialChanged = FINANCIAL_FIELDS.some((field) => dto[field] !== undefined);
+    const financialChanged =
+      FINANCIAL_FIELDS.some((field) => dto[field] !== undefined) || dto.outstanding !== undefined;
+
+    // Меняются сами условия (сумма/ставка/дата/срок) — тогда график действительно пересобираем.
+    const termsChanged = FINANCIAL_FIELDS.some((field) => dto[field] !== undefined);
 
     // Управление «снежинкой» 🧊
     if (dto.frozen !== undefined) {
@@ -172,37 +207,91 @@ export const creditsService = {
         graceReplenishDay: dto.graceReplenishDay ?? current.graceReplenishDay,
       };
 
-      // Нет оплаченных строк — строим график заново по новым условиям.
-      const items =
-        paidCount === 0
-          ? generateSchedule(merged)
-          : (() => {
-              const remaining = monthsBetween(
-                utcToday(),
-                addMonths(merged.startDate, merged.termMonths),
-              );
-              return rebuildSchedule({
-                outstanding: toNumber(updated.outstanding),
-                annualRate: merged.annualRate,
-                paymentType: merged.type as PaymentType,
-                mode: updated.prepaymentMode as PrepaymentMode,
-                remainingTermMonths: Math.max(1, remaining),
-                nextDueDate: nextPending ? nextPending.dueDate : addMonths(utcToday(), 1),
-                paymentDay: merged.paymentDay,
-                previousPayment: nextPending ? toNumber(nextPending.amount) : null,
-                previousPrincipalPart: nextPending ? toNumber(nextPending.principalPart) : null,
-              });
-            })();
+      let pastToMark = 0;
+      // Значения прошедших платежей для записи в кредит (числа, а не Decimal).
+      let totalPaidValue: number | undefined;
+      let outstandingValue: number | undefined = dto.outstanding ?? undefined;
 
-      await tx.paymentSchedule.deleteMany({ where: { creditId, status: 'PENDING' } });
+      // Готовим план пересборки графика.
+      const mergeInput = {
+        type: merged.type as PaymentType,
+        principal: merged.principal,
+        annualRate: merged.annualRate,
+        startDate: merged.startDate,
+        termMonths: merged.termMonths,
+        paymentDay: merged.paymentDay,
+        minPayment: merged.minPayment,
+        gracePeriodEnds: merged.gracePeriodEnds,
+        graceReplenishSum: merged.graceReplenishSum,
+        graceReplenishDay: merged.graceReplenishDay,
+      };
+      const freshPlan = planPastPayments(generateSchedule(mergeInput));
+
+      // Если кредит оформлен в прошлом (есть прошедшие платежи) — всегда строим
+      // график целиком от исходных условий и заново отмечаем прошедшие.
+      // Ручная правка только остатка график не трогает.
+      const rebuildFromStart = termsChanged && (paidCount === 0 || freshPlan.paidCount > 0);
+
+      const items = rebuildFromStart
+        ? (() => {
+            const rebuilt = generateSchedule(mergeInput);
+            const pastPlan = planPastPayments(rebuilt);
+            totalPaidValue = pastPlan.paidTotal;
+            outstandingValue = dto.outstanding ?? pastPlan.outstanding;
+            pastToMark = pastPlan.paidCount;
+            return rebuilt;
+          })()
+        : (() => {
+            const remaining = monthsBetween(
+              utcToday(),
+              addMonths(merged.startDate, merged.termMonths),
+            );
+            return rebuildSchedule({
+              outstanding: toNumber(updated.outstanding),
+              annualRate: merged.annualRate,
+              paymentType: merged.type as PaymentType,
+              mode: updated.prepaymentMode as PrepaymentMode,
+              remainingTermMonths: Math.max(1, remaining),
+              nextDueDate: nextPending ? nextPending.dueDate : addMonths(utcToday(), 1),
+              paymentDay: merged.paymentDay,
+              previousPayment: nextPending ? toNumber(nextPending.amount) : null,
+              previousPrincipalPart: nextPending ? toNumber(nextPending.principalPart) : null,
+            });
+          })();
+
+      // Ручная правка только остатка — расписание и история оплат остаются как есть,
+      // но сам остаток долга записываем.
+      if (!termsChanged) {
+        if (dto.outstanding != null) {
+          return tx.credit.update({ where: { id: creditId }, data: { outstanding: dto.outstanding } });
+        }
+        return updated;
+      }
+
+      // Все ранее оплаченные строки заменяются новыми — старые удаляем целиком.
+      await tx.paymentSchedule.deleteMany({ where: { creditId } });
       await tx.paymentSchedule.createMany({
-        data: items.map((item) => ({
-          creditId,
-          dueDate: item.dueDate,
-          amount: item.amount,
-          principalPart: item.principalPart,
-          interestPart: item.interestPart,
-        })),
+        data: items.map((item, index) => {
+          const isPast = index < pastToMark;
+          return {
+            creditId,
+            dueDate: item.dueDate,
+            amount: item.amount,
+            principalPart: item.principalPart,
+            interestPart: item.interestPart,
+            status: isPast ? 'PAID' : 'PENDING',
+            paidAt: isPast ? item.dueDate : null,
+            paidAmount: isPast ? item.amount : null,
+          };
+        }),
+      });
+
+      await tx.credit.update({
+        where: { id: creditId },
+        data: {
+          ...(totalPaidValue !== undefined ? { totalPaid: totalPaidValue } : {}),
+          ...(outstandingValue !== undefined ? { outstanding: outstandingValue } : {}),
+        },
       });
 
       return updated;

@@ -92,6 +92,10 @@ export interface CreateCreditPayload {
   graceReplenishDay?: number | null;
   frozen?: boolean;
   freezeCycleDays?: number | null;
+  /** true — прошедшие по графику платежи сразу пометить оплаченными (кредит оформлен раньше). */
+  markPastAsPaid?: boolean;
+  /** Фактический остаток долга сейчас (если известен точнее расчёта). */
+  outstanding?: number | null;
 }
 
 export interface EarlyRepaymentPayload {

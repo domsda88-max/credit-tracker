@@ -3,14 +3,14 @@ import type { CreditListItem } from '../types';
 import {
   CREDIT_TYPE_LABELS,
   describeDueDate,
+  debtPaidPercent,
   formatDate,
   formatMoney,
   formatMoneyShort,
-  paidPercent,
 } from '../utils/format';
 
 export function CreditRow({ credit }: { credit: CreditListItem }) {
-  const percent = paidPercent(credit.totalPaid, credit.principal);
+  const percent = debtPaidPercent(credit.principal, credit.outstanding);
   const isClosed = credit.status === 'CLOSED';
   const next = credit.nextPayment;
 
@@ -45,7 +45,9 @@ export function CreditRow({ credit }: { credit: CreditListItem }) {
           style={{ width: `${percent}%` }}
         />
       </div>
-      <p className="mt-1 text-xs text-slate-500">Погашено {percent}%</p>
+      <p className="mt-1 text-xs text-slate-500">
+        Долг погашен на {percent}% · остаток {100 - percent}%
+      </p>
 
       {next && !isClosed && (
         <div className="mt-3 flex items-center justify-between rounded-xl bg-slate-950/60 px-3 py-2 text-sm">

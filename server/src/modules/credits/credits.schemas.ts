@@ -27,6 +27,10 @@ const baseFields = {
   graceReplenishDay: z.number().int().min(1).max(31).optional().nullable(),
   frozen: z.boolean().optional(),
   freezeCycleDays: z.number().int().min(1).max(365).optional().nullable(),
+  /** true — прошедшие по графику платежи сразу пометить оплаченными (кредит оформлен раньше). */
+  markPastAsPaid: z.boolean().optional(),
+  /** Фактический остаток долга сейчас (если известен точнее расчёта). */
+  outstanding: z.number().min(0).optional().nullable(),
 };
 
 export const createCreditSchema = z.object(baseFields);
