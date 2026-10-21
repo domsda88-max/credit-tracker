@@ -24,3 +24,19 @@ createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </StrictMode>,
 );
+
+// PWA: раз в минуту проверяем обновление и один раз перезагружаем страницу,
+// чтобы на телефоне не залипала старая версия интерфейса.
+if ('serviceWorker' in navigator) {
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloading) return;
+    reloading = true;
+    window.location.reload();
+  });
+
+  void navigator.serviceWorker.ready.then((registration) => {
+    void registration.update();
+    setInterval(() => void registration.update(), 60_000);
+  });
+}
