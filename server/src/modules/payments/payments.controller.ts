@@ -16,4 +16,13 @@ export const paymentsController = {
     );
     res.json(result);
   },
+
+  async previewEarlyRepayment(req: Request, res: Response) {
+    const result = await paymentsService.previewEarlyRepayment(
+      req.user!.sub,
+      req.params.creditId,
+      req.body as EarlyRepaymentDto,
+    );
+    res.json(result);
+  },
 };

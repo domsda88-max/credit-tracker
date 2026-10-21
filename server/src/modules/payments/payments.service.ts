@@ -182,4 +182,81 @@ export const paymentsService = {
 
     return result;
   },
+
+  /**
+   * Предпросмотр досрочного погашения: сколько сэкономится процентов и времени.
+   * Ничего не пишет в БД — только считает «а что если».
+   */
+  async previewEarlyRepayment(userId: string, creditId: string, dto: EarlyRepaymentDto) {
+    const credit = await prisma.credit.findFirst({
+      where: { id: creditId, userId },
+      include: {
+        schedule: { orderBy: { dueDate: 'asc' } },
+      },
+    });
+
+    if (!credit) throw new AppError(404, 'Кредит не найден');
+
+    const outstanding = toNumber(credit.outstanding);
+    const newOutstanding = round2(outstanding - dto.amount);
+    const isFull = newOutstanding <= CLOSE_THRESHOLD;
+    const mode = (dto.mode ?? credit.prepaymentMode) as PrepaymentMode;
+
+    const pending = credit.schedule.filter((item) => item.status === 'PENDING');
+
+    // Что осталось заплатить процентов по текущему графику.
+    const currentInterest = round2(
+      pending.reduce((acc, item) => acc + toNumber(item.interestPart), 0),
+    );
+    const currentTotal = round2(pending.reduce((acc, item) => acc + toNumber(item.amount), 0));
+
+    if (isFull) {
+      return {
+        isFull: true,
+        amount: dto.amount,
+        newOutstanding: 0,
+        monthSaved: pending.length,
+        interestSaved: round2(Math.max(0, currentInterest)),
+        interestAfter: 0,
+        totalAfter: 0,
+        paymentBefore: pending[0] ? round2(toNumber(pending[0].amount)) : 0,
+        paymentAfter: 0,
+      };
+    }
+
+    const nextDueDate = pending[0]?.dueDate ?? addMonths(utcToday(), 1);
+    const remainingTerm = Math.max(
+      1,
+      monthsBetween(utcToday(), addMonths(credit.startDate, credit.termMonths)),
+    );
+
+    const items = rebuildSchedule({
+      outstanding: newOutstanding,
+      annualRate: toNumber(credit.annualRate),
+      paymentType: credit.paymentType as PaymentType,
+      mode,
+      remainingTermMonths: remainingTerm,
+      nextDueDate,
+      paymentDay: credit.paymentDay,
+      previousPayment: pending[0] ? toNumber(pending[0].amount) : null,
+      previousPrincipalPart: pending[0] ? toNumber(pending[0].principalPart) : null,
+    });
+
+    const newInterest = round2(items.reduce((acc, item) => acc + item.interestPart, 0));
+    const newTotal = round2(items.reduce((acc, item) => acc + item.amount, 0));
+
+    return {
+      isFull: false,
+      amount: dto.amount,
+      newOutstanding,
+      monthSaved: Math.max(0, pending.length - items.length),
+      interestSaved: round2(Math.max(0, currentInterest - newInterest)),
+      interestAfter: newInterest,
+      totalAfter: newTotal,
+      currentTotal,
+      paymentBefore: pending[0] ? round2(toNumber(pending[0].amount)) : 0,
+      paymentAfter: items[0] ? round2(items[0].amount) : 0,
+      monthsAfter: items.length,
+    };
+  },
 };

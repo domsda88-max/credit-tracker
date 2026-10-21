@@ -1,9 +1,14 @@
-import type { CreateCreditPayload, Credit, CreditDetail, CreditListItem } from '../types';
+import type { CreateCreditPayload, Credit, CreditDetail, CreditListItem, CreditSummary } from '../types';
 import { api } from './client';
 
 export const creditsApi = {
   async list(): Promise<CreditListItem[]> {
     const { data } = await api.get<CreditListItem[]>('/credits');
+    return data;
+  },
+
+  async summary(): Promise<CreditSummary> {
+    const { data } = await api.get<CreditSummary>('/credits/summary');
     return data;
   },
 

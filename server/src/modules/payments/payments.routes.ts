@@ -18,3 +18,10 @@ paymentsRouter.post(
   validate(earlyRepaymentSchema),
   asyncHandler(paymentsController.earlyRepayment),
 );
+
+/** Предпросмотр досрочного погашения: экономия процентов и срока (без записи). */
+paymentsRouter.post(
+  '/credits/:creditId/early-preview',
+  validate(earlyRepaymentSchema),
+  asyncHandler(paymentsController.previewEarlyRepayment),
+);

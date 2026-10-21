@@ -71,6 +71,19 @@ export interface CreditListItem extends Credit {
   nextPayment: PaymentScheduleItem | null;
 }
 
+/** Сводка по всем кредитам (GET /credits/summary). */
+export interface CreditSummary {
+  activeCount: number;
+  closedCount: number;
+  principalSum: number;
+  outstandingSum: number;
+  paidByPrincipal: number;
+  totalPaidSum: number;
+  scheduledTotal: number;
+  overpay: number;
+  debtFreeDate: string | null;
+}
+
 export interface CreditDetail extends Credit {
   schedule: PaymentScheduleItem[];
   events: PaymentEvent[];
@@ -102,6 +115,21 @@ export interface EarlyRepaymentPayload {
   amount: number;
   mode?: PrepaymentMode;
   note?: string;
+}
+
+/** Результат предпросмотра досрочного погашения (POST /payments/credits/:id/early-preview). */
+export interface EarlyPreview {
+  isFull: boolean;
+  amount: number;
+  newOutstanding: number;
+  monthSaved: number;
+  interestSaved: number;
+  interestAfter: number;
+  totalAfter: number;
+  currentTotal?: number;
+  paymentBefore: number;
+  paymentAfter: number;
+  monthsAfter?: number;
 }
 
 export interface SubscribePayload {

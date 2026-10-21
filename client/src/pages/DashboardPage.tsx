@@ -2,8 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { creditsApi } from '../api/credits';
 import { CreditRow } from '../components/CreditRow';
+import { DebtOverview } from '../components/DebtOverview';
 import { PushSettings } from '../components/PushSettings';
 import { SummaryCards } from '../components/SummaryCards';
+import { UpcomingPayments } from '../components/UpcomingPayments';
 
 export function DashboardPage() {
   const {
@@ -29,6 +31,7 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-4">
+      {list.length > 0 && <DebtOverview />}
       {list.length > 0 && <SummaryCards credits={list} />}
 
       <PushSettings />
@@ -48,6 +51,8 @@ export function DashboardPage() {
         </div>
       ) : (
         <>
+          <UpcomingPayments credits={list} />
+
           <section className="space-y-3">
             <h2 className="text-sm font-medium uppercase tracking-wide text-slate-500">
               Активные ({active.length})

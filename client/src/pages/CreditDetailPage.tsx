@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useParams } from 'react-router-dom';
 import { z } from 'zod';
@@ -9,7 +9,7 @@ import { creditsApi } from '../api/credits';
 import { paymentsApi } from '../api/payments';
 import { StatusBadge } from '../components/StatusBadge';
 import { EditCreditForm } from '../components/EditCreditForm';
-import type { PaymentEvent } from '../types';
+import type { EarlyPreview, PaymentEvent } from '../types';
 import {
   CREDIT_TYPE_LABELS,
   PAYMENT_TYPE_LABELS,
@@ -48,10 +48,38 @@ export function CreditDetailPage() {
     enabled: Boolean(id),
   });
 
-  const { register, handleSubmit, reset, formState } = useForm<EarlyFormValues>({
+  const { register, handleSubmit, reset, formState, watch } = useForm<EarlyFormValues>({
     resolver: zodResolver(earlySchema),
     defaultValues: { mode: 'REDUCE_PAYMENT' },
   });
+
+  const [preview, setPreview] = useState<EarlyPreview | null>(null);
+  const watchAmount = watch('amount');
+  const watchMode = watch('mode');
+
+  // Живой предпросмотр: считаем экономию, когда пользователь ввёл сумму.
+  useEffect(() => {
+    const amount = Number(watchAmount);
+    if (!id || !Number.isFinite(amount) || amount <= 0) {
+      setPreview(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      paymentsApi
+        .previewEarlyRepayment(id, { amount, mode: watchMode })
+        .then((data) => {
+          if (!cancelled) setPreview(data);
+        })
+        .catch(() => {
+          if (!cancelled) setPreview(null);
+        });
+    }, 350);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [id, watchAmount, watchMode]);
 
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: ['credit', id] });
@@ -232,6 +260,35 @@ export function CreditDetailPage() {
               {earlyMutation.isPending ? 'Пересчитываю…' : 'Внести'}
             </button>
           </form>
+
+          {preview && (
+            <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm">
+              {preview.isFull ? (
+                <p className="font-medium text-emerald-300">
+                  🎉 Полное закрытие кредита: сэкономите{' '}
+                  <span className="tabular">{formatMoney(preview.interestSaved)}</span> процентов
+                  {' '}и <span className="font-semibold">{preview.monthSaved} мес.</span>
+                </p>
+              ) : (
+                <>
+                  <p className="font-medium text-emerald-300">
+                    Экономия: <span className="tabular">{formatMoney(preview.interestSaved)}</span>{' '}
+                    процентов
+                    {preview.monthSaved > 0 && (
+                      <> и <span className="font-semibold">{preview.monthSaved} мес.</span> срока</>
+                    )}
+                  </p>
+                  <p className="mt-1 text-xs text-emerald-200/70">
+                    {watchMode === 'REDUCE_TERM' ? (
+                      <>Останется платежей: {preview.monthsAfter} · платёж {formatMoney(preview.paymentAfter)}</>
+                    ) : (
+                      <>Платёж уменьшится с {formatMoney(preview.paymentBefore)} до {formatMoney(preview.paymentAfter)}</>
+                    )}
+                  </p>
+                </>
+              )}
+            </div>
+          )}
         </section>
       )}
 

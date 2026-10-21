@@ -5,7 +5,7 @@ import { addMonths, addUTCDays, monthsBetween, utcToday } from '../../utils/fina
 import { planPastPayments } from '../../utils/finance/pastPayments';
 import { rebuildSchedule } from '../../utils/finance/earlyRepayment';
 import { generateSchedule } from '../../utils/finance/schedule';
-import { toNumber } from '../../utils/finance/round';
+import { round2, toNumber } from '../../utils/finance/round';
 import type { CreateCreditDto, ToggleFreezeDto, UpdateCreditDto } from './credits.schemas';
 
 /** Поля, изменение которых требует пересборки графика платежей. */
@@ -131,6 +131,54 @@ export const creditsService = {
       ...credit,
       nextPayment: schedule[0] ?? null,
     }));
+  },
+
+  /**
+   * Сводка по всем кредитам: общий прогресс, дата финансовой свободы и переплата.
+   * Дата свободы = последний платёж по графику среди активных кредитов.
+   * Переплата = сумма всех платежей по графику − первоначальный долг (если бы платили по графику).
+   */
+  async summary(userId: string) {
+    const credits = await prisma.credit.findMany({
+      where: { userId },
+      include: { schedule: { orderBy: { dueDate: 'asc' } } },
+    });
+
+    const active = credits.filter((c) => c.status === 'ACTIVE');
+
+    let principalSum = 0;
+    let outstandingSum = 0;
+    let totalPaidSum = 0;
+    let scheduledTotal = 0; // сколько всего ещё и уже запланировано по графику
+    let lastDueDate: Date | null = null;
+
+    for (const c of active) {
+      principalSum += toNumber(c.principal);
+      outstandingSum += Math.max(0, toNumber(c.outstanding));
+      totalPaidSum += toNumber(c.totalPaid);
+
+      for (const item of c.schedule) {
+        scheduledTotal += toNumber(item.amount);
+        if (!lastDueDate || item.dueDate.getTime() > lastDueDate.getTime()) {
+          lastDueDate = item.dueDate;
+        }
+      }
+    }
+
+    // Переплата: сколько процентов сверх тела уйдёт банку, если платить строго по графику.
+    const overpay = scheduledTotal - principalSum;
+
+    return {
+      activeCount: active.length,
+      closedCount: credits.length - active.length,
+      principalSum: round2(principalSum),
+      outstandingSum: round2(outstandingSum),
+      paidByPrincipal: round2(Math.max(0, principalSum - outstandingSum)),
+      totalPaidSum: round2(totalPaidSum),
+      scheduledTotal: round2(scheduledTotal),
+      overpay: round2(Math.max(0, overpay)),
+      debtFreeDate: lastDueDate ? lastDueDate.toISOString() : null,
+    };
   },
 
   /** Полная карточка кредита: график + журнал платежей. */
