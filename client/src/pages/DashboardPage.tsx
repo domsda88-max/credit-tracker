@@ -7,7 +7,6 @@ import { DebtOverview } from '../components/DebtOverview';
 import { OverdueAlert } from '../components/OverdueAlert';
 import { PayoffStrategy } from '../components/PayoffStrategy';
 import { PushSettings } from '../components/PushSettings';
-import { SummaryCards } from '../components/SummaryCards';
 import { UpcomingPayments } from '../components/UpcomingPayments';
 
 export function DashboardPage() {
@@ -36,7 +35,6 @@ export function DashboardPage() {
     <div className="space-y-4">
       <OverdueAlert credits={list} />
       {list.length > 0 && <DebtOverview />}
-      {list.length > 0 && <SummaryCards credits={list} />}
 
       <PushSettings />
 
