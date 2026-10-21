@@ -8,6 +8,7 @@ import { extractErrorMessage } from '../api/client';
 import { creditsApi } from '../api/credits';
 import { paymentsApi } from '../api/payments';
 import { StatusBadge } from '../components/StatusBadge';
+import { BalanceChart } from '../components/BalanceChart';
 import { EditCreditForm } from '../components/EditCreditForm';
 import type { EarlyPreview, PaymentEvent } from '../types';
 import {
@@ -224,6 +225,14 @@ export function CreditDetailPage() {
       </header>
 
       {editing && <EditCreditForm credit={credit} onClose={() => setEditing(false)} />}
+
+      {!editing && (
+        <BalanceChart
+          schedule={credit.schedule}
+          principal={credit.principal}
+          outstanding={credit.outstanding}
+        />
+      )}
 
       {credit.status === 'ACTIVE' && (
         <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
