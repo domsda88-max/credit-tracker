@@ -6,7 +6,7 @@ import { rebuildSchedule } from '../../utils/finance/earlyRepayment';
 import { crossedMilestone, milestoneMessage, paidPercent } from '../../utils/finance/milestones';
 import { round2, toNumber } from '../../utils/finance/round';
 import { sendUniquePush } from '../push/push.service';
-import type { EarlyRepaymentDto } from './payments.schemas';
+import type { EarlyRepaymentDto, PayInstallmentDto } from './payments.schemas';
 
 const CLOSE_THRESHOLD = 0.01; // меньше копейки — считаем долг закрытым
 
@@ -30,8 +30,8 @@ async function notifyMilestone(
 }
 
 export const paymentsService = {
-  /** «Я оплатил» — отметить платёж по графику. */
-  async payInstallment(userId: string, installmentId: string) {
+  /** «Я оплатил» — отметить платёж по графику. Можно указать фактическую сумму и дату. */
+  async payInstallment(userId: string, installmentId: string, dto: PayInstallmentDto = {}) {
     const installment = await prisma.paymentSchedule.findUnique({
       where: { id: installmentId },
       include: { credit: true },
@@ -44,15 +44,24 @@ export const paymentsService = {
       throw new AppError(409, 'Этот платёж уже отмечен как оплаченный');
     }
 
-    const amount = toNumber(installment.amount);
-    const principalPart = toNumber(installment.principalPart);
+    const scheduledAmount = toNumber(installment.amount);
+    // Фактически внесённая сумма (по умолчанию — как в графике).
+    const amount = round2(dto.amount ?? scheduledAmount);
+    const scheduledPrincipal = toNumber(installment.principalPart);
+
+    // Какую долю от графика реально внёс пользователь: от неё зависит,
+    // на сколько уменьшится тело долга. При переплате тело гасится сильнее.
+    const ratio = scheduledAmount > 0 ? amount / scheduledAmount : 1;
+    const principalPart = round2(scheduledPrincipal * ratio);
+
     const credit = installment.credit;
     const prevPercent = paidPercent(toNumber(credit.principal), toNumber(credit.outstanding));
+    const paidAt = dto.paidAt ?? new Date();
 
     const result = await prisma.$transaction(async (tx) => {
       const updatedInstallment = await tx.paymentSchedule.update({
         where: { id: installmentId },
-        data: { status: 'PAID', paidAt: new Date(), paidAmount: amount },
+        data: { status: 'PAID', paidAt, paidAmount: amount },
       });
 
       let updatedCredit = await tx.credit.update({
@@ -68,6 +77,7 @@ export const paymentsService = {
           creditId: credit.id,
           kind: credit.paymentType === 'MIN_PAYMENT' ? 'MIN_PAYMENT' : 'SCHEDULED',
           amount,
+          paidAt,
         },
       });
 

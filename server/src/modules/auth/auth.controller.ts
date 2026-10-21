@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import type { LoginDto, RegisterDto } from './auth.schemas';
+import type { LoginDto, RegisterDto, UpdateSettingsDto } from './auth.schemas';
 import { authService } from './auth.service';
 
 export const authController = {
@@ -15,6 +15,11 @@ export const authController = {
 
   async me(req: Request, res: Response) {
     const result = await authService.getMe(req.user!.sub);
+    res.json(result);
+  },
+
+  async updateSettings(req: Request, res: Response) {
+    const result = await authService.updateSettings(req.user!.sub, req.body as UpdateSettingsDto);
     res.json(result);
   },
 };

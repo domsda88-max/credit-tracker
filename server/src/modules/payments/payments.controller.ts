@@ -1,10 +1,14 @@
 import type { Request, Response } from 'express';
-import type { EarlyRepaymentDto } from './payments.schemas';
+import type { EarlyRepaymentDto, PayInstallmentDto } from './payments.schemas';
 import { paymentsService } from './payments.service';
 
 export const paymentsController = {
   async payInstallment(req: Request, res: Response) {
-    const result = await paymentsService.payInstallment(req.user!.sub, req.params.installmentId);
+    const result = await paymentsService.payInstallment(
+      req.user!.sub,
+      req.params.installmentId,
+      req.body as PayInstallmentDto,
+    );
     res.json(result);
   },
 

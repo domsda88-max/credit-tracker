@@ -19,6 +19,8 @@ model User {
   passwordHash  String
   name          String?
   timezone      String              @default("Europe/Moscow") // часовой пояс для времени пушей
+  reminderHour  Int                 @default(10) // час локального времени для дневного дайджеста
+  leadDaysList  Int[]               @default([3, 2, 1, 0]) // за сколько дней предупреждать (0 = в день платежа)
   createdAt     DateTime            @default(now())
   credits       Credit[]
   subscriptions PushSubscription[]

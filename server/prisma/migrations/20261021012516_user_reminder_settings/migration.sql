@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "reminderHour" INTEGER NOT NULL DEFAULT 10,
+ADD COLUMN     "leadDaysList" INTEGER[] NOT NULL DEFAULT ARRAY[3, 2, 1, 0];

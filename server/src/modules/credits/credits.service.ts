@@ -5,6 +5,7 @@ import { addMonths, addUTCDays, monthsBetween, utcToday } from '../../utils/fina
 import { planPastPayments } from '../../utils/finance/pastPayments';
 import { rebuildSchedule } from '../../utils/finance/earlyRepayment';
 import { generateSchedule } from '../../utils/finance/schedule';
+import { effectiveAnnualRate } from '../../utils/finance/effectiveRate';
 import { round2, toNumber } from '../../utils/finance/round';
 import type { CreateCreditDto, ToggleFreezeDto, UpdateCreditDto } from './credits.schemas';
 
@@ -27,10 +28,13 @@ async function getOwnedCredit(userId: string, creditId: string): Promise<Credit>
 export const creditsService = {
   /** Создание кредита + генерация графика платежей одной транзакцией. */
   async create(userId: string, dto: CreateCreditDto) {
+    const frozen = dto.frozen ?? false;
+
     const schedule = generateSchedule({
       type: dto.paymentType,
       principal: dto.principal,
-      annualRate: dto.annualRate,
+      // Замороженная кредитка: проценты не начисляются → считаем как 0%.
+      annualRate: effectiveAnnualRate(dto.annualRate, frozen),
       startDate: dto.startDate,
       termMonths: dto.termMonths,
       paymentDay: dto.paymentDay,
@@ -43,8 +47,6 @@ export const creditsService = {
     if (schedule.length === 0) {
       throw new AppError(400, 'Не удалось построить график платежей — проверьте параметры кредита');
     }
-
-    const frozen = dto.frozen ?? false;
 
     // Кредит, оформленный раньше: платежи, дата которых уже прошла,
     // сразу помечаем внесёнными и вычитаем их тело из остатка долга.
@@ -240,11 +242,14 @@ export const creditsService = {
       }
     }
 
+    const freezeChanged = dto.frozen !== undefined && dto.frozen !== current.frozen;
     const financialChanged =
-      FINANCIAL_FIELDS.some((field) => dto[field] !== undefined) || dto.outstanding !== undefined;
+      FINANCIAL_FIELDS.some((field) => dto[field] !== undefined) || dto.outstanding !== undefined || freezeChanged;
 
     // Меняются сами условия (сумма/ставка/дата/срок) — тогда график действительно пересобираем.
-    const termsChanged = FINANCIAL_FIELDS.some((field) => dto[field] !== undefined);
+    // Заморозка меняет эффективную ставку (🧊 = 0%), поэтому тоже требует пересборки.
+    const termsChanged =
+      FINANCIAL_FIELDS.some((field) => dto[field] !== undefined) || freezeChanged;
 
     // Управление «снежинкой» 🧊
     if (dto.frozen !== undefined) {
@@ -287,6 +292,10 @@ export const creditsService = {
         graceReplenishDay: dto.graceReplenishDay ?? current.graceReplenishDay,
       };
 
+      // Итоговое состояние заморозки: что прислали в dto, иначе — текущее.
+      const willBeFrozen = dto.frozen ?? current.frozen;
+      const effectiveRate = effectiveAnnualRate(merged.annualRate, willBeFrozen);
+
       let pastToMark = 0;
       // Значения прошедших платежей для записи в кредит (числа, а не Decimal).
       let totalPaidValue: number | undefined;
@@ -296,7 +305,7 @@ export const creditsService = {
       const mergeInput = {
         type: merged.type as PaymentType,
         principal: merged.principal,
-        annualRate: merged.annualRate,
+        annualRate: effectiveRate,
         startDate: merged.startDate,
         termMonths: merged.termMonths,
         paymentDay: merged.paymentDay,
@@ -328,7 +337,7 @@ export const creditsService = {
             );
             return rebuildSchedule({
               outstanding: toNumber(updated.outstanding),
-              annualRate: merged.annualRate,
+              annualRate: effectiveRate,
               paymentType: merged.type as PaymentType,
               mode: updated.prepaymentMode as PrepaymentMode,
               remainingTermMonths: Math.max(1, remaining),

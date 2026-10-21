@@ -42,6 +42,8 @@ export function CreditDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [showAllPaid, setShowAllPaid] = useState(false);
   const [editing, setEditing] = useState(false);
+  /** id платежа, для которого открыта форма фактической оплаты (сумма/дата). */
+  const [payingId, setPayingId] = useState<string | null>(null);
 
   const { data: credit, isLoading, error: loadError } = useQuery({
     queryKey: ['credit', id],
@@ -88,8 +90,12 @@ export function CreditDetailPage() {
   };
 
   const payMutation = useMutation({
-    mutationFn: (installmentId: string) => paymentsApi.payInstallment(installmentId),
-    onSuccess: invalidate,
+    mutationFn: (vars: { installmentId: string; amount?: number; paidAt?: string }) =>
+      paymentsApi.payInstallment(vars.installmentId, { amount: vars.amount, paidAt: vars.paidAt }),
+    onSuccess: async () => {
+      setPayingId(null);
+      await invalidate();
+    },
     onError: (err) => setError(extractErrorMessage(err)),
   });
 
@@ -327,34 +333,95 @@ export function CreditDetailPage() {
         )}
 
         <div className="mt-3 divide-y divide-slate-800">
-          {visible.map((item) => (
-            <div key={item.id} className="flex items-center justify-between gap-3 py-3">
-              <div className="min-w-0">
-                <p className="text-sm text-slate-200">{formatDate(item.dueDate)}</p>
-                <p className="text-xs text-slate-500">
-                  тело {formatMoney(item.principalPart)} · проценты {formatMoney(item.interestPart)}
-                </p>
-              </div>
+          {visible.map((item) => {
+            const expanded = payingId === item.id;
+            const today = new Date().toISOString().slice(0, 10);
+            return (
+              <div key={item.id} className="py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm text-slate-200">{formatDate(item.dueDate)}</p>
+                    <p className="text-xs text-slate-500">
+                      тело {formatMoney(item.principalPart)} · проценты {formatMoney(item.interestPart)}
+                    </p>
+                  </div>
 
-              <div className="flex shrink-0 items-center gap-3">
-                <span className="tabular text-sm font-medium text-slate-100">
-                  {formatMoney(item.amount)}
-                </span>
-                {item.status === 'PAID' ? (
-                  <StatusBadge status="PAID" />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => payMutation.mutate(item.id)}
-                    disabled={payMutation.isPending}
-                    className="rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-medium text-slate-950 transition hover:bg-sky-400 disabled:opacity-50"
+                  <div className="flex shrink-0 items-center gap-3">
+                    <span className="tabular text-sm font-medium text-slate-100">
+                      {formatMoney(item.amount)}
+                    </span>
+                    {item.status === 'PAID' ? (
+                      <StatusBadge status="PAID" />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setPayingId(expanded ? null : item.id)}
+                        className="rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-medium text-slate-950 transition hover:bg-sky-400"
+                      >
+                        {expanded ? 'Отмена' : 'Я оплатил'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {expanded && (
+                  <form
+                    className="mt-3 rounded-xl border border-slate-800 bg-slate-950/50 p-3"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const form = e.currentTarget;
+                      const amountRaw = (form.elements.namedItem('amount') as HTMLInputElement).value;
+                      const dateRaw = (form.elements.namedItem('paidAt') as HTMLInputElement).value;
+                      const amount = amountRaw ? Number(amountRaw) : undefined;
+                      if (amount !== undefined && (!Number.isFinite(amount) || amount <= 0)) {
+                        setError('Сумма должна быть больше 0');
+                        return;
+                      }
+                      payMutation.mutate({
+                        installmentId: item.id,
+                        amount,
+                        paidAt: dateRaw ? new Date(dateRaw).toISOString() : undefined,
+                      });
+                    }}
                   >
-                    Я оплатил
-                  </button>
+                    <p className="text-xs text-slate-400">
+                      Фактическая оплата. Оставьте как есть, если заплатили вовремя и всю сумму —
+                      тогда тело долга уменьшится на {formatMoney(item.principalPart)}.
+                    </p>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <label className="block">
+                        <span className="text-[11px] text-slate-500">Сумма, ₽</span>
+                        <input
+                          name="amount"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          defaultValue={Number(item.amount)}
+                          className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-2 text-sm text-slate-100 outline-none focus:border-sky-500"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-[11px] text-slate-500">Дата платежа</span>
+                        <input
+                          name="paidAt"
+                          type="date"
+                          defaultValue={today}
+                          className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-2 text-sm text-slate-100 outline-none focus:border-sky-500"
+                        />
+                      </label>
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={payMutation.isPending}
+                      className="mt-2 rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-medium text-slate-950 transition hover:bg-sky-400 disabled:opacity-50"
+                    >
+                      {payMutation.isPending ? 'Записываю…' : 'Подтвердить оплату'}
+                    </button>
+                  </form>
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 

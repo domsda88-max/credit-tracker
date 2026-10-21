@@ -10,6 +10,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name?: string) => Promise<void>;
   logout: () => void;
+  setUser: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -31,6 +32,10 @@ export const useAuthStore = create<AuthState>()(
 
       logout() {
         set({ user: null, token: null, isAuthenticated: false });
+      },
+
+      setUser(user) {
+        set({ user });
       },
     }),
     { name: 'credit-tracker-auth' },

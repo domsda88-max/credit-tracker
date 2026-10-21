@@ -3,7 +3,11 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
+import { initTheme } from './store/theme';
 import './index.css';
+
+// Тема ставится до первого рендера — чтобы не мигало белым/тёмным.
+initTheme();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,3 +44,4 @@ if ('serviceWorker' in navigator) {
     setInterval(() => void registration.update(), 60_000);
   });
 }
+

@@ -3,13 +3,15 @@ import jwt from 'jsonwebtoken';
 import { env } from '../../config/env';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middlewares/errorHandler';
-import type { LoginDto, RegisterDto } from './auth.schemas';
+import type { LoginDto, RegisterDto, UpdateSettingsDto } from './auth.schemas';
 
 const publicUserSelect = {
   id: true,
   email: true,
   name: true,
   timezone: true,
+  reminderHour: true,
+  leadDaysList: true,
 } as const;
 
 function signToken(userId: string, email: string): string {
@@ -46,6 +48,20 @@ export const authService = {
   async getMe(userId: string) {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: publicUserSelect });
     if (!user) throw new AppError(404, 'Пользователь не найден');
+    return user;
+  },
+
+  /** Обновление настроек напоминаний (часовой пояс, час дайджеста, за сколько дней предупреждать). */
+  async updateSettings(userId: string, dto: UpdateSettingsDto) {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        timezone: dto.timezone,
+        reminderHour: dto.reminderHour,
+        leadDaysList: dto.leadDaysList,
+      },
+      select: publicUserSelect,
+    });
     return user;
   },
 };

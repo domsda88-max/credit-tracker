@@ -2,9 +2,13 @@ import type { EarlyRepaymentPayload, EarlyPreview } from '../types';
 import { api } from './client';
 
 export const paymentsApi = {
-  /** «Я оплатил» — отметить платёж по графику. */
-  async payInstallment(installmentId: string) {
-    const { data } = await api.post(`/payments/installments/${installmentId}/pay`);
+  /**
+   * «Я оплатил» — отметить платёж по графику.
+   * Можно передать фактическую сумму и реальную дату платежа
+   * (например, если заплатили меньше или позже).
+   */
+  async payInstallment(installmentId: string, payload?: { amount?: number; paidAt?: string }) {
+    const { data } = await api.post(`/payments/installments/${installmentId}/pay`, payload ?? {});
     return data;
   },
 

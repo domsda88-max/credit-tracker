@@ -10,6 +10,8 @@ export interface User {
   email: string;
   name: string | null;
   timezone: string;
+  reminderHour: number;
+  leadDaysList: number[];
 }
 
 export interface AuthResponse {

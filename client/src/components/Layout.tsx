@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth';
+import { ThemeToggle } from './ThemeToggle';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -31,13 +32,16 @@ export function Layout() {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="shrink-0 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-400 transition active:bg-slate-800/60"
-        >
-          Выйти
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="shrink-0 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-400 transition active:bg-slate-800/60"
+          >
+            Выйти
+          </button>
+        </div>
       </header>
 
       {/* Единственная прокручиваемая область приложения */}

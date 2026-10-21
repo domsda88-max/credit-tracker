@@ -16,4 +16,13 @@ export const authApi = {
     const { data } = await api.get<User>('/auth/me');
     return data;
   },
+
+  async updateSettings(payload: {
+    timezone: string;
+    reminderHour: number;
+    leadDaysList: number[];
+  }): Promise<User> {
+    const { data } = await api.put<User>('/auth/settings', payload);
+    return data;
+  },
 };

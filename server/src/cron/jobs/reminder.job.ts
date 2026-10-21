@@ -3,10 +3,13 @@ import { sendUniquePush } from '../../modules/push/push.service';
 import { addUTCDays, formatDate, isoDate, utcToday } from '../../utils/finance/date';
 
 /** Час (локального времени пользователя), в который отправляем дневной дайджест. */
-const REMINDER_HOUR = 10;
+const DEFAULT_REMINDER_HOUR = 10;
 
 /** Горизонт предупреждения о конце цикла заморозки (дней). */
 const FREEZE_WARNING_DAYS = 2;
+
+/** Дни предупреждения по умолчанию: за 3, за 2, за 1 день и в сам день платежа. */
+const DEFAULT_LEAD_DAYS = [3, 2, 1, 0];
 
 /** Локальный час пользователя по его таймзоне; при неверной таймзоне — Москва. */
 function localHour(timezone: string): number {
@@ -38,15 +41,24 @@ function describe(items: DueItem[]): string {
   return items.map((item) => `${item.creditName} — ${item.amount.toLocaleString('ru-RU')} ₽`).join('; ');
 }
 
-/** Сводный дайджест: просрочка + платежи сегодня + платежи завтра — одним пушем. */
-async function sendDigestForUser(userId: string): Promise<void> {
+/**
+ * Напоминания о платежах. Для каждого дня из `leadDaysList` (например [3, 2, 1, 0])
+ * отправляем отдельное уведомление тем платежам, срок которых наступает ровно
+ * через N дней. Плюс раз в день — сводка по просрочке.
+ *
+ * Идемпотентность: dedupKey включает дату и число дней, поэтому при «догоне»
+ * после пробуждения сервера дубли не отправляются.
+ */
+async function sendDigestForUser(userId: string, leadDaysList: number[]): Promise<void> {
   const today = utcToday();
-  const tomorrow = addUTCDays(today, 1);
+  const days = leadDaysList.length > 0 ? leadDaysList : DEFAULT_LEAD_DAYS;
+  const maxLead = Math.max(...days);
 
+  // Все незакрытые платежи в пределах самого дальнего горизонта предупреждения.
   const pending = await prisma.paymentSchedule.findMany({
     where: {
       status: 'PENDING',
-      dueDate: { lte: tomorrow },
+      dueDate: { lte: addUTCDays(today, maxLead) },
       credit: { userId, status: 'ACTIVE' },
     },
     include: { credit: { select: { name: true } } },
@@ -56,8 +68,7 @@ async function sendDigestForUser(userId: string): Promise<void> {
   if (pending.length === 0) return;
 
   const overdue: DueItem[] = [];
-  const dueToday: DueItem[] = [];
-  const dueTomorrow: DueItem[] = [];
+  const byLead = new Map<number, DueItem[]>();
 
   for (const item of pending) {
     const entry: DueItem = {
@@ -65,27 +76,54 @@ async function sendDigestForUser(userId: string): Promise<void> {
       amount: Number(item.amount),
       dueDate: item.dueDate,
     };
-    const time = item.dueDate.getTime();
-    if (time < today.getTime()) overdue.push(entry);
-    else if (time === today.getTime()) dueToday.push(entry);
-    else dueTomorrow.push(entry);
+    const diffDays = Math.round((item.dueDate.getTime() - today.getTime()) / 86_400_000);
+    if (diffDays < 0) {
+      overdue.push(entry);
+    } else {
+      const bucket = byLead.get(diffDays) ?? [];
+      bucket.push(entry);
+      byLead.set(diffDays, bucket);
+    }
   }
 
-  const sections: string[] = [];
-  if (overdue.length > 0) sections.push(`🔴 Просрочка (${overdue.length}): ${describe(overdue)}`);
-  if (dueToday.length > 0) sections.push(`🟠 Сегодня (${dueToday.length}): ${describe(dueToday)}`);
-  if (dueTomorrow.length > 0) sections.push(`🟡 Завтра (${dueTomorrow.length}): ${describe(dueTomorrow)}`);
+  // 1) Просрочка — одним сообщением в день.
+  if (overdue.length > 0) {
+    const total = sum(overdue);
+    await sendUniquePush(userId, null, 'DIGEST', `${userId}:OVERDUE:${isoDate(today)}`, {
+      title: `🔴 Просрочено платежей: ${overdue.length}`,
+      body: `${describe(overdue)}\n💰 Итого: ${total.toLocaleString('ru-RU')} ₽`,
+      url: '/',
+      tag: 'overdue',
+    });
+  }
 
-  const total = sum([...overdue, ...dueToday, ...dueTomorrow]);
-  sections.push(`💰 Итого: ${total.toLocaleString('ru-RU')} ₽`);
+  // 2) Предупреждения по каждому дню из настроек.
+  for (const lead of days) {
+    const items = byLead.get(lead);
+    if (!items || items.length === 0) continue;
 
-  const hasOverdue = overdue.length > 0;
-  await sendUniquePush(userId, null, 'DIGEST', `${userId}:DIGEST:${isoDate(today)}`, {
-    title: hasOverdue ? '🔴 Есть просроченные платежи' : '💳 Платежи по кредитам',
-    body: sections.join('\n'),
-    url: '/',
-    tag: 'daily-digest',
-  });
+    const total = sum(items);
+    const title =
+      lead === 0
+        ? `🟠 Сегодня платёж: ${items.length}`
+        : `🟡 Через ${lead} ${pluralDays(lead)} платёж: ${items.length}`;
+
+    await sendUniquePush(userId, null, 'DIGEST', `${userId}:DIGEST:${lead}:${isoDate(today)}`, {
+      title,
+      body: `${describe(items)}\n💰 Итого: ${total.toLocaleString('ru-RU')} ₽`,
+      url: '/',
+      tag: `due-${lead}`,
+    });
+  }
+}
+
+/** «день / дня / дней» — чтобы текст не выглядел машинным. */
+function pluralDays(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'день';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'дня';
+  return 'дней';
 }
 
 /** Предупреждение об окончании цикла заморозки («снежинка» 🧊). */
@@ -127,21 +165,24 @@ async function sendFreezeAlerts(userId: string): Promise<void> {
  * Экспортируется для ручного запуска и тестов.
  */
 export async function runReminderJob(force = false): Promise<{ processedUsers: number; pushed: number }> {
-  const users = await prisma.user.findMany({ select: { id: true, timezone: true } });
+  const users = await prisma.user.findMany({
+    select: { id: true, timezone: true, reminderHour: true, leadDaysList: true },
+  });
 
   let processedUsers = 0;
   let pushed = 0;
 
   for (const user of users) {
     try {
-      if (!force && localHour(user.timezone) < REMINDER_HOUR) continue;
+      const hour = user.reminderHour ?? DEFAULT_REMINDER_HOUR;
+      if (!force && localHour(user.timezone) < hour) continue;
       processedUsers += 1;
 
       const before = await prisma.notificationLog.count({
         where: { userId: user.id, type: 'DIGEST' },
       });
 
-      await sendDigestForUser(user.id);
+      await sendDigestForUser(user.id, user.leadDaysList ?? DEFAULT_LEAD_DAYS);
       await sendFreezeAlerts(user.id);
 
       const after = await prisma.notificationLog.count({

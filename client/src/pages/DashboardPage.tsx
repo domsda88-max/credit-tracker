@@ -7,6 +7,7 @@ import { DebtOverview } from '../components/DebtOverview';
 import { OverdueAlert } from '../components/OverdueAlert';
 import { PayoffStrategy } from '../components/PayoffStrategy';
 import { PushSettings } from '../components/PushSettings';
+import { ReminderSettings } from '../components/ReminderSettings';
 import { UpcomingPayments } from '../components/UpcomingPayments';
 
 export function DashboardPage() {
@@ -37,6 +38,8 @@ export function DashboardPage() {
       {list.length > 0 && <DebtOverview />}
 
       <PushSettings />
+
+      <ReminderSettings />
 
       {list.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-800 p-8 text-center">

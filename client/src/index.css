@@ -2,8 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Тема оформления.
+ * По умолчанию — «как в системе» (светлая/тёмная подстраивается под телефон).
+ * Пользователь может переключить вручную: system → light → dark.
+ * Значение хранится в localStorage и проставляется в data-theme на <html>.
+ *
+ * Компоненты написаны в тёмной палитре (slate-*), поэтому светлая тема
+ * реализована как точечные переопределения тех же утилит — так не нужно
+ * переписывать классы в каждом компоненте.
+ */
+
 :root {
   color-scheme: dark;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
 }
 
 html,
@@ -40,3 +55,62 @@ main {
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* ═══════════════════════ СВЕТЛАЯ ТЕМА ═══════════════════════ */
+/* Инвертируем шкалу slate: тёмные фоны → светлые, светлый текст → тёмный. */
+
+[data-theme='light'] body {
+  background-color: #f8fafc; /* slate-50 */
+  color: #0f172a; /* slate-900 */
+}
+
+/* Фоны */
+[data-theme='light'] .bg-slate-950 { background-color: #f1f5f9; }
+[data-theme='light'] .bg-slate-950\/50 { background-color: rgb(241 245 249 / 0.6); }
+[data-theme='light'] .bg-slate-950\/60 { background-color: rgb(241 245 249 / 0.7); }
+[data-theme='light'] .bg-slate-900 { background-color: #ffffff; }
+[data-theme='light'] .bg-slate-900\/40 { background-color: rgb(255 255 255 / 0.6); }
+[data-theme='light'] .bg-slate-900\/60 { background-color: rgb(255 255 255 / 0.85); }
+[data-theme='light'] .bg-slate-800 { background-color: #e2e8f0; }
+[data-theme='light'] .bg-slate-800\/40 { background-color: rgb(226 232 240 / 0.5); }
+[data-theme='light'] .bg-slate-800\/60 { background-color: rgb(226 232 240 / 0.7); }
+
+/* Градиент шапки обзора */
+[data-theme='light'] .from-slate-900 { --tw-gradient-from: #ffffff; }
+[data-theme='light'] .to-slate-900\/40 { --tw-gradient-to: rgb(255 255 255 / 0.4); }
+
+/* Текст */
+[data-theme='light'] .text-slate-100 { color: #0f172a; }
+[data-theme='light'] .text-slate-200 { color: #1e293b; }
+[data-theme='light'] .text-slate-300 { color: #334155; }
+[data-theme='light'] .text-slate-400 { color: #475569; }
+[data-theme='light'] .text-slate-500 { color: #64748b; }
+[data-theme='light'] .text-slate-950 { color: #f8fafc; } /* текст на цветных кнопках */
+
+/* Границы */
+[data-theme='light'] .border-slate-800 { border-color: #e2e8f0; }
+[data-theme='light'] .border-slate-700 { border-color: #cbd5e1; }
+[data-theme='light'] .border-slate-600 { border-color: #94a3b8; }
+[data-theme='light'] .divide-slate-800 > :not([hidden]) ~ :not([hidden]) { border-color: #e2e8f0; }
+
+/* Hover/active-фоны */
+[data-theme='light'] .hover\:bg-slate-900:hover { background-color: #f8fafc; }
+[data-theme='light'] .active\:bg-slate-800\/60:active { background-color: rgb(226 232 240 / 0.7); }
+[data-theme='light'] .hover\:text-slate-300:hover { color: #334155; }
+[data-theme='light'] .hover\:border-slate-500:hover { border-color: #94a3b8; }
+[data-theme='light'] .hover\:border-slate-600:hover { border-color: #cbd5e1; }
+
+/* Акцентные цвета делаем чуть темнее для читаемости на белом */
+[data-theme='light'] .text-sky-300 { color: #0284c7; }
+[data-theme='light'] .text-sky-400 { color: #0284c7; }
+[data-theme='light'] .text-emerald-300\/80 { color: rgb(4 120 87 / 0.85); }
+[data-theme='light'] .text-amber-300\/80 { color: rgb(180 83 9 / 0.9); }
+[data-theme='light'] .text-amber-300 { color: #b45309; }
+[data-theme='light'] .text-sky-300\/80 { color: rgb(2 132 199 / 0.8); }
+[data-theme='light'] .text-rose-300 { color: #be123c; }
+[data-theme='light'] .text-rose-400 { color: #e11d48; }
+[data-theme='light'] .bg-sky-500\/10 { background-color: rgb(14 165 233 / 0.12); }
+[data-theme='light'] .bg-sky-500\/15 { background-color: rgb(14 165 233 / 0.15); }
+
+/* Светлая тема: активная навигация и мелкие детали */
+[data-theme='light'] .bg-slate-800\/40 { background-color: rgb(241 245 249 / 0.8); }
