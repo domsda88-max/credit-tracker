@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { CreditListItem } from '../types';
 import { describeDueDate, formatDate, formatMoney } from '../utils/format';
@@ -15,11 +16,34 @@ interface Item {
   overdue: boolean;
 }
 
+const COLLAPSE_KEY = 'upcomingPaymentsCollapsed';
+
 /**
  * Ближайшие платежи по всем кредитам одним списком —
  * чтобы видеть «что и когда платить», не открывая каждый кредит.
+ * Список можно свернуть/развернуть, состояние запоминается.
  */
 export function UpcomingPayments({ credits }: Props) {
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(COLLAPSE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggle = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0');
+      } catch {
+        // localStorage может быть недоступен — просто игнорируем
+      }
+      return next;
+    });
+  };
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -36,33 +60,56 @@ export function UpcomingPayments({ credits }: Props) {
 
   if (items.length === 0) return null;
 
+  const total = items.reduce((sum, item) => sum + item.amount, 0);
+
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-medium uppercase tracking-wide text-slate-500">
-        Ближайшие платежи
-      </h2>
-      <div className="divide-y divide-slate-800 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60">
-        {items.map((item) => (
-          <Link
-            key={item.creditId}
-            to={`/credits/${item.creditId}`}
-            className="flex items-center justify-between gap-3 px-4 py-3 transition active:bg-slate-800/60"
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={!collapsed}
+        className="flex w-full items-center justify-between gap-3 text-left"
+      >
+        <span className="text-sm font-medium uppercase tracking-wide text-slate-500">
+          Ближайшие платежи
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="tabular text-xs text-slate-500">
+            {items.length} · {formatMoney(total)}
+          </span>
+          <span
+            className={`text-slate-500 transition-transform ${collapsed ? '' : 'rotate-180'}`}
+            aria-hidden="true"
           >
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-slate-100">{item.creditName}</p>
-              <p className="text-xs text-slate-500">
-                {formatDate(item.dueDate)} ·{' '}
-                <span className={item.overdue ? 'text-rose-400' : 'text-slate-500'}>
-                  {describeDueDate(item.dueDate)}
-                </span>
-              </p>
-            </div>
-            <span className="tabular shrink-0 text-sm font-semibold text-slate-100">
-              {formatMoney(item.amount)}
-            </span>
-          </Link>
-        ))}
-      </div>
+            ⌄
+          </span>
+        </span>
+      </button>
+
+      {!collapsed && (
+        <div className="divide-y divide-white/[0.06] overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+          {items.map((item) => (
+            <Link
+              key={item.creditId}
+              to={`/credits/${item.creditId}`}
+              className="flex items-center justify-between gap-3 px-4 py-3 transition active:bg-slate-800/60"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-slate-100">{item.creditName}</p>
+                <p className="text-xs text-slate-500">
+                  {formatDate(item.dueDate)} ·{' '}
+                  <span className={item.overdue ? 'text-rose-400' : 'text-slate-500'}>
+                    {describeDueDate(item.dueDate)}
+                  </span>
+                </p>
+              </div>
+              <span className="tabular shrink-0 text-sm font-semibold text-slate-100">
+                {formatMoney(item.amount)}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
