@@ -14,4 +14,10 @@ export const pushApi = {
   async unsubscribe(endpoint: string): Promise<void> {
     await api.delete('/push/subscribe', { data: { endpoint } });
   },
+
+  /** Отправить тестовое уведомление на все устройства пользователя. */
+  async sendTest(): Promise<number> {
+    const { data } = await api.post<{ ok: boolean; sent: number }>('/push/test');
+    return data.sent;
+  },
 };

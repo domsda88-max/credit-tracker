@@ -23,4 +23,15 @@ export const pushController = {
     await pushService.removeSubscription(req.user!.sub, dto.endpoint);
     res.status(204).send();
   },
+
+  /** Отправить тестовое push-уведомление на все устройства текущего пользователя. */
+  async sendTest(req: Request, res: Response) {
+    const sent = await pushService.sendToUser(req.user!.sub, {
+      title: 'Credit Tracker',
+      body: 'Данные обновлены — проверьте список кредитов 👋',
+      url: '/',
+      tag: 'test-push',
+    });
+    res.json({ ok: true, sent });
+  },
 };

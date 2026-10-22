@@ -12,3 +12,4 @@ pushRouter.get('/vapid-public-key', asyncHandler(pushController.publicKey));
 
 pushRouter.post('/subscribe', requireAuth, validate(subscribeSchema), asyncHandler(pushController.subscribe));
 pushRouter.delete('/subscribe', requireAuth, validate(unsubscribeSchema), asyncHandler(pushController.unsubscribe));
+pushRouter.post('/test', requireAuth, asyncHandler(pushController.sendTest));

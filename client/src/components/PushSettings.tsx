@@ -1,7 +1,25 @@
+import { useState } from 'react';
+import { extractErrorMessage } from '../api/client';
+import { pushApi } from '../api/push';
 import { usePushNotifications } from '../hooks/usePushNotifications';
+import { useToast } from './Toast';
 
 export function PushSettings() {
   const { status, error, subscribe, unsubscribe } = usePushNotifications();
+  const toast = useToast();
+  const [testing, setTesting] = useState(false);
+
+  const sendTest = async () => {
+    setTesting(true);
+    try {
+      const sent = await pushApi.sendTest();
+      toast.show(sent > 0 ? `Отправлено на устройств: ${sent}` : 'Нет активных подписок');
+    } catch (err) {
+      toast.show(extractErrorMessage(err), 'error');
+    } finally {
+      setTesting(false);
+    }
+  };
 
   return (
     <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
@@ -47,7 +65,17 @@ export function PushSettings() {
       )}
       {status === 'error' && error && <p className="mt-2 text-xs text-rose-400">{error}</p>}
       {status === 'subscribed' && (
-        <p className="mt-2 text-xs text-emerald-400">Уведомления включены ✅</p>
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <p className="text-xs text-emerald-400">Уведомления включены ✅</p>
+          <button
+            type="button"
+            onClick={() => void sendTest()}
+            disabled={testing}
+            className="shrink-0 rounded-lg border border-white/[0.08] px-3 py-1.5 text-xs text-slate-300 transition hover:border-sky-500/50 disabled:opacity-50"
+          >
+            {testing ? 'Отправляю…' : 'Проверить'}
+          </button>
+        </div>
       )}
     </div>
   );
