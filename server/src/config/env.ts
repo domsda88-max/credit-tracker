@@ -16,6 +16,11 @@ const envSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().min(1, 'VAPID_PRIVATE_KEY обязателен (npm run vapid:gen)'),
   VAPID_SUBJECT: z.string().default('mailto:admin@example.com'),
   CLIENT_ORIGIN: z.string().default('*'),
+  /**
+   * Разовый секрет для служебных маршрутов (например, пересоздание данных).
+   * Задаётся в панели Render. Если не задан — служебные маршруты отключены.
+   */
+  ADMIN_RESET_SECRET: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
