@@ -2,6 +2,7 @@ import { createApp } from './app';
 import { env } from './config/env';
 import { prisma } from './config/prisma';
 import { ensureVapidConfigured } from './config/vapid';
+import { runMotivationJob } from './cron/jobs/motivation.job';
 import { runReminderJob } from './cron/jobs/reminder.job';
 import { registerCronJobs } from './cron/scheduler';
 
@@ -22,6 +23,9 @@ async function bootstrap(): Promise<void> {
   setTimeout(() => {
     void runReminderJob().catch((error) =>
       console.error('[cron] Сбой догоняющего запуска напоминаний:', error),
+    );
+    void runMotivationJob().catch((error) =>
+      console.error('[cron] Сбой догоняющего запуска мотивации:', error),
     );
   }, 10_000);
 

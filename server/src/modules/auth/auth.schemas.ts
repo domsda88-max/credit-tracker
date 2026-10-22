@@ -35,6 +35,7 @@ export const updateSettingsSchema = z.object({
     .array(z.coerce.number().int().min(0).max(14))
     .max(15)
     .transform((days) => [...new Set(days)].sort((a, b) => b - a)),
+  motivationEnabled: z.boolean().optional(),
 });
 
 export type RegisterDto = z.infer<typeof registerSchema>;

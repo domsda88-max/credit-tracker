@@ -21,6 +21,9 @@ model User {
   timezone      String              @default("Europe/Moscow") // часовой пояс для времени пушей
   reminderHour  Int                 @default(10) // час локального времени для дневного дайджеста
   leadDaysList  Int[]               @default([3, 2, 1, 0]) // за сколько дней предупреждать (0 = в день платежа)
+  motivationEnabled Boolean         @default(true) // ежедневная мотивационная рассылка в 9:30
+  motivationDay Int                 @default(1) // текущий день цикла мотивации (1..30)
+  motivationSentOn DateTime?        @db.Date // дата последней отправки мотивации (защита от дублей)
   createdAt     DateTime            @default(now())
   credits       Credit[]
   subscriptions PushSubscription[]

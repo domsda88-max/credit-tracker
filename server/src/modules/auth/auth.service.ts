@@ -12,6 +12,8 @@ const publicUserSelect = {
   timezone: true,
   reminderHour: true,
   leadDaysList: true,
+  motivationEnabled: true,
+  motivationDay: true,
 } as const;
 
 function signToken(userId: string, email: string): string {
@@ -59,6 +61,7 @@ export const authService = {
         timezone: dto.timezone,
         reminderHour: dto.reminderHour,
         leadDaysList: dto.leadDaysList,
+        ...(dto.motivationEnabled !== undefined ? { motivationEnabled: dto.motivationEnabled } : {}),
       },
       select: publicUserSelect,
     });

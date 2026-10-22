@@ -21,6 +21,7 @@ export const authApi = {
     timezone: string;
     reminderHour: number;
     leadDaysList: number[];
+    motivationEnabled?: boolean;
   }): Promise<User> {
     const { data } = await api.put<User>('/auth/settings', payload);
     return data;

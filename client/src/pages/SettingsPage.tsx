@@ -1,5 +1,6 @@
 import { PushSettings } from '../components/PushSettings';
 import { ReminderSettings } from '../components/ReminderSettings';
+import { MotivationSettings } from '../components/MotivationSettings';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { DataExport } from '../components/DataExport';
 import { useAuthStore } from '../store/auth';
@@ -20,6 +21,7 @@ export function SettingsPage() {
         </h2>
         <PushSettings />
         <ReminderSettings />
+        <MotivationSettings />
       </section>
 
       <section className="space-y-2">

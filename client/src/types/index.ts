@@ -12,6 +12,8 @@ export interface User {
   timezone: string;
   reminderHour: number;
   leadDaysList: number[];
+  motivationEnabled: boolean;
+  motivationDay: number;
 }
 
 export interface AuthResponse {
