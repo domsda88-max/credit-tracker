@@ -23,7 +23,7 @@ function untilLabel(iso: string): string {
  */
 export function DebtOverview() {
   const { data } = useQuery({
-    queryKey: ['credits', 'summary'],
+    queryKey: ['summary'],
     queryFn: () => creditsApi.summary(),
   });
 

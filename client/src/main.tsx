@@ -3,6 +3,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
+import { ToastProvider } from './components/Toast';
 import { initTheme } from './store/theme';
 import './index.css';
 
@@ -22,14 +23,18 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </ToastProvider>
     </QueryClientProvider>
   </StrictMode>,
 );
 
-// PWA: автообновление при новой версии Service Worker
+// PWA: автообновление при новой версии Service Worker.
+// Проверяем при старте, раз в минуту, при возврате в приложение и при появлении сети —
+// чтобы установленное на рабочий стол приложение не «залипало» на старой версии.
 if ('serviceWorker' in navigator) {
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -41,8 +46,11 @@ if ('serviceWorker' in navigator) {
   const checkUpdate = async () => {
     try {
       const registration = await navigator.serviceWorker.getRegistration();
-      if (registration) {
-        await registration.update();
+      if (!registration) return;
+      await registration.update();
+      // Если уже ждёт новая версия — активируем её немедленно.
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
       }
     } catch {
       // игнорируем
@@ -51,5 +59,10 @@ if ('serviceWorker' in navigator) {
 
   void checkUpdate();
   setInterval(checkUpdate, 60_000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') void checkUpdate();
+  });
+  window.addEventListener('online', () => void checkUpdate());
+  window.addEventListener('focus', () => void checkUpdate());
 }
 

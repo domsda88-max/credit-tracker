@@ -10,6 +10,7 @@ import { paymentsApi } from '../api/payments';
 import { StatusBadge } from '../components/StatusBadge';
 import { BalanceChart } from '../components/BalanceChart';
 import { EditCreditForm } from '../components/EditCreditForm';
+import { useToast } from '../components/Toast';
 import type { EarlyPreview, PaymentEvent } from '../types';
 import {
   CREDIT_TYPE_LABELS,
@@ -39,6 +40,7 @@ const EVENT_LABELS: Record<PaymentEvent['kind'], string> = {
 export function CreditDetailPage() {
   const { id = '' } = useParams();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [error, setError] = useState<string | null>(null);
   const [showAllPaid, setShowAllPaid] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -95,6 +97,7 @@ export function CreditDetailPage() {
     onSuccess: async () => {
       setPayingId(null);
       await invalidate();
+      toast.show('Платёж отмечен');
     },
     onError: (err) => setError(extractErrorMessage(err)),
   });
@@ -107,13 +110,17 @@ export function CreditDetailPage() {
     onSuccess: async () => {
       reset({ amount: undefined as unknown as number, mode: 'REDUCE_PAYMENT' });
       await invalidate();
+      toast.show('Досрочное погашение внесено');
     },
     onError: (err) => setError(extractErrorMessage(err)),
   });
 
   const freezeMutation = useMutation({
     mutationFn: (frozen: boolean) => creditsApi.toggleFreeze(id, frozen),
-    onSuccess: invalidate,
+    onSuccess: async (_data, frozen) => {
+      await invalidate();
+      toast.show(frozen ? 'Кредит заморожен' : 'Кредит разморожен');
+    },
     onError: (err) => setError(extractErrorMessage(err)),
   });
 
@@ -139,16 +146,17 @@ export function CreditDetailPage() {
   const visible = showAllPaid ? credit.schedule : pending;
   const collapsedCount = showAllPaid ? 0 : paid.length;
   return (
-    <div className="space-y-4">
+    <div className="h-full overflow-y-auto overflow-x-hidden pb-4 [-webkit-overflow-scrolling:touch]">
+      <div className="space-y-4">
       <Link to="/" className="inline-block text-sm text-slate-500 hover:text-slate-300">
         ← Дашборд
       </Link>
 
       <header className="rounded-3xl border border-white/[0.06] bg-gradient-to-br from-sky-500/10 via-transparent to-emerald-400/5 p-4">
         <div className="flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold text-slate-100">{credit.name}</h1>
+              <h1 className="truncate text-xl font-semibold text-slate-100">{credit.name}</h1>
               {credit.frozen && <span title="Цикл заморозки">🧊</span>}
               {credit.status === 'CLOSED' && <span>✅</span>}
             </div>
@@ -488,6 +496,7 @@ export function CreditDetailPage() {
           </div>
         </section>
       )}
+      </div>
     </div>
   );
 }

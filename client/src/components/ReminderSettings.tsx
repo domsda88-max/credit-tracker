@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { extractErrorMessage } from '../api/client';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/auth';
+import { useToast } from './Toast';
 
 /** Час из браузера — предлагаем его как значение по умолчанию при первом открытии. */
 function browserTimezone(): string {
@@ -13,6 +14,28 @@ function browserTimezone(): string {
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
+/** Популярные часовые пояса РФ/СНГ + пояс браузера. */
+const BASE_TIMEZONES = [
+  'Europe/Kaliningrad',
+  'Europe/Moscow',
+  'Europe/Samara',
+  'Asia/Yekaterinburg',
+  'Asia/Omsk',
+  'Asia/Krasnoyarsk',
+  'Asia/Irkutsk',
+  'Asia/Yakutsk',
+  'Asia/Vladivostok',
+  'Asia/Magadan',
+  'Asia/Kamchatka',
+  'Europe/Kyiv',
+  'Europe/Minsk',
+  'Asia/Almaty',
+  'Asia/Tashkent',
+  'UTC',
+];
+
+const TIMEZONES = Array.from(new Set([browserTimezone(), ...BASE_TIMEZONES]));
 
 /** Варианты «за сколько дней предупреждать». 0 = в сам день платежа. */
 const LEAD_OPTIONS: { value: number; label: string }[] = [
@@ -36,6 +59,7 @@ function hourLabel(hour: number): string {
 export function ReminderSettings() {
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
+  const toast = useToast();
 
   const [hour, setHour] = useState(user?.reminderHour ?? 10);
   const [leadDaysList, setLeadDaysList] = useState<number[]>(
@@ -43,7 +67,6 @@ export function ReminderSettings() {
   );
   const [timezone, setTimezone] = useState(user?.timezone ?? browserTimezone());
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!user) return null;
@@ -57,7 +80,6 @@ export function ReminderSettings() {
   const save = async () => {
     setSaving(true);
     setError(null);
-    setSaved(false);
     try {
       const updated = await authApi.updateSettings({
         timezone,
@@ -65,8 +87,7 @@ export function ReminderSettings() {
         leadDaysList,
       });
       setUser(updated);
-      setSaved(true);
-      window.setTimeout(() => setSaved(false), 2500);
+      toast.show('Настройки напоминаний сохранены');
     } catch (err) {
       setError(extractErrorMessage(err));
     } finally {
@@ -80,7 +101,7 @@ export function ReminderSettings() {
   const dirty = hour !== user.reminderHour || !sameList || timezone !== user.timezone;
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
       <p className="font-medium text-slate-100">Напоминания</p>
       <p className="mt-0.5 text-xs text-slate-500">
         Во сколько присылать сводку и за сколько дней предупреждать о платеже
@@ -91,11 +112,26 @@ export function ReminderSettings() {
         <select
           value={hour}
           onChange={(e) => setHour(Number(e.target.value))}
-          className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-slate-100 outline-none transition focus:border-sky-500"
+          className="mt-1 w-full rounded-xl border border-white/[0.08] bg-slate-900 px-3 py-2.5 text-slate-100 outline-none transition focus:border-sky-500"
         >
           {HOURS.map((h) => (
             <option key={h} value={h}>
               {hourLabel(h)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mt-3">
+        <span className="text-xs text-slate-400">Часовой пояс</span>
+        <select
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          className="mt-1 w-full rounded-xl border border-white/[0.08] bg-slate-900 px-3 py-2.5 text-slate-100 outline-none transition focus:border-sky-500"
+        >
+          {TIMEZONES.map((tz) => (
+            <option key={tz} value={tz}>
+              {tz}
             </option>
           ))}
         </select>
@@ -114,7 +150,7 @@ export function ReminderSettings() {
                 className={`rounded-xl border px-3 py-1.5 text-xs transition ${
                   active
                     ? 'border-sky-500 bg-sky-500/15 text-sky-300'
-                    : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600'
+                    : 'border-white/[0.08] bg-slate-900 text-slate-400 hover:border-slate-600'
                 }`}
               >
                 {active ? '✓ ' : ''}
@@ -136,19 +172,14 @@ export function ReminderSettings() {
           disabled={saving || !dirty}
           className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-sky-400 disabled:opacity-50"
         >
-          {saving ? 'Сохраняю…' : saved ? 'Сохранено ✅' : 'Сохранить'}
+          {saving ? 'Сохраняю…' : 'Сохранить'}
         </button>
-        <span className="ml-3 text-xs text-slate-500">часовой пояс: {timezone}</span>
       </div>
 
       {error && <p className="mt-2 text-xs text-rose-400">{error}</p>}
       <p className="mt-2 text-xs text-slate-500">
         Работает без открытого приложения: уведомление приходит, даже если телефон заблокирован
         (нужно разрешить уведомления и включить push выше).
-      </p>
-      <p className="mt-1 text-xs text-slate-500">
-        🧊 По кредиткам с циклом заморозки отдельно предупредим за 2 дня до его окончания — чтобы вы
-        успели пополнить карту и продлить льготный период.
       </p>
     </div>
   );

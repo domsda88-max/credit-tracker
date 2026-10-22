@@ -107,7 +107,7 @@ export interface CreateCreditPayload {
   principal: number;
   annualRate: number;
   startDate: string;
-  termMonths: number;
+  termMonths?: number;
   paymentDay?: number | null;
   minPayment?: number | null;
   gracePeriodEnds?: string | null;

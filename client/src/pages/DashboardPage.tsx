@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { creditsApi } from '../api/credits';
@@ -7,6 +8,27 @@ import { DebtOverview } from '../components/DebtOverview';
 import { OverdueAlert } from '../components/OverdueAlert';
 import { UpcomingPayments } from '../components/UpcomingPayments';
 import { formatDate, formatMoney } from '../utils/format';
+
+/** Экран загрузки: бесплатный Render «просыпается» до ~50 секунд — предупреждаем об этом. */
+function LoadingScreen() {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSlow(true), 5000);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="flex flex-col items-center gap-3 py-16 text-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-sky-400" />
+      <p className="text-sm text-slate-400">Загружаю данные…</p>
+      {slow && (
+        <p className="max-w-xs text-xs text-slate-500">
+          Сервер просыпается после простоя — это может занять до минуты. Данные появятся сами.
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function DashboardPage() {
   const {
@@ -23,7 +45,7 @@ export function DashboardPage() {
   });
 
   if (isLoading) {
-    return <p className="text-sm text-slate-500">Загружаю данные…</p>;
+    return <LoadingScreen />;
   }
 
   if (error) {

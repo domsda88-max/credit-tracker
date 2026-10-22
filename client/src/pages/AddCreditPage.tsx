@@ -20,13 +20,13 @@ const optionalNumber = (min: number, max: number) =>
 /** Схема формы. Числа приходят строками из input → coerce. */
 const schema = z.object({
   name: z.string().min(1, 'Укажите название банка или продукта'),
-  type: z.enum(['CREDIT_CARD', 'CONSUMER', 'MORTGAGE', 'INSTALLMENT', 'MICROLOAN']),
+  type: z.enum(['CREDIT_CARD', 'CONSUMER', 'MORTGAGE', 'INSTALLMENT', 'MICROLOAN', 'LOAN']),
   paymentType: z.enum(['ANNUITY', 'DIFFERENTIAL', 'MIN_PAYMENT']),
   prepaymentMode: z.enum(['REDUCE_TERM', 'REDUCE_PAYMENT']),
   principal: z.coerce.number().positive('Сумма должна быть больше 0'),
   annualRate: z.coerce.number().min(0).max(100),
   startDate: z.string().min(1, 'Укажите дату выдачи'),
-  termMonths: z.coerce.number().int().min(1, 'Минимум 1 месяц').max(600),
+  termMonths: z.coerce.number().int().min(0).max(600).optional(),
   paymentDay: optionalNumber(1, 31),
   minPayment: optionalNumber(0, Number.MAX_SAFE_INTEGER),
   gracePeriodEnds: z.string().optional(),

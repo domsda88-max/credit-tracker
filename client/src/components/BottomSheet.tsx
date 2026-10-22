@@ -1,0 +1,42 @@
+import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
+
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  title?: string;
+  children: React.ReactNode;
+}
+
+export function BottomSheet({ open, onClose, title, children }: Props) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end justify-center">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div
+        className="relative w-full max-w-3xl rounded-t-3xl border border-white/[0.08] bg-[#0b1020] pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-slate-700" />
+        {title && <p className="px-4 pb-2 text-center text-sm font-medium text-slate-200">{title}</p>}
+        <div className="px-2">{children}</div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
