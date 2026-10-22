@@ -29,14 +29,42 @@ export const creditsService = {
   /** Создание кредита + генерация графика платежей одной транзакцией. */
   async create(userId: string, dto: CreateCreditDto) {
     const frozen = dto.frozen ?? false;
+    const isLoan = dto.type === 'LOAN';
+
+    if (isLoan) {
+      return prisma.credit.create({
+        data: {
+          userId,
+          name: dto.name,
+          type: 'LOAN' as any,
+          paymentType: (dto.paymentType ?? 'ANNUITY') as any,
+          prepaymentMode: (dto.prepaymentMode ?? 'REDUCE_PAYMENT') as PrepaymentMode,
+          principal: dto.principal,
+          outstanding: dto.outstanding ?? dto.principal,
+          annualRate: dto.annualRate,
+          startDate: dto.startDate,
+          termMonths: dto.termMonths ?? 0,
+          paymentDay: null,
+          minPayment: null,
+          gracePeriodEnds: null,
+          graceReplenishSum: null,
+          graceReplenishDay: null,
+          frozen: false,
+          freezeCycleDays: null,
+          freezeStartedAt: null,
+          nextFreezeCheckAt: null,
+          totalPaid: 0,
+        },
+      });
+    }
 
     const schedule = generateSchedule({
-      type: dto.paymentType,
+      type: dto.paymentType!,
       principal: dto.principal,
       // Замороженная кредитка: проценты не начисляются → считаем как 0%.
       annualRate: effectiveAnnualRate(dto.annualRate, frozen),
       startDate: dto.startDate,
-      termMonths: dto.termMonths,
+      termMonths: dto.termMonths!,
       paymentDay: dto.paymentDay,
       minPayment: dto.minPayment,
       gracePeriodEnds: dto.gracePeriodEnds,
@@ -61,13 +89,13 @@ export const creditsService = {
           userId,
           name: dto.name,
           type: dto.type,
-          paymentType: dto.paymentType,
+          paymentType: dto.paymentType!,
           prepaymentMode: (dto.prepaymentMode ?? 'REDUCE_PAYMENT') as PrepaymentMode,
           principal: dto.principal,
           outstanding: dto.outstanding ?? past?.outstanding ?? dto.principal,
           annualRate: dto.annualRate,
           startDate: dto.startDate,
-          termMonths: dto.termMonths,
+          termMonths: dto.termMonths!,
           paymentDay: dto.paymentDay ?? null,
           minPayment: dto.minPayment ?? null,
           gracePeriodEnds: dto.gracePeriodEnds ?? null,

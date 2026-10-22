@@ -29,8 +29,7 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-// PWA: раз в минуту проверяем обновление и один раз перезагружаем страницу,
-// чтобы на телефоне не залипала старая версия интерфейса.
+// PWA: автообновление при новой версии Service Worker
 if ('serviceWorker' in navigator) {
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -39,9 +38,18 @@ if ('serviceWorker' in navigator) {
     window.location.reload();
   });
 
-  void navigator.serviceWorker.ready.then((registration) => {
-    void registration.update();
-    setInterval(() => void registration.update(), 60_000);
-  });
+  const checkUpdate = async () => {
+    try {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) {
+        await registration.update();
+      }
+    } catch {
+      // игнорируем
+    }
+  };
+
+  void checkUpdate();
+  setInterval(checkUpdate, 60_000);
 }
 

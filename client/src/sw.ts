@@ -57,9 +57,16 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
 });
 
 // Автообновление: при появлении новой версии сразу активируем её и перезагружаем страницы.
-self.addEventListener('install', () => {
-  void self.skipWaiting();
+self.addEventListener('install', (event) => {
+  event.waitUntil(self.skipWaiting());
 });
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(Promise.all([self.clients.claim()]));
+});
+
+// При сообщении от клиента - принудительный skipWaiting
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    void self.skipWaiting();
+  }
 });

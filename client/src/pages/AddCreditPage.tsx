@@ -71,8 +71,9 @@ export function AddCreditPage() {
   });
 
   const paymentType = watch('paymentType');
+  const type = watch('type');
   const isCard = paymentType === 'MIN_PAYMENT';
-  const frozen = watch('frozen');
+  const isLoan = type === 'LOAN';
   const markPast = watch('markPastAsPaid');
   const startDate = watch('startDate');
 
@@ -131,22 +132,25 @@ export function AddCreditPage() {
           <label className="block">
             <span className="text-sm text-slate-400">Тип продукта</span>
             <select {...register('type')} className={inputClass}>
-              <option value="CREDIT_CARD">Кредитная карта</option>
               <option value="CONSUMER">Потребительский кредит</option>
+              <option value="CREDIT_CARD">Кредитная карта</option>
               <option value="MORTGAGE">Ипотека</option>
               <option value="INSTALLMENT">Рассрочка / Сплит</option>
               <option value="MICROLOAN">Займ (МФО)</option>
+              <option value="LOAN">Заем (частный)</option>
             </select>
           </label>
 
-          <label className="block">
-            <span className="text-sm text-slate-400">Тип платежа</span>
-            <select {...register('paymentType')} className={inputClass}>
-              <option value="ANNUITY">Аннуитетный</option>
-              <option value="DIFFERENTIAL">Дифференцированный</option>
-              <option value="MIN_PAYMENT">Минимальный платёж (кредитка)</option>
-            </select>
-          </label>
+          {!isLoan && (
+            <label className="block">
+              <span className="text-sm text-slate-400">Тип платежа</span>
+              <select {...register('paymentType')} className={inputClass}>
+                <option value="ANNUITY">Аннуитетный</option>
+                <option value="DIFFERENTIAL">Дифференцированный</option>
+                <option value="MIN_PAYMENT">Минимальный платёж (кредитка)</option>
+              </select>
+            </label>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -176,32 +180,36 @@ export function AddCreditPage() {
             )}
           </label>
 
-          <label className="block">
-            <span className="text-sm text-slate-400">Срок, месяцев</span>
-            <input type="number" {...register('termMonths')} className={inputClass} />
-            {errors.termMonths && (
-              <p className="mt-1 text-xs text-rose-400">{errors.termMonths.message}</p>
-            )}
-          </label>
+          {!isLoan && (
+            <label className="block">
+              <span className="text-sm text-slate-400">Срок, месяцев</span>
+              <input type="number" {...register('termMonths')} className={inputClass} />
+              {errors.termMonths && (
+                <p className="mt-1 text-xs text-rose-400">{errors.termMonths.message}</p>
+              )}
+            </label>
+          )}
 
-          <label className="block">
-            <span className="text-sm text-slate-400">День платежа</span>
-            <input
-              type="number"
-              min={1}
-              max={31}
-              inputMode="numeric"
-              placeholder="напр. 20"
-              {...register('paymentDay')}
-              className={inputClass}
-            />
-            {errors.paymentDay && (
-              <p className="mt-1 text-xs text-rose-400">{errors.paymentDay.message}</p>
-            )}
-          </label>
+          {!isLoan && (
+            <label className="block">
+              <span className="text-sm text-slate-400">День платежа</span>
+              <input
+                type="number"
+                min={1}
+                max={31}
+                inputMode="numeric"
+                placeholder="напр. 20"
+                {...register('paymentDay')}
+                className={inputClass}
+              />
+              {errors.paymentDay && (
+                <p className="mt-1 text-xs text-rose-400">{errors.paymentDay.message}</p>
+              )}
+            </label>
+          )}
         </div>
 
-        {isCard && (
+        {isCard && !isLoan && (
           <fieldset className="space-y-4 rounded-2xl border border-sky-500/30 bg-sky-500/5 p-4">
             <legend className="px-1 text-sm font-medium text-sky-300">Льготный период карты</legend>
 
@@ -241,82 +249,59 @@ export function AddCreditPage() {
           </fieldset>
         )}
 
-        <label className="block">
-          <span className="text-sm text-slate-400">Режим досрочного погашения</span>
-          <select {...register('prepaymentMode')} className={inputClass}>
-            <option value="REDUCE_PAYMENT">Уменьшать платёж</option>
-            <option value="REDUCE_TERM">Сокращать срок</option>
-          </select>
-        </label>
-
-        <div className="space-y-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4">
-          <label className="flex items-start gap-2 text-sm text-slate-300">
-            <input
-              type="checkbox"
-              {...register('markPastAsPaid')}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-500"
-            />
-            <span>
-              Кредит оформлен раньше — платежи, срок которых уже прошёл, считать внесёнными
-              <span className="mt-0.5 block text-xs text-slate-500">
-                {startInPast
-                  ? 'Дата выдачи в прошлом: график будет построен целиком, прошедшие платежи отметятся оплаченными, а остаток долга уменьшится на их «тело».'
-                  : 'Укажите прошедшую дату выдачи, чтобы это сработало.'}
-              </span>
-            </span>
+        {!isLoan && (
+          <label className="block">
+            <span className="text-sm text-slate-400">Режим досрочного погашения</span>
+            <select {...register('prepaymentMode')} className={inputClass}>
+              <option value="REDUCE_PAYMENT">Уменьшать платёж</option>
+              <option value="REDUCE_TERM">Сокращать срок</option>
+            </select>
           </label>
+        )}
 
-          {markPast && (
-            <label className="block">
-              <span className="text-sm text-slate-400">
-                Остаток долга сейчас, ₽ <span className="text-xs text-slate-500">необязательно</span>
-              </span>
+        {!isLoan && (
+          <div className="space-y-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+            <label className="flex items-start gap-2 text-sm text-slate-300">
               <input
-                type="number"
-                step="0.01"
-                inputMode="decimal"
-                placeholder="оставьте пустым — посчитаю сам"
-                {...register('outstanding')}
-                className={inputClass}
+                type="checkbox"
+                {...register('markPastAsPaid')}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-500"
               />
-              <span className="mt-1 block text-xs text-slate-500">
-                Если знаете точный остаток из приложения банка — введите его, и он заменит расчёт.
+              <span>
+                Кредит оформлен раньше — платежи, срок которых уже прошёл, считать внесёнными
+                <span className="mt-0.5 block text-xs text-slate-500">
+                  {startInPast
+                    ? 'Дата выдачи в прошлом: график будет построен целиком, прошедшие платежи отметятся оплаченными, а остаток долга уменьшится на их «тело».'
+                    : 'Укажите прошедшую дату выдачи, чтобы это сработало.'}
+                </span>
               </span>
-              {errors.outstanding && (
-                <p className="mt-1 text-xs text-rose-400">{errors.outstanding.message}</p>
-              )}
             </label>
-          )}
-        </div>
 
-        <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-          <label className="flex items-center gap-2 text-sm text-slate-300">
-            <input type="checkbox" {...register('frozen')} className="h-4 w-4 accent-sky-500" />
-            🧊 Цикл заморозки (деньги заморожены)
-          </label>
-
-          {frozen && (
-            <div>
-              <label className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
-                Продлевать каждые
+            {markPast && (
+              <label className="block">
+                <span className="text-sm text-slate-400">
+                  Остаток долга сейчас, ₽ <span className="text-xs text-slate-500">необязательно</span>
+                </span>
                 <input
                   type="number"
-                  min={1}
-                  max={365}
-                  inputMode="numeric"
-                  placeholder="7"
-                  {...register('freezeCycleDays')}
-                  className="w-20 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-slate-100 outline-none focus:border-sky-500"
+                  step="0.01"
+                  inputMode="decimal"
+                  placeholder="оставьте пустым — посчитаю сам"
+                  {...register('outstanding')}
+                  className={inputClass}
                 />
-                дней
-                <span className="text-xs text-slate-500">необязательно</span>
+                <span className="mt-1 block text-xs text-slate-500">
+                  Если знаете точный остаток из приложения банка — введите его, и он заменит расчёт.
+                </span>
+                {errors.outstanding && (
+                  <p className="mt-1 text-xs text-rose-400">{errors.outstanding.message}</p>
+                )}
               </label>
-              {errors.freezeCycleDays && (
-                <p className="mt-1 text-xs text-rose-400">{errors.freezeCycleDays.message}</p>
-              )}
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
+
+        {/* Заморозка убрана */}
 
         {error && <p className="text-sm text-rose-400">{error}</p>}
 
@@ -326,7 +311,7 @@ export function AddCreditPage() {
             disabled={isSubmitting || mutation.isPending}
             className="rounded-xl bg-sky-500 px-4 py-2.5 font-medium text-slate-950 transition hover:bg-sky-400 disabled:opacity-50"
           >
-            {mutation.isPending ? 'Сохраняю…' : 'Сохранить и построить график'}
+            {mutation.isPending ? 'Сохраняю…' : isLoan ? 'Сохранить' : 'Сохранить и построить график'}
           </button>
           <button
             type="button"

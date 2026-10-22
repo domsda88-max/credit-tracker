@@ -6,6 +6,7 @@ import { CreditDetailPage } from './pages/CreditDetailPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 export function App() {
   return (
@@ -23,6 +24,7 @@ export function App() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/credits/new" element={<AddCreditPage />} />
         <Route path="/credits/:id" element={<CreditDetailPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,4 +1,4 @@
-export type CreditType = 'CREDIT_CARD' | 'CONSUMER' | 'MORTGAGE' | 'INSTALLMENT' | 'MICROLOAN';
+export type CreditType = 'CREDIT_CARD' | 'CONSUMER' | 'MORTGAGE' | 'INSTALLMENT' | 'MICROLOAN' | 'LOAN';
 export type PaymentType = 'ANNUITY' | 'DIFFERENTIAL' | 'MIN_PAYMENT';
 export type PrepaymentMode = 'REDUCE_TERM' | 'REDUCE_PAYMENT';
 export type CreditStatus = 'ACTIVE' | 'CLOSED';

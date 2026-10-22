@@ -144,7 +144,7 @@ export function CreditDetailPage() {
         ← Дашборд
       </Link>
 
-      <header className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+      <header className="rounded-3xl border border-white/[0.06] bg-gradient-to-br from-sky-500/10 via-transparent to-emerald-400/5 p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
@@ -153,8 +153,14 @@ export function CreditDetailPage() {
               {credit.status === 'CLOSED' && <span>✅</span>}
             </div>
             <p className="mt-1 text-xs text-slate-500">
-              {CREDIT_TYPE_LABELS[credit.type]} · {PAYMENT_TYPE_LABELS[credit.paymentType]} ·{' '}
-              {Number(credit.annualRate)}%
+              {CREDIT_TYPE_LABELS[credit.type]}
+              {credit.type !== 'LOAN' && (
+                <>
+                  {' · '}
+                  {PAYMENT_TYPE_LABELS[credit.paymentType]} · {Number(credit.annualRate)}%
+                </>
+              )}
+              {credit.type === 'LOAN' && <> · {Number(credit.annualRate)}%</>}
             </p>
           </div>
 
@@ -162,19 +168,59 @@ export function CreditDetailPage() {
             <button
               type="button"
               onClick={() => setEditing((v) => !v)}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-sky-500/50"
+              className="rounded-lg border border-white/[0.08] px-3 py-2 text-sm text-slate-300 transition hover:border-sky-500/50"
             >
               {editing ? 'Закрыть' : 'Изменить'}
             </button>
-            <button
-              type="button"
-              onClick={() => freezeMutation.mutate(!credit.frozen)}
-              disabled={freezeMutation.isPending}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-sky-500/50 disabled:opacity-50"
-            >
-              {credit.frozen ? 'Разморозить' : '🧊 Заморозить'}
-            </button>
           </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div>
+            <p className="text-xs text-slate-500">Остаток долга</p>
+            <p className="tabular text-lg font-semibold text-slate-100">{formatMoney(credit.outstanding)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">Первоначально</p>
+            <p className="tabular text-lg font-semibold text-slate-100">{formatMoney(credit.principal)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">Выплачено</p>
+            <p className="tabular text-lg font-semibold text-emerald-300">{formatMoney(credit.totalPaid)}</p>
+          </div>
+          {credit.type !== 'LOAN' ? (
+            <div>
+              <p className="text-xs text-slate-500">Срок / день платежа</p>
+              <p className="font-semibold text-slate-100">
+                {credit.termMonths} мес.
+                {credit.paymentDay ? ` · ${credit.paymentDay}-е` : ''}
+              </p>
+            </div>
+          ) : (
+            <div>
+              <p className="text-xs text-slate-500">Ставка</p>
+              <p className="font-semibold text-slate-100">{Number(credit.annualRate)}%</p>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!window.confirm('Удалить кредит и весь график платежей?')) return;
+              try {
+                await creditsApi.remove(id);
+                await queryClient.invalidateQueries({ queryKey: ['credits'] });
+                window.location.href = '/';
+              } catch (err) {
+                setError(extractErrorMessage(err));
+              }
+            }}
+            className="rounded-lg border border-rose-500/40 px-3 py-2 text-sm text-rose-300 transition hover:bg-rose-500/10"
+          >
+            Удалить кредит
+          </button>
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -240,8 +286,8 @@ export function CreditDetailPage() {
         />
       )}
 
-      {credit.status === 'ACTIVE' && (
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+      {credit.status === 'ACTIVE' && credit.type !== 'LOAN' && (
+        <section className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
           <h2 className="font-medium text-slate-100">Досрочное погашение</h2>
           <p className="mt-0.5 text-xs text-slate-500">
             График пересчитается автоматически: {credit.prepaymentMode === 'REDUCE_TERM' ? 'сократится срок' : 'уменьшится платёж'}
@@ -309,7 +355,8 @@ export function CreditDetailPage() {
 
       {error && <p className="text-sm text-rose-400">{error}</p>}
 
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+      {credit.type !== 'LOAN' && (
+      <section className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-medium text-slate-100">
             График платежей{' '}
@@ -424,9 +471,10 @@ export function CreditDetailPage() {
           })}
         </div>
       </section>
+      )}
 
       {credit.events.length > 0 && (
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+        <section className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
           <h2 className="font-medium text-slate-100">История платежей</h2>
           <div className="mt-3 space-y-2">
             {credit.events.map((event) => (

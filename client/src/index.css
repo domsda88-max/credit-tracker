@@ -15,6 +15,7 @@
 
 :root {
   color-scheme: dark;
+  --app-bg: #0b1020;
 }
 
 [data-theme='light'] {
@@ -34,7 +35,8 @@ body {
 }
 
 body {
-  @apply bg-slate-950 text-slate-100 antialiased;
+  background-color: var(--app-bg);
+  @apply text-slate-100 antialiased;
   /* Убираем «двойной тап-зум»; вертикальный скролл остаётся */
   touch-action: pan-y;
 }

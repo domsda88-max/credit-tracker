@@ -67,6 +67,7 @@ export const CREDIT_TYPE_LABELS: Record<CreditType, string> = {
   MORTGAGE: 'Ипотека',
   INSTALLMENT: 'Рассрочка / Сплит',
   MICROLOAN: 'Займ (МФО)',
+  LOAN: 'Заем (частный)',
 };
 
 export const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
