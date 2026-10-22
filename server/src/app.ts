@@ -11,7 +11,6 @@ import { authRouter } from './modules/auth/auth.routes';
 import { creditsRouter } from './modules/credits/credits.routes';
 import { paymentsRouter } from './modules/payments/payments.routes';
 import { pushRouter } from './modules/push/push.routes';
-import { adminRouter } from './modules/admin/admin.routes';
 
 /** Сборка Express-приложения (без listen — удобно для тестов). */
 export function createApp(): express.Express {
@@ -36,7 +35,6 @@ export function createApp(): express.Express {
   app.use('/api/credits', creditsRouter);
   app.use('/api/payments', paymentsRouter);
   app.use('/api/push', pushRouter);
-  app.use('/api/admin', adminRouter);
 
   // Клиент (React SPA) отдаётся с того же домена, что и API:
   // нет CORS, нет отдельного статик-сайта и нет переменной VITE_API_URL.
