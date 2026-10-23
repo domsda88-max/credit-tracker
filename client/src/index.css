@@ -174,7 +174,13 @@ button {
   }
 }
 
-/* Уважаем prefers-reduced-motion */
+/* Слайдер «Ускорь свободу»: залитая часть — success, незалитая — line */
+input[type='range'] {
+  width: 100%;
+  height: 6px;
+  accent-color: rgb(var(--c-success));
+  cursor: pointer;
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

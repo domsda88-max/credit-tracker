@@ -105,7 +105,7 @@ export function DebtOverview() {
             <span className="font-semibold text-success">
               через {monthsLabel(data.accelerator.acceleratedMonths)}
             </span>{' '}
-            вместо {monthsLabel(data.accelerator.baselineMonths)}.
+            вместо {monthsLabel(data.accelerator.baselineMonths)}
           </p>
           <p className="mt-1 text-micro text-success/80">
             Экономия: {monthsLabel(data.accelerator.savedMonths)}
