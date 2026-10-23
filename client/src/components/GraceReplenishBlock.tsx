@@ -16,14 +16,14 @@ export function GraceReplenishBlock() {
 
   return (
     <section
-      className={`card animate-fade-up p-4 ${overdue ? 'border-danger/60 bg-danger/10' : 'border-warning/40 bg-warning/10'}`}
+      className={`card animate-fade-up p-4 ${overdue ? 'border-primary/60 bg-primary/10' : 'border-primary/40 bg-primary/10'}`}
     >
       <div className="flex items-center gap-2">
-        <span className={`flex h-8 w-8 items-center justify-center rounded-chip ${overdue ? 'bg-danger/20 text-danger' : 'bg-warning/20 text-warning'}`}>
+        <span className={`flex h-8 w-8 items-center justify-center rounded-chip ${overdue ? 'bg-primary/20 text-primary' : 'bg-primary/20 text-primary'}`}>
           {overdue ? <AlertTriangle size={18} /> : <Snowflake size={18} />}
         </span>
         <div>
-          <p className={`text-body font-semibold ${overdue ? 'text-danger' : 'text-warning'}`}>
+          <p className={`text-body font-semibold ${overdue ? 'text-primary' : 'text-primary'}`}>
             {overdue ? 'ВНИМАНИЕ: грейс-период сбрасывается!' : 'Для сохранения грейса'}
           </p>
           <p className="text-caption text-t2">

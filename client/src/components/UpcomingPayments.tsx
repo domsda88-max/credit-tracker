@@ -40,8 +40,9 @@ export function UpcomingPayments({ credits }: Props) {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const horizon = new Date(today);
-  horizon.setDate(horizon.getDate() + 30);
+  const curYear = today.getUTCFullYear();
+  const curMonth = today.getUTCMonth();
+  const endOfMonth = new Date(Date.UTC(curYear, curMonth + 1, 0));
 
   const items: Item[] = credits
     .filter((c) => c.status === 'ACTIVE' && c.nextPayment)
@@ -54,16 +55,18 @@ export function UpcomingPayments({ credits }: Props) {
     }))
     .filter((item) => {
       const d = new Date(item.dueDate);
-      return d >= today && d <= horizon;
+      return (
+        d.getUTCFullYear() === curYear && d.getUTCMonth() === curMonth && d >= today && d <= endOfMonth
+      );
     })
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
   if (items.length === 0) {
     return (
       <section className="space-y-3">
-        <p className="section-title">Ближайшие платежи (30 дней)</p>
+        <p className="section-title">Ближайшие платежи</p>
         <div className="rounded-card border border-line bg-surface p-4 text-center text-caption text-t3">
-          Нет платежей в ближайшие 30 дней
+          Нет платежей в этом месяце
         </div>
       </section>
     );
@@ -79,15 +82,12 @@ export function UpcomingPayments({ credits }: Props) {
         aria-expanded={!collapsed}
         className="flex w-full items-center justify-between gap-3 text-left"
       >
-        <span className="section-title">Ближайшие платежи (30 дней)</span>
+        <span className="section-title">Ближайшие платежи</span>
         <span className="flex items-center gap-2">
           <span className="tabular text-caption text-t3">
             {items.length} · {formatMoney(total)}
           </span>
-          <span
-            className={`text-t3 transition-transform ${collapsed ? '' : 'rotate-180'}`}
-            aria-hidden="true"
-          >
+          <span className={`text-t3 transition-transform ${collapsed ? '' : 'rotate-180'}`} aria-hidden="true">
             ▾
           </span>
         </span>
