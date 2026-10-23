@@ -76,8 +76,11 @@ export function Layout() {
                 <Icon
                   size={24}
                   strokeWidth={isActive ? 2.4 : 2}
-                  className="transition-transform duration-200 ease-app"
-                  style={{ transform: isActive ? 'scale(1.08)' : 'scale(1)' }}
+                  className="transition-all duration-[350ms] ease-app"
+                  style={{
+                    transform: isActive ? 'scale(1.1)' : 'scale(1)',
+                    opacity: isActive ? 1 : 0.7,
+                  }}
                 />
                 {label}
               </>

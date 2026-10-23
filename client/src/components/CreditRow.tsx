@@ -73,7 +73,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
 
   const toggleFreeze = async () => {
     try {
-      navigator.vibrate?.(10);
+      navigator.vibrate?.(25);
       await creditsApi.toggleFreeze(credit.id, !credit.frozen);
       await queryClient.invalidateQueries({ queryKey: ['credits'] });
       await queryClient.invalidateQueries({ queryKey: ['summary'] });
@@ -87,7 +87,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
   const remove = async () => {
     if (!window.confirm('Удалить кредит и весь график платежей?')) return;
     try {
-      navigator.vibrate?.(10);
+      navigator.vibrate?.(25);
       await creditsApi.remove(credit.id);
       await queryClient.invalidateQueries({ queryKey: ['credits'] });
       await queryClient.invalidateQueries({ queryKey: ['summary'] });

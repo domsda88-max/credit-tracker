@@ -65,9 +65,10 @@ body {
   color: rgb(var(--c-t1));
   font-family: Inter, -apple-system, BlinkMacSystemFont, 'SF Pro Text', Roboto, system-ui,
     sans-serif;
-  /* Плавная смена темы */
-  transition: background-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
-    color 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Плавная смена темы (400-500ms crossfade) */
+  transition: background-color 450ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 450ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 450ms cubic-bezier(0.4, 0, 0.2, 1);
   -webkit-font-smoothing: antialiased;
   /* Убираем «двойной тап-зум»; вертикальный скролл остаётся */
   touch-action: pan-y;
@@ -138,14 +139,16 @@ button {
   }
 }
 
-/* Нажатие на карточку — лёгкое затемнение */
+/* Нажатие на карточку/кнопку — плавное уменьшение (premiuim feel) */
 .tap {
-  transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1),
-    transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
+  contain: layout style paint;
 }
 .tap:active {
-  opacity: 0.9;
-  transform: scale(0.995);
+  opacity: 0.85;
+  transform: scale(0.97);
 }
 
 /* Шиммер для skeleton-загрузки */
