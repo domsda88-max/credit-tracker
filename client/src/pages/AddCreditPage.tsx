@@ -120,7 +120,7 @@ export function AddCreditPage() {
 
       <form
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
-        className="mt-5 space-y-4"
+        className="mt-5 space-y-4 touch-manipulation"
       >
         <label className="block">
           <span className="text-sm text-t2">Название</span>
