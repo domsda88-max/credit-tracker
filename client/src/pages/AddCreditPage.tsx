@@ -248,7 +248,7 @@ export function AddCreditPage() {
   const sectionClass = 'transition-all duration-300 ease-in-out';
 
   return (
-    <div className="min-w-0 w-full max-w-full space-y-4">
+    <div className="min-w-0 w-full max-w-full space-y-4 px-4 safe-area-bottom">
       <h1 className="text-heading font-bold text-t1">Добавить долг</h1>
       <p className="mt-1 text-sm text-t3">
         График платежей будет построен автоматически по выбранному типу
