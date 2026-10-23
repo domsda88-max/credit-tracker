@@ -24,8 +24,8 @@ const schema = z.object({
   paymentType: z.enum(['ANNUITY', 'DIFFERENTIAL', 'MIN_PAYMENT']),
   prepaymentMode: z.enum(['REDUCE_TERM', 'REDUCE_PAYMENT']),
   principal: z.coerce.number().positive('Сумма должна быть больше 0'),
-  annualRate: z.coerce.number().min(0).max(100),
-  startDate: z.string().min(1, 'Укажите дату выдачи'),
+  annualRate: z.coerce.number().min(0).max(100).optional().default(0),
+  startDate: z.string().optional().default(''),
   termMonths: z.coerce.number().int().min(0).max(600).optional(),
   paymentDay: optionalNumber(1, 31),
   minPayment: optionalNumber(0, Number.MAX_SAFE_INTEGER),
@@ -78,14 +78,14 @@ export function AddCreditPage() {
   const startDate = watch('startDate');
 
   // Дата в прошлом → приложение само посчитает прошедшие платежи.
-  const startInPast = Boolean(startDate) && new Date(startDate) < new Date();
+  const startInPast = Boolean(startDate) && new Date(startDate as string) < new Date();
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) => {
       const parsed = schema.parse(values);
       return creditsApi.create({
         ...parsed,
-        startDate: new Date(parsed.startDate).toISOString(),
+        startDate: parsed.startDate ? new Date(parsed.startDate as string).toISOString() : new Date().toISOString(),
         gracePeriodEnds: parsed.gracePeriodEnds
           ? new Date(parsed.gracePeriodEnds).toISOString()
           : null,
