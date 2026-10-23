@@ -1,5 +1,5 @@
 import { Target, Zap } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { creditsApi } from '../api/credits';
 import { debtPaidPercent, formatDate, formatMoney, formatMoneyShort } from '../utils/format';
@@ -57,8 +57,9 @@ export function DebtOverview() {
     return Math.max(0, monthsBetween(new Date(), new Date(summary.debtFreeDate)));
   }, [summary?.debtFreeDate]);
 
+  const lastAccel = useRef<ReturnType<typeof simulateAccelerator>>(null);
   const accelerator = useMemo(() => {
-    if (!credits) return null;
+    if (!credits) return lastAccel.current;
     const active = (credits as CreditListItem[]).filter((c) => c.status === 'ACTIVE');
     const debts = active
       .map((c) => {
@@ -80,7 +81,9 @@ export function DebtOverview() {
         };
       })
       .filter((d): d is NonNullable<typeof d> => d !== null);
-    return simulateAccelerator({ extraPerMonth: extra, baselineMonths, debts });
+    const res = simulateAccelerator({ extraPerMonth: extra, baselineMonths, debts });
+    if (res) lastAccel.current = res;
+    return res ?? lastAccel.current;
   }, [credits, extra, baselineMonths]);
 
   if (!summary || summary.activeCount === 0) return null;
