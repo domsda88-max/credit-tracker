@@ -20,4 +20,5 @@ creditsRouter.post(
   validate(toggleFreezeSchema),
   asyncHandler(creditsController.toggleFreeze),
 );
+creditsRouter.post('/:id/freeze/renew', asyncHandler(creditsController.renewFreezeCycle));
 creditsRouter.delete('/:id', asyncHandler(creditsController.remove));

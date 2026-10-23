@@ -37,6 +37,12 @@ export const creditsApi = {
     return data;
   },
 
+  /** Подтвердить, что сумма обновления периода внесена (сдвиг цикла заморозки). */
+  async renewFreezeCycle(id: string): Promise<Credit> {
+    const { data } = await api.post<Credit>(`/credits/${id}/freeze/renew`);
+    return data;
+  },
+
   async remove(id: string): Promise<void> {
     await api.delete(`/credits/${id}`);
   },

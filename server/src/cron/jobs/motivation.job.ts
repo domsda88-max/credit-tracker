@@ -1,7 +1,8 @@
 import { prisma } from '../../config/prisma';
 import { sendUniquePush } from '../../modules/push/push.service';
 import { isoDate, utcToday } from '../../utils/finance/date';
-import { motivationForDay } from '../motivation.texts';
+import { buildMotivationContext } from '../motivation.context';
+import { MOTIVATION_CYCLE, motivationForDay } from '../motivation.texts';
 
 /** Час и минута отправки мотивационной рассылки (локальное время пользователя). */
 export const MOTIVATION_HOUR = 9;
@@ -40,7 +41,10 @@ export async function sendMotivationForUser(
   day: number,
 ): Promise<boolean> {
   const today = utcToday();
-  const text = motivationForDay(day);
+
+  // Текст собирается под ЭТОГО пользователя: его долги, ставки, циклы, суммы.
+  const context = await buildMotivationContext(userId);
+  const text = motivationForDay(context, day);
 
   // Идемпотентность: одна мотивация в сутки на пользователя.
   const sent = await sendUniquePush(
@@ -59,7 +63,6 @@ export async function sendMotivationForUser(
   if (!sent) return false;
 
   // Переходим к следующему дню цикла (после последнего — снова день 1).
-  const { MOTIVATION_CYCLE } = await import('../motivation.texts');
   const nextDay = (day % MOTIVATION_CYCLE) + 1;
   await prisma.user.update({
     where: { id: userId },

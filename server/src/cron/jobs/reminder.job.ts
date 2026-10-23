@@ -1,6 +1,6 @@
 import { prisma } from '../../config/prisma';
 import { sendUniquePush } from '../../modules/push/push.service';
-import { addUTCDays, formatDate, isoDate, utcToday } from '../../utils/finance/date';
+import { addUTCDays, isoDate, utcToday } from '../../utils/finance/date';
 
 /** Час (локального времени пользователя), в который отправляем дневной дайджест. */
 const DEFAULT_REMINDER_HOUR = 10;
@@ -126,7 +126,13 @@ function pluralDays(n: number): string {
   return 'дней';
 }
 
-/** Предупреждение об окончании цикла заморозки («снежинка» 🧊). */
+/**
+ * Предупреждения об окончании цикла заморозки («снежинка» 🧊).
+ *
+ * У карты в цикле заморозки нет минимального платежа и срока: раз в цикл
+ * (день `graceReplenishDay`) нужно внести сумму обновления беспроцентного
+ * периода. Напоминаем за 2 дня и в сам день — с акцентом, что пропускать нельзя.
+ */
 async function sendFreezeAlerts(userId: string): Promise<void> {
   const today = utcToday();
   const horizon = addUTCDays(today, FREEZE_WARNING_DAYS);
@@ -141,14 +147,19 @@ async function sendFreezeAlerts(userId: string): Promise<void> {
   });
 
   for (const credit of credits) {
+    const day = credit.graceReplenishDay ?? credit.paymentDay;
+    const sum = credit.graceReplenishSum ? Number(credit.graceReplenishSum) : null;
+    const sumLabel = sum ? `${sum.toLocaleString('ru-RU')} ₽` : 'сумму обновления';
+    const dayLabel = day ? ` до ${day} числа` : '';
+
     await sendUniquePush(
       userId,
       credit.id,
       'FREEZE_ENDING',
       `${userId}:FREEZE:${credit.id}:${isoDate(today)}`,
       {
-        title: '🧊 Цикл заморозки скоро закончится',
-        body: `По «${credit.name}» заморозка истекает ${formatDate(credit.nextFreezeCheckAt!)}. Продлите период, иначе начнут начисляться проценты.`,
+        title: '🧊 Обновите беспроцентный период',
+        body: `«${credit.name}»: внесите ${sumLabel}${dayLabel} — иначе льготный период сгорит и банк начнёт начислять проценты.`,
         url: `/credits/${credit.id}`,
         tag: `freeze-${credit.id}`,
       },

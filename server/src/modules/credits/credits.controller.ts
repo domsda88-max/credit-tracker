@@ -34,6 +34,10 @@ export const creditsController = {
     );
   },
 
+  async renewFreezeCycle(req: Request, res: Response) {
+    res.json(await creditsService.renewFreezeCycle(req.user!.sub, req.params.id));
+  },
+
   async remove(req: Request, res: Response) {
     await creditsService.remove(req.user!.sub, req.params.id);
     res.status(204).send();

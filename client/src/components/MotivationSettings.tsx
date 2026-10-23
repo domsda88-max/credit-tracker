@@ -68,8 +68,9 @@ export function MotivationSettings() {
 
       {enabled && (
         <p className="mt-2 text-xs text-slate-500">
-          Всего 30 текстов, потом цикл повторяется. Сейчас показывается день{' '}
-          <span className="text-slate-300">{user.motivationDay ?? 1}</span> из 30.
+          Тексты подстраиваются под твои кредиты: самый дорогой долг, карты в заморозке,
+          ипотека, сумма и дата свободы. Всего 30 сценариев, потом цикл повторяется.
+          Сейчас день <span className="text-slate-300">{user.motivationDay ?? 1}</span> из 30.
         </p>
       )}
       <p className="mt-2 text-xs text-slate-500">

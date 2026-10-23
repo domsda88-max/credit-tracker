@@ -6,8 +6,12 @@ import { planPastPayments } from '../../utils/finance/pastPayments';
 import { rebuildSchedule } from '../../utils/finance/earlyRepayment';
 import { generateSchedule } from '../../utils/finance/schedule';
 import { effectiveAnnualRate } from '../../utils/finance/effectiveRate';
+import { simulateAccelerator } from '../../utils/finance/accelerator';
 import { round2, toNumber } from '../../utils/finance/round';
 import type { CreateCreditDto, ToggleFreezeDto, UpdateCreditDto } from './credits.schemas';
+
+/** Дополнительный взнос в месяц для прогноза «свобода от долгов» (₽). */
+const ACCELERATOR_EXTRA = 10_000;
 
 /** Поля, изменение которых требует пересборки графика платежей. */
 const FINANCIAL_FIELDS: (keyof UpdateCreditDto)[] = [
@@ -72,7 +76,11 @@ export const creditsService = {
       graceReplenishDay: dto.graceReplenishDay,
     });
 
-    if (schedule.length === 0) {
+    // Пустой график допустим для карты в цикле заморозки: минимального платежа
+    // и срока у неё нет, платится только сумма обновления периода.
+    const freezeCycleCard = frozen && dto.paymentType === 'MIN_PAYMENT';
+
+    if (schedule.length === 0 && !freezeCycleCard) {
       throw new AppError(400, 'Не удалось построить график платежей — проверьте параметры кредита');
     }
 
@@ -207,6 +215,40 @@ export const creditsService = {
       _count: true,
     });
 
+    // Прогноз «что если вносить +10 000 ₽ в месяц в самый дорогой долг».
+    //
+    // Карты в цикле заморозки НЕ уменьшают тело долга: сумма обновления периода
+    // лишь продлевает льготный период. Поэтому в симуляции для них
+    // ежемесячное погашение = 0, а ставка = 0 (пока заморожены).
+    const baselineMonths = lastDueDate ? Math.max(0, monthsBetween(utcToday(), lastDueDate)) : 0;
+
+    const accelerator = simulateAccelerator({
+      extraPerMonth: ACCELERATOR_EXTRA,
+      baselineMonths,
+      debts: active
+        .map((c) => {
+          const balance = Math.max(0, toNumber(c.outstanding));
+          if (balance <= 0) return null;
+
+          const next = c.schedule.find((s) => s.status === 'PENDING');
+          const isFreezeCycle = c.frozen && c.freezeCycleDays !== null;
+          const minPayment = isFreezeCycle
+            ? 0
+            : next
+              ? toNumber(next.amount)
+              : Math.max(balance * 0.03, 0);
+
+          return {
+            id: c.id,
+            name: c.name,
+            annualRate: isFreezeCycle ? 0 : toNumber(c.annualRate),
+            balance,
+            minPayment,
+          };
+        })
+        .filter((d): d is NonNullable<typeof d> => d !== null),
+    });
+
     return {
       activeCount: active.length,
       closedCount: credits.length - active.length,
@@ -219,6 +261,7 @@ export const creditsService = {
       debtFreeDate: lastDueDate ? lastDueDate.toISOString() : null,
       paidLast12Months: round2(toNumber(yearAgg._sum.amount ?? 0)),
       paymentsLast12Months: yearAgg._count,
+      accelerator,
     };
   },
 
@@ -344,10 +387,15 @@ export const creditsService = {
       };
       const freshPlan = planPastPayments(generateSchedule(mergeInput));
 
+      // Карта в цикле заморозки: графика минимальных платежей нет.
+      // Пустая пересборка — это норма, а не ошибка; старые строки просто удаляем.
+      const freezeCycleCard = willBeFrozen && merged.type === 'MIN_PAYMENT';
+
       // Если кредит оформлен в прошлом (есть прошедшие платежи) — всегда строим
       // график целиком от исходных условий и заново отмечаем прошедшие.
       // Ручная правка только остатка график не трогает.
-      const rebuildFromStart = termsChanged && (paidCount === 0 || freshPlan.paidCount > 0);
+      const rebuildFromStart =
+        termsChanged && (freezeCycleCard || paidCount === 0 || freshPlan.paidCount > 0);
 
       const items = rebuildFromStart
         ? (() => {
@@ -418,6 +466,51 @@ export const creditsService = {
   /** Переключить «снежинку» (цикл заморозки). */
   async toggleFreeze(userId: string, creditId: string, dto: ToggleFreezeDto) {
     return this.update(userId, creditId, { frozen: dto.frozen });
+  },
+
+  /**
+   * «Я внёс сумму обновления периода» — пользователь подтверждает, что
+   * обновил беспроцентный период. Сдвигаем дату следующей проверки
+   * на полный цикл вперёд и фиксируем платёж в журнале.
+   */
+  async renewFreezeCycle(userId: string, creditId: string) {
+    const credit = await getOwnedCredit(userId, creditId);
+
+    if (!credit.frozen) throw new AppError(400, 'Кредит не в цикле заморозки');
+
+    const cycleDays = credit.freezeCycleDays ?? 30;
+    const amount = credit.graceReplenishSum ? toNumber(credit.graceReplenishSum) : 0;
+    const today = utcToday();
+
+    return prisma.$transaction(async (tx) => {
+      const updated = await tx.credit.update({
+        where: { id: creditId },
+        data: {
+          freezeStartedAt: today,
+          nextFreezeCheckAt: addUTCDays(today, cycleDays),
+          ...(amount > 0
+            ? {
+                totalPaid: { increment: amount },
+                outstanding: { decrement: Math.min(amount, toNumber(credit.outstanding)) },
+              }
+            : {}),
+        },
+      });
+
+      if (amount > 0) {
+        await tx.paymentEvent.create({
+          data: {
+            creditId,
+            kind: 'MIN_PAYMENT',
+            amount,
+            paidAt: today,
+            note: 'Обновление беспроцентного периода',
+          },
+        });
+      }
+
+      return updated;
+    });
   },
 
   async remove(userId: string, creditId: string) {

@@ -62,6 +62,24 @@ export function CreditRow({ credit }: Props) {
     }
   };
 
+  const renewCycle = async () => {
+    try {
+      await creditsApi.renewFreezeCycle(credit.id);
+      await queryClient.invalidateQueries({ queryKey: ['credits'] });
+      await queryClient.invalidateQueries({ queryKey: ['summary'] });
+      toast.show('Период обновлён — цикл сдвинут');
+      setOpen(false);
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    }
+  };
+
+  // Карта в цикле заморозки: минимального платежа нет, есть только сумма
+  // обновления беспроцентного периода (её пропускать нельзя).
+  const freezeCycle = credit.frozen && credit.type === 'CREDIT_CARD';
+  const cycleDay = credit.graceReplenishDay ?? credit.paymentDay;
+  const cycleSum = credit.graceReplenishSum ? Number(credit.graceReplenishSum) : null;
+
   return (
     <>
       <div className="relative rounded-2xl border border-white/[0.06] bg-white/[0.02]">
@@ -101,7 +119,7 @@ export function CreditRow({ credit }: Props) {
             />
           </div>
 
-          {next && !isClosed && (
+          {next && !isClosed && !freezeCycle && (
             <div className="mt-3 flex items-center justify-between rounded-xl bg-slate-950/40 px-3 py-2 text-sm">
               <span className="text-slate-400">Ближайший платёж</span>
               <span className="text-right">
@@ -109,6 +127,26 @@ export function CreditRow({ credit }: Props) {
                 <span className="ml-2 text-xs text-slate-500">
                   {formatDate(next.dueDate)} · {describeDueDate(next.dueDate)}
                 </span>
+              </span>
+            </div>
+          )}
+
+          {freezeCycle && !isClosed && (
+            <div className="mt-3 flex items-center justify-between rounded-xl bg-sky-500/[0.07] px-3 py-2 text-sm">
+              <span className="text-slate-400">
+                🧊 Обновить период{cycleDay ? ` до ${cycleDay}-го` : ''}
+              </span>
+              <span className="text-right">
+                {cycleSum !== null ? (
+                  <span className="tabular font-medium text-sky-200">{formatMoneyShort(cycleSum)}</span>
+                ) : (
+                  <span className="text-xs text-slate-500">сумма не задана</span>
+                )}
+                {credit.nextFreezeCheckAt && (
+                  <span className="ml-2 text-xs text-slate-500">
+                    до {formatDate(credit.nextFreezeCheckAt)}
+                  </span>
+                )}
               </span>
             </div>
           )}
@@ -148,6 +186,16 @@ export function CreditRow({ credit }: Props) {
             <span>❄️</span>
             <span>{credit.frozen ? 'Разморозить' : 'Заморозить'}</span>
           </button>
+          {freezeCycle && (
+            <button
+              type="button"
+              onClick={renewCycle}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sky-200 transition active:bg-sky-500/10"
+            >
+              <span>✅</span>
+              <span>Я обновил период (внёс сумму)</span>
+            </button>
+          )}
           {credit.type !== 'LOAN' && !isClosed && (
             <button
               type="button"

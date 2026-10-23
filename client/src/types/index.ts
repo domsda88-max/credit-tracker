@@ -75,8 +75,18 @@ export interface CreditListItem extends Credit {
   nextPayment: PaymentScheduleItem | null;
 }
 
+/** Прогноз ускоренного погашения («+N ₽ в самый дорогой долг»). */
+export interface PayoffAccelerator {
+  baselineMonths: number;
+  acceleratedMonths: number;
+  savedMonths: number;
+  targetName: string;
+  extraPerMonth: number;
+}
+
 /** Сводка по всем кредитам (GET /credits/summary). */
-export interface CreditSummary {  activeCount: number;
+export interface CreditSummary {
+  activeCount: number;
   closedCount: number;
   principalSum: number;
   outstandingSum: number;
@@ -87,6 +97,7 @@ export interface CreditSummary {  activeCount: number;
   debtFreeDate: string | null;
   paidLast12Months: number;
   paymentsLast12Months: number;
+  accelerator: PayoffAccelerator | null;
 }
 
 export interface CreditDetail extends Credit {

@@ -17,6 +17,17 @@ function untilLabel(iso: string): string {
   return parts.length ? `через ${parts.join(' ')}` : 'меньше месяца';
 }
 
+/** Число месяцев человеческим языком: «2 года 3 мес.». */
+function monthsLabel(months: number): string {
+  if (months <= 0) return 'меньше месяца';
+  const years = Math.floor(months / 12);
+  const rest = months % 12;
+  const parts: string[] = [];
+  if (years > 0) parts.push(`${years} ${years === 1 ? 'год' : years < 5 ? 'года' : 'лет'}`);
+  if (rest > 0) parts.push(`${rest} мес.`);
+  return parts.join(' ');
+}
+
 /**
  * Общая картина по всем кредитам — то, чего не хватало в отзывах конкурентов
  * (AlmostZero: «нет общего прогресса и таймлайна»). Данные — с сервера (/credits/summary).
@@ -75,6 +86,30 @@ export function DebtOverview() {
             </p>
           </div>
           <p className="text-xs text-sky-300/80">{untilLabel(data.debtFreeDate)}</p>
+        </div>
+      )}
+
+      {data.accelerator && data.accelerator.savedMonths > 0 && (
+        <div className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] px-4 py-3">
+          <p className="text-xs uppercase tracking-wide text-emerald-300/80">
+            ⚡ Ускорь свободу
+          </p>
+          <p className="mt-1 text-sm text-slate-200">
+            Если вносить{' '}
+            <span className="tabular font-semibold text-emerald-200">
+              +{formatMoney(data.accelerator.extraPerMonth)}
+            </span>{' '}
+            каждый месяц в самый дорогой долг (
+            <span className="text-emerald-200">{data.accelerator.targetName}</span>
+            ), ты освободишься{' '}
+            <span className="font-semibold text-emerald-200">
+              через {monthsLabel(data.accelerator.acceleratedMonths)}
+            </span>{' '}
+            вместо {monthsLabel(data.accelerator.baselineMonths)}.
+          </p>
+          <p className="mt-1 text-xs text-emerald-300/80">
+            Экономия: {monthsLabel(data.accelerator.savedMonths)} 🎉
+          </p>
         </div>
       )}
 
