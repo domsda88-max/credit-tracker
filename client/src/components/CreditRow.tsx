@@ -55,18 +55,10 @@ interface Props {
 
 export function CreditRow({ credit, index = 0 }: Props) {
   const navigate = useNavigate();
-  useEffect(() => {
-    setFrozen(credit.frozen);
-  }, [credit.frozen]);
   const queryClient = useQueryClient();
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [frozen, setFrozen] = useState(credit.frozen);
-
-  useEffect(() => {
-    setFrozen(credit.frozen);
-  }, [credit.frozen]);
   const percent = debtPaidPercent(credit.principal, credit.outstanding);
   const isClosed = credit.status === 'CLOSED';
   const next = credit.nextPayment;
@@ -79,33 +71,30 @@ export function CreditRow({ credit, index = 0 }: Props) {
     return () => window.clearTimeout(t);
   }, [percent]);
 
-  const toggleFreeze = async () => {
-    const nextFrozen = !frozen;
+  const toggleFreeze = () => {
+    // 1. вибрация — синхронно
     navigator.vibrate?.(25);
-    setFrozen(nextFrozen);
+    // 2. закрыть шторку — синхронно
     setOpen(false);
-    // Optimistic update: reflect immediately in cache
+    // 3. оптимистичное обновление кэша — синхронно
     queryClient.setQueryData(['credits'], (old: any) =>
       Array.isArray(old)
-        ? old.map((c: any) => (c.id === credit.id ? { ...c, frozen: nextFrozen } : c))
+        ? old.map((c: any) => (c.id === credit.id ? { ...c, frozen: !credit.frozen } : c))
         : old,
     );
-    try {
-      await creditsApi.toggleFreeze(credit.id, nextFrozen);
-      await queryClient.invalidateQueries({ queryKey: ['credits'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['summary'], refetchType: 'active' });
-      toast.show(nextFrozen ? 'Кредит заморожен' : 'Кредит разморожен');
-    } catch (err) {
-      // Rollback
-      setFrozen(credit.frozen);
-      queryClient.setQueryData(['credits'], (old: any) =>
-        Array.isArray(old)
-          ? old.map((c: any) => (c.id === credit.id ? { ...c, frozen: credit.frozen } : c))
-          : old,
-      );
-      setError(extractErrorMessage(err));
-      toast.show('Ошибка заморозки');
-    }
+    // 4. мутация в фоне
+    creditsApi
+      .toggleFreeze(credit.id, !credit.frozen)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['credits'], refetchType: 'active' });
+        queryClient.invalidateQueries({ queryKey: ['summary'], refetchType: 'active' });
+        toast.show(credit.frozen ? 'Кредит разморожен' : 'Кредит заморожен');
+      })
+      .catch((err) => {
+        queryClient.invalidateQueries({ queryKey: ['credits'], refetchType: 'active' });
+        setError(extractErrorMessage(err));
+        toast.show('Ошибка заморозки');
+      });
   };
 
   const remove = async () => {
@@ -136,7 +125,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
 
   // Карта в цикле заморозки: минимального платежа нет, есть только сумма
   // обновления беспроцентного периода (её пропускать нельзя).
-  const freezeCycle = frozen && credit.type === 'CREDIT_CARD';
+  const freezeCycle = credit.frozen && credit.type === 'CREDIT_CARD';
   const cycleDay = credit.graceReplenishDay ?? credit.paymentDay;
   const cycleSum = credit.graceReplenishSum ? Number(credit.graceReplenishSum) : null;
   const tone = next ? TONE[urgencyTone(daysUntil(next.dueDate))] : TONE.muted;
@@ -156,7 +145,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <h3 className="truncate text-body font-semibold text-t1">{credit.name}</h3>
-                  {frozen && (
+                  {credit.frozen && (
                     <Snowflake size={15} className="shrink-0 text-primary" aria-label="В заморозке" />
                   )}
                   {isClosed && (
@@ -264,7 +253,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
             className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-t1 transition-colors active:bg-surface2"
           >
             <Snowflake size={18} className="text-primary" />
-            <span>{frozen ? 'Разморозить' : 'Заморозить'}</span>
+            <span>{credit.frozen ? 'Разморозить' : 'Заморозить'}</span>
           </button>
           {freezeCycle && (
             <button
