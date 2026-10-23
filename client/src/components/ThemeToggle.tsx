@@ -1,16 +1,11 @@
-import { Monitor, Moon, Sun } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { useThemeStore } from '../store/theme';
 
 const LABELS = {
-  system: { Icon: Monitor, text: 'Как в телефоне' },
   light: { Icon: Sun, text: 'Светлая' },
   dark: { Icon: Moon, text: 'Тёмная' },
 } as const;
 
-/**
- * Переключатель темы. Режим «как в телефоне» следует системной настройке iOS/Android,
- * остальные два фиксируют тему вручную. Выбор запоминается.
- */
 export function ThemeToggle() {
   const mode = useThemeStore((s) => s.mode);
   const cycle = useThemeStore((s) => s.cycle);
