@@ -309,7 +309,7 @@ export function AddCreditPage() {
           <button
             type="submit"
             disabled={isSubmitting || mutation.isPending}
-            className="rounded-control bg-primary px-4 py-2.5 font-medium text-white transition hover:bg-primary/90 disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 min-w-[140px] whitespace-nowrap rounded-control bg-primary px-4 py-2.5 font-medium text-white transition hover:bg-primary/90 disabled:opacity-50"
           >
             {mutation.isPending ? 'Сохраняю…' : isLoan ? 'Сохранить' : 'Сохранить и построить график'}
           </button>
