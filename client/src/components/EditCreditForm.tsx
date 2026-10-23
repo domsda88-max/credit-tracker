@@ -192,9 +192,9 @@ export function EditCreditForm({
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="inline-flex items-center justify-center gap-2 min-w-[140px] whitespace-nowrap rounded-control bg-primary px-4 py-2.5 font-medium text-white transition hover:bg-primary/90 disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 min-w-[150px] whitespace-nowrap rounded-control bg-primary px-4 py-2.5 font-medium text-white disabled:opacity-70"
           >
-            {mutation.isPending ? 'Сохраняю…' : 'Сохранить изменения'}
+            {mutation.isPending ? (<><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />Сохраняю…</>) : 'Сохранить изменения'}
           </button>
           <button
             type="button"
