@@ -72,15 +72,29 @@ export function CreditRow({ credit, index = 0 }: Props) {
   }, [percent]);
 
   const toggleFreeze = async () => {
+    const nextFrozen = !credit.frozen;
+    navigator.vibrate?.(25);
+    // Optimistic update: reflect immediately in cache
+    queryClient.setQueryData(['credits'], (old: any) =>
+      Array.isArray(old)
+        ? old.map((c: any) => (c.id === credit.id ? { ...c, frozen: nextFrozen } : c))
+        : old,
+    );
     try {
-      navigator.vibrate?.(25);
-      await creditsApi.toggleFreeze(credit.id, !credit.frozen);
-      await queryClient.invalidateQueries({ queryKey: ['credits'] });
-      await queryClient.invalidateQueries({ queryKey: ['summary'] });
-      toast.show(credit.frozen ? 'Кредит разморожен' : 'Кредит заморожен');
+      await creditsApi.toggleFreeze(credit.id, nextFrozen);
+      await queryClient.invalidateQueries({ queryKey: ['credits'], refetchType: 'active' });
+      await queryClient.invalidateQueries({ queryKey: ['summary'], refetchType: 'active' });
+      toast.show(nextFrozen ? 'Кредит заморожен' : 'Кредит разморожен');
       setOpen(false);
     } catch (err) {
+      // Rollback
+      queryClient.setQueryData(['credits'], (old: any) =>
+        Array.isArray(old)
+          ? old.map((c: any) => (c.id === credit.id ? { ...c, frozen: credit.frozen } : c))
+          : old,
+      );
       setError(extractErrorMessage(err));
+      toast.show('Ошибка заморозки');
     }
   };
 
