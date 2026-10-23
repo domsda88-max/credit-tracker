@@ -190,6 +190,8 @@ export const creditsService = {
     let scheduledTotal = 0; // сколько всего ещё и уже запланировано по графику
     let lastDueDate: Date | null = null;
     let monthlyPayments = 0; // ближайшие обязательные платежи по всем активным долгам
+    let graceReplenishTotal = 0;
+    let graceItems: { name: string; amount: number; dueDate: string | null }[] = [];
 
     for (const c of active) {
       principalSum += toNumber(c.principal);
@@ -214,6 +216,18 @@ export const creditsService = {
         if (d.getUTCFullYear() === curYear && d.getUTCMonth() === curMonth) {
           monthlyPayments += toNumber(item.amount);
         }
+      }
+
+      // Карты в цикле заморозки: нет обязательного платежа по графику,
+      // но есть сумма обновления грейс-периода — показываем отдельно,
+      // в «Платежи в месяц» НЕ включаем (это «переливание», не расход).
+      if (c.frozen && c.graceReplenishSum) {
+        graceReplenishTotal += toNumber(c.graceReplenishSum);
+        graceItems.push({
+          name: c.name,
+          amount: toNumber(c.graceReplenishSum),
+          dueDate: c.nextFreezeCheckAt ? c.nextFreezeCheckAt.toISOString() : null,
+        });
       }
     }
 
@@ -285,6 +299,8 @@ export const creditsService = {
       monthlyIncome: monthlyIncome === null ? null : round2(monthlyIncome),
       freeMoney:
         monthlyIncome === null ? null : round2(monthlyIncome - monthlyPayments),
+      graceReplenishTotal: round2(graceReplenishTotal),
+      graceItems,
       accelerator,
     };
   },

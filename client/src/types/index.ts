@@ -105,6 +105,8 @@ export interface CreditSummary {
   monthlyIncome: number | null;
   /** Свободные деньги = доход − ежемесячные платежи. */
   freeMoney: number | null;
+  graceReplenishTotal: number;
+  graceItems: { name: string; amount: number; dueDate: string | null }[];
   accelerator: PayoffAccelerator | null;
 }
 

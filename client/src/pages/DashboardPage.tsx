@@ -5,6 +5,7 @@ import { CreditRow } from '../components/CreditRow';
 import { DataExport } from '../components/DataExport';
 import { DebtOverview } from '../components/DebtOverview';
 import { MoneyFlow } from '../components/MoneyFlow';
+import { GraceReplenishBlock } from '../components/GraceReplenishBlock';
 import { OverdueAlert } from '../components/OverdueAlert';
 import { UpcomingPayments } from '../components/UpcomingPayments';
 import { formatDate, formatMoney } from '../utils/format';
@@ -84,6 +85,7 @@ export function DashboardPage() {
 
       {list.length > 0 && <DebtOverview />}
       <MoneyFlow />
+      <GraceReplenishBlock />
 
       <UpcomingPayments credits={list} />
 
