@@ -58,7 +58,7 @@ export function Layout() {
         <Outlet />
       </main>
 
-      <nav className="flex shrink-0 items-stretch justify-around border-t border-line pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1.5">
+      <nav className="flex shrink-0 items-stretch justify-around border-t border-line bg-surface/80 backdrop-blur-xl pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1.5">
         {NAV.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
