@@ -40,6 +40,8 @@ export function UpcomingPayments({ credits }: Props) {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const horizon = new Date(today);
+  horizon.setDate(horizon.getDate() + 30);
 
   const items: Item[] = credits
     .filter((c) => c.status === 'ACTIVE' && c.nextPayment)
@@ -50,9 +52,22 @@ export function UpcomingPayments({ credits }: Props) {
       amount: Number(c.nextPayment!.amount),
       overdue: new Date(c.nextPayment!.dueDate).getTime() < today.getTime(),
     }))
+    .filter((item) => {
+      const d = new Date(item.dueDate);
+      return d >= today && d <= horizon;
+    })
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    return (
+      <section className="space-y-3">
+        <p className="section-title">Ближайшие платежи (30 дней)</p>
+        <div className="rounded-card border border-line bg-surface p-4 text-center text-caption text-t3">
+          Нет платежей в ближайшие 30 дней
+        </div>
+      </section>
+    );
+  }
 
   const total = items.reduce((sum, item) => sum + item.amount, 0);
 
@@ -64,7 +79,7 @@ export function UpcomingPayments({ credits }: Props) {
         aria-expanded={!collapsed}
         className="flex w-full items-center justify-between gap-3 text-left"
       >
-        <span className="section-title">Ближайшие платежи</span>
+        <span className="section-title">Ближайшие платежи (30 дней)</span>
         <span className="flex items-center gap-2">
           <span className="tabular text-caption text-t3">
             {items.length} · {formatMoney(total)}

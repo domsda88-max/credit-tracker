@@ -203,14 +203,17 @@ export const creditsService = {
         }
       }
 
-      // Ежемесячная нагрузка: ближайший платёж из графика. У карт в цикле
-      // заморозки платежа нет — но есть обязательная сумма обновления
-      // беспроцентного периода, именно она и ложится на бюджет.
-      const next = c.schedule.find((s) => s.status === 'PENDING');
-      if (next) {
-        monthlyPayments += toNumber(next.amount);
-      } else if (c.frozen && c.graceReplenishSum) {
-        monthlyPayments += toNumber(c.graceReplenishSum);
+      // Ежемесячная нагрузка: сумма платежей, приходящих в ТЕКУЩЕМ
+      // календарном месяце (с 1 по последнее число). Не «все платежи
+      // по всем кредитам навсегда», а только те, что в этом месяце.
+      const now = new Date();
+      const curYear = now.getUTCFullYear();
+      const curMonth = now.getUTCMonth();
+      for (const item of c.schedule) {
+        const d = new Date(item.dueDate);
+        if (d.getUTCFullYear() === curYear && d.getUTCMonth() === curMonth) {
+          monthlyPayments += toNumber(item.amount);
+        }
       }
     }
 
