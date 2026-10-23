@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { creditsApi } from '../api/credits';
@@ -10,23 +9,13 @@ import { OverdueAlert } from '../components/OverdueAlert';
 import { UpcomingPayments } from '../components/UpcomingPayments';
 import { formatDate, formatMoney } from '../utils/format';
 
-/** Экран загрузки: бесплатный Render «просыпается» до ~50 секунд — предупреждаем об этом. */
+/** Экран загрузки: скелетоны карточек вместо спиннера. */
 function LoadingScreen() {
-  const [slow, setSlow] = useState(false);
-  useEffect(() => {
-    const timer = window.setTimeout(() => setSlow(true), 5000);
-    return () => window.clearTimeout(timer);
-  }, []);
-
   return (
-    <div className="flex flex-col items-center gap-3 py-16 text-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-sky-400" />
-      <p className="text-sm text-t2">Загружаю данные…</p>
-      {slow && (
-        <p className="max-w-xs text-xs text-t3">
-          Сервер просыпается после простоя — это может занять до минуты. Данные появятся сами.
-        </p>
-      )}
+    <div className="space-y-4">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="skeleton h-24 rounded-card" />
+      ))}
     </div>
   );
 }
@@ -99,16 +88,33 @@ export function DashboardPage() {
       <UpcomingPayments credits={list} />
 
       {list.length === 0 ? (
-        <div className="rounded-card border border-line bg-surface p-6 text-center">
-          <p className="text-lg font-medium text-t1">Пока нет долгов</p>
-          <p className="mt-1 text-sm text-t3">
+        <div className="card flex flex-col items-center gap-4 p-8 text-center">
+          <svg width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden="true">
+            <circle cx="48" cy="48" r="44" fill="rgb(var(--c-surface2))" />
+            <path
+              d="M30 52c0-9.94 8.06-18 18-18s18 8.06 18 18"
+              stroke="rgb(var(--c-primary))"
+              strokeWidth="4"
+              strokeLinecap="round"
+            />
+            <circle cx="40" cy="44" r="3" fill="rgb(var(--c-t2))" />
+            <circle cx="56" cy="44" r="3" fill="rgb(var(--c-t2))" />
+            <path
+              d="M40 62c2.5 2.5 5.5 3.5 8 3.5s5.5-1 8-3.5"
+              stroke="rgb(var(--c-success))"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+          </svg>
+          <p className="text-heading font-semibold text-t1">Пока нет долгов</p>
+          <p className="max-w-xs text-caption text-t3">
             Добавьте первый кредит, карту или заём — всё будет под контролем
           </p>
           <Link
             to="/credits/new"
-            className="mt-4 inline-flex rounded-control bg-primary px-4 py-2.5 font-medium text-white transition hover:bg-primary/90"
+            className="btn btn-primary"
           >
-            Добавить
+            Добавить первый долг
           </Link>
         </div>
       ) : (
