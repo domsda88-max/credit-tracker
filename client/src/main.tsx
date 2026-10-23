@@ -49,9 +49,7 @@ if ('serviceWorker' in navigator) {
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     console.log('[SW] controllerchange');
-    if (reloading) return;
-    reloading = true;
-    window.location.reload();
+    // Do NOT auto-reload — causes reload loop. User can refresh manually.
   });
 
   const checkUpdate = async () => {
@@ -71,7 +69,7 @@ if ('serviceWorker' in navigator) {
   };
 
   void checkUpdate();
-  setInterval(checkUpdate, 60_000);
+  // Removed setInterval polling to prevent SW update loop
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') void checkUpdate();
   });
