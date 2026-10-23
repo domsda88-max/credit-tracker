@@ -1,6 +1,6 @@
 import { Target, Zap } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { creditsApi } from '../api/credits';
 import { debtPaidPercent, formatDate, formatMoney, formatMoneyShort } from '../utils/format';
 import { simulateAccelerator } from '../utils/finance/accelerator';
@@ -40,10 +40,12 @@ export function DebtOverview() {
   const { data: summary } = useQuery({
     queryKey: ['summary'],
     queryFn: () => creditsApi.summary(),
+    placeholderData: keepPreviousData,
   });
   const { data: credits } = useQuery({
     queryKey: ['credits'],
     queryFn: () => creditsApi.list(),
+    placeholderData: keepPreviousData,
   });
 
   const [extra, setExtra] = useState(10000);
@@ -138,7 +140,52 @@ export function DebtOverview() {
         </div>
       )}
 
-      {/* Accelerator block temporarily removed for binary search */}
+      {activeDebtsExist && (
+        <div className="mt-3 rounded-control border border-success/20 bg-success/[0.07] px-4 py-3" style={{ minHeight: 150, overflowAnchor: 'none' }}>
+          <p className="flex items-center gap-1.5 text-micro uppercase tracking-[0.04em] text-success">
+            <Zap size={14} />
+            Ускорь свободу
+          </p>
+          <p className="mt-1.5 text-caption leading-relaxed text-t1" style={{ minHeight: 44 }}>
+            {accelerator && accelerator.savedMonths > 0 ? (
+              <>
+                Если вносить{' '}
+                <span className="tabular font-semibold text-success">{formatMoney(extra)}</span>
+                {' '}дополнительно каждый месяц в самый дорогой долг (
+                <span className="font-medium text-success">{accelerator.targetName}</span>), ты
+                освободишься{' '}
+                <span className="font-semibold text-success">
+                  через {monthsLabel(accelerator.acceleratedMonths)}
+                </span>{' '}
+                вместо {monthsLabel(accelerator.baselineMonths)}
+              </>
+            ) : (
+              <>Перетащи слайдер, чтобы увидеть, как дополнительный платёж ускорит погашение.</>
+            )}
+          </p>
+          <p className="mt-1 text-micro text-success/80" style={{ minHeight: 14 }}>
+            {accelerator && accelerator.savedMonths > 0
+              ? `Экономия: ${monthsLabel(accelerator.savedMonths)}`
+              : '\u00A0'}
+          </p>
+
+          <div className="mt-3">
+            <input
+              type="range"
+              min={0}
+              max={100000}
+              step={5000}
+              value={extra}
+              onChange={(e) => setExtra(Number(e.target.value))}
+              className="w-full"
+            />
+            <div className="mt-1 flex justify-between text-micro text-t3">
+              <span>0 ₽</span>
+              <span>100 000 ₽</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {summary.overpay > 0 && (
         <p className="mt-3 border-t border-line pt-3 text-micro text-t3">

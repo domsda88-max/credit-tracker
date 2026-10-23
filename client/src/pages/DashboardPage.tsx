@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { creditsApi } from '../api/credits';
 import { CreditRow } from '../components/CreditRow';
@@ -39,10 +39,12 @@ export function DashboardPage() {
   } = useQuery({
     queryKey: ['credits'],
     queryFn: () => creditsApi.list(),
+    placeholderData: keepPreviousData,
   });
   const { data: summary } = useQuery({
     queryKey: ['summary'],
     queryFn: () => creditsApi.summary(),
+    placeholderData: keepPreviousData,
   });
 
   if (isLoading) {
