@@ -31,44 +31,44 @@ export function LoginPage() {
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center px-4">
-      <h1 className="text-2xl font-semibold text-slate-100">Вход</h1>
-      <p className="mt-1 text-sm text-slate-500">Контроль кредитов и напоминания о платежах</p>
+      <h1 className="text-2xl font-semibold text-t1">Вход</h1>
+      <p className="mt-1 text-sm text-t3">Контроль кредитов и напоминания о платежах</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
         <label className="block">
-          <span className="text-sm text-slate-400">Email</span>
+          <span className="text-sm text-t2">Email</span>
           <input
             type="email"
             autoComplete="email"
             {...register('email', { required: true })}
-            className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-slate-100 outline-none transition focus:border-sky-500"
+            className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none transition focus:border-primary"
           />
         </label>
 
         <label className="block">
-          <span className="text-sm text-slate-400">Пароль</span>
+          <span className="text-sm text-t2">Пароль</span>
           <input
             type="password"
             autoComplete="current-password"
             {...register('password', { required: true })}
-            className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-slate-100 outline-none transition focus:border-sky-500"
+            className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none transition focus:border-primary"
           />
         </label>
 
-        {error && <p className="text-sm text-rose-400">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded-xl bg-sky-500 py-2.5 font-medium text-slate-950 transition hover:bg-sky-400 disabled:opacity-50"
+          className="w-full rounded-control bg-primary py-2.5 font-medium text-white transition hover:bg-primary/90 disabled:opacity-50"
         >
           {isSubmitting ? 'Вхожу…' : 'Войти'}
         </button>
       </form>
 
-      <p className="mt-4 text-sm text-slate-500">
+      <p className="mt-4 text-sm text-t3">
         Нет аккаунта?{' '}
-        <Link to="/register" className="text-sky-400 hover:text-sky-300">
+        <Link to="/register" className="text-primary hover:text-primary">
           Зарегистрироваться
         </Link>
       </p>

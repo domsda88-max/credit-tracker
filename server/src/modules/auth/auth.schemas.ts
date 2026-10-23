@@ -36,6 +36,11 @@ export const updateSettingsSchema = z.object({
     .max(15)
     .transform((days) => [...new Set(days)].sort((a, b) => b - a)),
   motivationEnabled: z.boolean().optional(),
+  /** Доход в месяц, ₽. null / пусто — не задан. */
+  monthlyIncome: z
+    .union([z.null(), z.literal(''), z.coerce.number().min(0).max(1_000_000_000)])
+    .optional()
+    .transform((v) => (v === '' || v == null ? null : v)),
 });
 
 export type RegisterDto = z.infer<typeof registerSchema>;

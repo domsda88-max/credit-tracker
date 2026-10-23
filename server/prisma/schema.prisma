@@ -24,6 +24,7 @@ model User {
   motivationEnabled Boolean         @default(true) // ежедневная мотивационная рассылка в 9:30
   motivationDay Int                 @default(1) // текущий день цикла мотивации (1..30)
   motivationSentOn DateTime?        @db.Date // дата последней отправки мотивации (защита от дублей)
+  monthlyIncome Decimal?            @db.Decimal(14, 2) // доход в месяц, ₽ (для расчёта свободных денег)
   createdAt     DateTime            @default(now())
   credits       Credit[]
   subscriptions PushSubscription[]

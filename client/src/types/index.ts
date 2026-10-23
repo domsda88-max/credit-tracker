@@ -14,6 +14,8 @@ export interface User {
   leadDaysList: number[];
   motivationEnabled: boolean;
   motivationDay: number;
+  /** Доход в месяц, ₽. null — не задан. */
+  monthlyIncome: number | null;
 }
 
 export interface AuthResponse {
@@ -97,6 +99,12 @@ export interface CreditSummary {
   debtFreeDate: string | null;
   paidLast12Months: number;
   paymentsLast12Months: number;
+  /** Сумма ежемесячных обязательных платежей по всем активным долгам. */
+  monthlyPayments: number;
+  /** Доход в месяц (null — не задан в настройках). */
+  monthlyIncome: number | null;
+  /** Свободные деньги = доход − ежемесячные платежи. */
+  freeMoney: number | null;
   accelerator: PayoffAccelerator | null;
 }
 

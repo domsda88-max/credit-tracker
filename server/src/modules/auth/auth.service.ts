@@ -14,6 +14,7 @@ const publicUserSelect = {
   leadDaysList: true,
   motivationEnabled: true,
   motivationDay: true,
+  monthlyIncome: true,
 } as const;
 
 function signToken(userId: string, email: string): string {
@@ -62,6 +63,7 @@ export const authService = {
         reminderHour: dto.reminderHour,
         leadDaysList: dto.leadDaysList,
         ...(dto.motivationEnabled !== undefined ? { motivationEnabled: dto.motivationEnabled } : {}),
+        ...(dto.monthlyIncome !== undefined ? { monthlyIncome: dto.monthlyIncome } : {}),
       },
       select: publicUserSelect,
     });

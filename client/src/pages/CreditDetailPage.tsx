@@ -28,7 +28,7 @@ const earlySchema = z.object({
 type EarlyFormValues = z.input<typeof earlySchema>;
 
 const inputClass =
-  'mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-slate-100 outline-none transition focus:border-sky-500';
+  'mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none transition focus:border-primary';
 
 const EVENT_LABELS: Record<PaymentEvent['kind'], string> = {
   SCHEDULED: 'Платёж по графику',
@@ -124,14 +124,14 @@ export function CreditDetailPage() {
     onError: (err) => setError(extractErrorMessage(err)),
   });
 
-  if (isLoading) return <p className="text-sm text-slate-500">Загружаю кредит…</p>;
+  if (isLoading) return <p className="text-sm text-t3">Загружаю кредит…</p>;
   if (loadError || !credit) {
     return (
       <div>
-        <p className="text-sm text-rose-400">
+        <p className="text-sm text-danger">
           Не удалось загрузить кредит: {(loadError as Error | null)?.message ?? 'не найден'}
         </p>
-        <Link to="/" className="mt-3 inline-block text-sm text-sky-400">
+        <Link to="/" className="mt-3 inline-block text-sm text-primary">
           ← Назад к дашборду
         </Link>
       </div>
@@ -148,19 +148,19 @@ export function CreditDetailPage() {
   return (
     <div className="h-full overflow-y-auto overflow-x-hidden pb-4 [-webkit-overflow-scrolling:touch]">
       <div className="space-y-4">
-      <Link to="/" className="inline-block text-sm text-slate-500 hover:text-slate-300">
+      <Link to="/" className="inline-block text-sm text-t3 hover:text-t2">
         ← Дашборд
       </Link>
 
-      <header className="rounded-3xl border border-white/[0.06] bg-gradient-to-br from-sky-500/10 via-transparent to-emerald-400/5 p-4">
+      <header className="rounded-card border border-line bg-gradient-to-br from-primary/10 via-transparent to-success/5 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="truncate text-xl font-semibold text-slate-100">{credit.name}</h1>
+              <h1 className="truncate text-xl font-semibold text-t1">{credit.name}</h1>
               {credit.frozen && <span title="Цикл заморозки">🧊</span>}
               {credit.status === 'CLOSED' && <span>✅</span>}
             </div>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-t3">
               {CREDIT_TYPE_LABELS[credit.type]}
               {credit.type !== 'LOAN' && (
                 <>
@@ -176,7 +176,7 @@ export function CreditDetailPage() {
             <button
               type="button"
               onClick={() => setEditing((v) => !v)}
-              className="rounded-lg border border-white/[0.08] px-3 py-2 text-sm text-slate-300 transition hover:border-sky-500/50"
+              className="rounded-lg border border-line px-3 py-2 text-sm text-t2 transition hover:border-primary/50"
             >
               {editing ? 'Закрыть' : 'Изменить'}
             </button>
@@ -185,29 +185,29 @@ export function CreditDetailPage() {
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div>
-            <p className="text-xs text-slate-500">Остаток долга</p>
-            <p className="tabular text-lg font-semibold text-slate-100">{formatMoney(credit.outstanding)}</p>
+            <p className="text-xs text-t3">Остаток долга</p>
+            <p className="tabular text-lg font-semibold text-t1">{formatMoney(credit.outstanding)}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-500">Первоначально</p>
-            <p className="tabular text-lg font-semibold text-slate-100">{formatMoney(credit.principal)}</p>
+            <p className="text-xs text-t3">Первоначально</p>
+            <p className="tabular text-lg font-semibold text-t1">{formatMoney(credit.principal)}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-500">Выплачено</p>
-            <p className="tabular text-lg font-semibold text-emerald-300">{formatMoney(credit.totalPaid)}</p>
+            <p className="text-xs text-t3">Выплачено</p>
+            <p className="tabular text-lg font-semibold text-success">{formatMoney(credit.totalPaid)}</p>
           </div>
           {credit.type !== 'LOAN' ? (
             <div>
-              <p className="text-xs text-slate-500">Срок / день платежа</p>
-              <p className="font-semibold text-slate-100">
+              <p className="text-xs text-t3">Срок / день платежа</p>
+              <p className="font-semibold text-t1">
                 {credit.termMonths} мес.
                 {credit.paymentDay ? ` · ${credit.paymentDay}-е` : ''}
               </p>
             </div>
           ) : (
             <div>
-              <p className="text-xs text-slate-500">Ставка</p>
-              <p className="font-semibold text-slate-100">{Number(credit.annualRate)}%</p>
+              <p className="text-xs text-t3">Ставка</p>
+              <p className="font-semibold text-t1">{Number(credit.annualRate)}%</p>
             </div>
           )}
         </div>
@@ -225,7 +225,7 @@ export function CreditDetailPage() {
                 setError(extractErrorMessage(err));
               }
             }}
-            className="rounded-lg border border-rose-500/40 px-3 py-2 text-sm text-rose-300 transition hover:bg-rose-500/10"
+            className="rounded-lg border border-danger/40 px-3 py-2 text-sm text-danger transition hover:bg-danger/10"
           >
             Удалить кредит
           </button>
@@ -233,51 +233,51 @@ export function CreditDetailPage() {
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div>
-            <p className="text-xs text-slate-500">Остаток долга</p>
-            <p className="tabular font-semibold text-slate-100">{formatMoney(credit.outstanding)}</p>
+            <p className="text-xs text-t3">Остаток долга</p>
+            <p className="tabular font-semibold text-t1">{formatMoney(credit.outstanding)}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-500">Первоначально</p>
-            <p className="tabular font-semibold text-slate-100">{formatMoney(credit.principal)}</p>
+            <p className="text-xs text-t3">Первоначально</p>
+            <p className="tabular font-semibold text-t1">{formatMoney(credit.principal)}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-500">Выплачено</p>
-            <p className="tabular font-semibold text-emerald-300">{formatMoney(credit.totalPaid)}</p>
+            <p className="text-xs text-t3">Выплачено</p>
+            <p className="tabular font-semibold text-success">{formatMoney(credit.totalPaid)}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-500">Срок / день платежа</p>
-            <p className="font-semibold text-slate-100">
+            <p className="text-xs text-t3">Срок / день платежа</p>
+            <p className="font-semibold text-t1">
               {credit.termMonths} мес.
               {credit.paymentDay ? ` · ${credit.paymentDay}-е` : ''}
             </p>
           </div>
         </div>
 
-        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-800">
+        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-surface2">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-400"
+            className="h-full rounded-full bg-gradient-to-r from-primary to-success"
             style={{ width: `${percent}%` }}
           />
         </div>
         <div className="mt-2 space-y-0.5">
-          <p className="text-xs text-slate-400">
-            Долг погашен на <span className="font-medium text-slate-200">{percent}%</span>
+          <p className="text-xs text-t2">
+            Долг погашен на <span className="font-medium text-t1">{percent}%</span>
             {' — '}
-            <span className="tabular text-slate-300">{formatMoney(principalPaid)}</span> из{' '}
-            <span className="tabular text-slate-300">{formatMoney(credit.principal)}</span>
+            <span className="tabular text-t2">{formatMoney(principalPaid)}</span> из{' '}
+            <span className="tabular text-t2">{formatMoney(credit.principal)}</span>
           </p>
-          <p className="text-xs text-slate-500">
-            Всего выплачено <span className="tabular text-slate-400">{formatMoney(credit.totalPaid)}</span>
+          <p className="text-xs text-t3">
+            Всего выплачено <span className="tabular text-t2">{formatMoney(credit.totalPaid)}</span>
             {' '}(тело {formatMoney(principalPaid)} + проценты {formatMoney(interestPaid)})
           </p>
-          <p className="text-xs text-slate-500">
-            Остаток долга <span className="tabular text-slate-300">{formatMoney(credit.outstanding)}</span>
+          <p className="text-xs text-t3">
+            Остаток долга <span className="tabular text-t2">{formatMoney(credit.outstanding)}</span>
             {' '}(<span className="tabular">{100 - percent}%</span> от первоначальной суммы)
           </p>
         </div>
 
         {credit.frozen && credit.nextFreezeCheckAt && (
-          <p className="mt-3 rounded-xl bg-sky-500/10 px-3 py-2 text-xs text-sky-300">
+          <p className="mt-3 rounded-control bg-primary/10 px-3 py-2 text-xs text-primary">
             🧊 Цикл заморозки до {formatDate(credit.nextFreezeCheckAt)}
             {credit.freezeCycleDays ? ` (каждые ${credit.freezeCycleDays} дн.)` : ''}
           </p>
@@ -295,9 +295,9 @@ export function CreditDetailPage() {
       )}
 
       {credit.status === 'ACTIVE' && credit.type !== 'LOAN' && (
-        <section className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
-          <h2 className="font-medium text-slate-100">Досрочное погашение</h2>
-          <p className="mt-0.5 text-xs text-slate-500">
+        <section className="rounded-card border border-line bg-surface p-4">
+          <h2 className="font-medium text-t1">Досрочное погашение</h2>
+          <p className="mt-0.5 text-xs text-t3">
             График пересчитается автоматически: {credit.prepaymentMode === 'REDUCE_TERM' ? 'сократится срок' : 'уменьшится платёж'}
           </p>
 
@@ -306,15 +306,15 @@ export function CreditDetailPage() {
             className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end"
           >
             <label className="block sm:w-40">
-              <span className="text-sm text-slate-400">Сумма, ₽</span>
+              <span className="text-sm text-t2">Сумма, ₽</span>
               <input type="number" step="0.01" {...register('amount')} className={inputClass} />
               {formState.errors.amount && (
-                <p className="mt-1 text-xs text-rose-400">{formState.errors.amount.message}</p>
+                <p className="mt-1 text-xs text-danger">{formState.errors.amount.message}</p>
               )}
             </label>
 
             <label className="block sm:w-48">
-              <span className="text-sm text-slate-400">Режим</span>
+              <span className="text-sm text-t2">Режим</span>
               <select {...register('mode')} className={inputClass}>
                 <option value="REDUCE_PAYMENT">Уменьшить платёж</option>
                 <option value="REDUCE_TERM">Сократить срок</option>
@@ -324,30 +324,30 @@ export function CreditDetailPage() {
             <button
               type="submit"
               disabled={earlyMutation.isPending}
-              className="rounded-xl bg-emerald-500 px-4 py-2.5 font-medium text-slate-950 transition hover:bg-emerald-400 disabled:opacity-50"
+              className="rounded-control bg-success px-4 py-2.5 font-medium text-white transition hover:bg-emerald-400 disabled:opacity-50"
             >
               {earlyMutation.isPending ? 'Пересчитываю…' : 'Внести'}
             </button>
           </form>
 
           {preview && (
-            <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm">
+            <div className="mt-3 rounded-control border border-success/30 bg-success/10 px-4 py-3 text-sm">
               {preview.isFull ? (
-                <p className="font-medium text-emerald-300">
+                <p className="font-medium text-success">
                   🎉 Полное закрытие кредита: сэкономите{' '}
                   <span className="tabular">{formatMoney(preview.interestSaved)}</span> процентов
                   {' '}и <span className="font-semibold">{preview.monthSaved} мес.</span>
                 </p>
               ) : (
                 <>
-                  <p className="font-medium text-emerald-300">
+                  <p className="font-medium text-success">
                     Экономия: <span className="tabular">{formatMoney(preview.interestSaved)}</span>{' '}
                     процентов
                     {preview.monthSaved > 0 && (
                       <> и <span className="font-semibold">{preview.monthSaved} мес.</span> срока</>
                     )}
                   </p>
-                  <p className="mt-1 text-xs text-emerald-200/70">
+                  <p className="mt-1 text-xs text-success/70">
                     {watchMode === 'REDUCE_TERM' ? (
                       <>Останется платежей: {preview.monthsAfter} · платёж {formatMoney(preview.paymentAfter)}</>
                     ) : (
@@ -361,20 +361,20 @@ export function CreditDetailPage() {
         </section>
       )}
 
-      {error && <p className="text-sm text-rose-400">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       {credit.type !== 'LOAN' && (
-      <section className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+      <section className="rounded-card border border-line bg-surface p-4">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="font-medium text-slate-100">
+          <h2 className="font-medium text-t1">
             График платежей{' '}
-            {pending.length > 0 && <span className="text-slate-500">· к оплате {pending.length}</span>}
+            {pending.length > 0 && <span className="text-t3">· к оплате {pending.length}</span>}
           </h2>
           {paid.length > 0 && (
             <button
               type="button"
               onClick={() => setShowAllPaid((v) => !v)}
-              className="shrink-0 rounded-lg border border-slate-700 px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-sky-500/50"
+              className="shrink-0 rounded-lg border border-line px-2.5 py-1.5 text-xs text-t2 transition hover:border-primary/50"
             >
               {showAllPaid ? 'Свернуть оплаченные' : `Показать оплаченные (${paid.length})`}
             </button>
@@ -382,12 +382,12 @@ export function CreditDetailPage() {
         </div>
 
         {collapsedCount > 0 && (
-          <p className="mt-3 rounded-xl bg-slate-800/40 px-3 py-2 text-xs text-slate-400">
+          <p className="mt-3 rounded-control bg-surface2 px-3 py-2 text-xs text-t2">
             {collapsedCount} прошедших платежей уже учтены как оплаченные. Нажмите «Показать оплаченные», чтобы посмотреть.
           </p>
         )}
 
-        <div className="mt-3 divide-y divide-slate-800">
+        <div className="mt-3 divide-y divide-line">
           {visible.map((item) => {
             const expanded = payingId === item.id;
             const today = new Date().toISOString().slice(0, 10);
@@ -395,14 +395,14 @@ export function CreditDetailPage() {
               <div key={item.id} className="py-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm text-slate-200">{formatDate(item.dueDate)}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-sm text-t1">{formatDate(item.dueDate)}</p>
+                    <p className="text-xs text-t3">
                       тело {formatMoney(item.principalPart)} · проценты {formatMoney(item.interestPart)}
                     </p>
                   </div>
 
                   <div className="flex shrink-0 items-center gap-3">
-                    <span className="tabular text-sm font-medium text-slate-100">
+                    <span className="tabular text-sm font-medium text-t1">
                       {formatMoney(item.amount)}
                     </span>
                     {item.status === 'PAID' ? (
@@ -411,7 +411,7 @@ export function CreditDetailPage() {
                       <button
                         type="button"
                         onClick={() => setPayingId(expanded ? null : item.id)}
-                        className="rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-medium text-slate-950 transition hover:bg-sky-400"
+                        className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition hover:bg-primary/90"
                       >
                         {expanded ? 'Отмена' : 'Я оплатил'}
                       </button>
@@ -421,7 +421,7 @@ export function CreditDetailPage() {
 
                 {expanded && (
                   <form
-                    className="mt-3 rounded-xl border border-slate-800 bg-slate-950/50 p-3"
+                    className="mt-3 rounded-control border border-line bg-bg/60 p-3"
                     onSubmit={(e) => {
                       e.preventDefault();
                       const form = e.currentTarget;
@@ -439,36 +439,36 @@ export function CreditDetailPage() {
                       });
                     }}
                   >
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-t2">
                       Фактическая оплата. Оставьте как есть, если заплатили вовремя и всю сумму —
                       тогда тело долга уменьшится на {formatMoney(item.principalPart)}.
                     </p>
                     <div className="mt-2 grid grid-cols-2 gap-2">
                       <label className="block">
-                        <span className="text-[11px] text-slate-500">Сумма, ₽</span>
+                        <span className="text-[11px] text-t3">Сумма, ₽</span>
                         <input
                           name="amount"
                           type="number"
                           step="0.01"
                           min="0"
                           defaultValue={Number(item.amount)}
-                          className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-2 text-sm text-slate-100 outline-none focus:border-sky-500"
+                          className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-2 text-sm text-t1 outline-none focus:border-primary"
                         />
                       </label>
                       <label className="block">
-                        <span className="text-[11px] text-slate-500">Дата платежа</span>
+                        <span className="text-[11px] text-t3">Дата платежа</span>
                         <input
                           name="paidAt"
                           type="date"
                           defaultValue={today}
-                          className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-2 text-sm text-slate-100 outline-none focus:border-sky-500"
+                          className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-2 text-sm text-t1 outline-none focus:border-primary"
                         />
                       </label>
                     </div>
                     <button
                       type="submit"
                       disabled={payMutation.isPending}
-                      className="mt-2 rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-medium text-slate-950 transition hover:bg-sky-400 disabled:opacity-50"
+                      className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition hover:bg-primary/90 disabled:opacity-50"
                     >
                       {payMutation.isPending ? 'Записываю…' : 'Подтвердить оплату'}
                     </button>
@@ -482,15 +482,15 @@ export function CreditDetailPage() {
       )}
 
       {credit.events.length > 0 && (
-        <section className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
-          <h2 className="font-medium text-slate-100">История платежей</h2>
+        <section className="rounded-card border border-line bg-surface p-4">
+          <h2 className="font-medium text-t1">История платежей</h2>
           <div className="mt-3 space-y-2">
             {credit.events.map((event) => (
               <div key={event.id} className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">
+                <span className="text-t2">
                   {formatDate(event.paidAt)} · {EVENT_LABELS[event.kind]}
                 </span>
-                <span className="tabular text-slate-100">{formatMoney(event.amount)}</span>
+                <span className="tabular text-t1">{formatMoney(event.amount)}</span>
               </div>
             ))}
           </div>

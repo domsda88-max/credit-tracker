@@ -70,15 +70,15 @@ export function UpcomingPayments({ credits }: Props) {
         aria-expanded={!collapsed}
         className="flex w-full items-center justify-between gap-3 text-left"
       >
-        <span className="text-sm font-medium uppercase tracking-wide text-slate-500">
+        <span className="text-sm font-medium uppercase tracking-wide text-t3">
           Ближайшие платежи
         </span>
         <span className="flex items-center gap-2">
-          <span className="tabular text-xs text-slate-500">
+          <span className="tabular text-xs text-t3">
             {items.length} · {formatMoney(total)}
           </span>
           <span
-            className={`text-slate-500 transition-transform ${collapsed ? '' : 'rotate-180'}`}
+            className={`text-t3 transition-transform ${collapsed ? '' : 'rotate-180'}`}
             aria-hidden="true"
           >
             ⌄
@@ -87,23 +87,23 @@ export function UpcomingPayments({ credits }: Props) {
       </button>
 
       {!collapsed && (
-        <div className="divide-y divide-white/[0.06] overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+        <div className="divide-y divide-white/[0.06] overflow-hidden rounded-card border border-line bg-surface">
           {items.map((item) => (
             <Link
               key={item.creditId}
               to={`/credits/${item.creditId}`}
-              className="flex items-center justify-between gap-3 px-4 py-3 transition active:bg-slate-800/60"
+              className="flex items-center justify-between gap-3 px-4 py-3 transition active:bg-surface2"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-slate-100">{item.creditName}</p>
-                <p className="text-xs text-slate-500">
+                <p className="truncate text-sm font-medium text-t1">{item.creditName}</p>
+                <p className="text-xs text-t3">
                   {formatDate(item.dueDate)} ·{' '}
-                  <span className={item.overdue ? 'text-rose-400' : 'text-slate-500'}>
+                  <span className={item.overdue ? 'text-danger' : 'text-t3'}>
                     {describeDueDate(item.dueDate)}
                   </span>
                 </p>
               </div>
-              <span className="tabular shrink-0 text-sm font-semibold text-slate-100">
+              <span className="tabular shrink-0 text-sm font-semibold text-t1">
                 {formatMoney(item.amount)}
               </span>
             </Link>

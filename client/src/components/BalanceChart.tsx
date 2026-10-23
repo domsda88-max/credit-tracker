@@ -46,10 +46,10 @@ export function BalanceChart({ schedule, principal, outstanding }: Props) {
   const currentIndex = firstPending === -1 ? points.length - 1 : firstPending + 1;
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+    <div className="rounded-card border border-line bg-surface/80 p-4">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-medium text-slate-100">Динамика долга</h2>
-        <p className="text-xs text-slate-500">
+        <h2 className="font-medium text-t1">Динамика долга</h2>
+        <p className="text-xs text-t3">
           {formatMoneyShort(start)} → 0
         </p>
       </div>
@@ -78,7 +78,7 @@ export function BalanceChart({ schedule, principal, outstanding }: Props) {
         />
       </svg>
 
-      <div className="mt-1 flex justify-between text-xs text-slate-500">
+      <div className="mt-1 flex justify-between text-xs text-t3">
         <span>старт</span>
         <span>сейчас · остаток {formatMoneyShort(current)}</span>
         <span>ноль</span>

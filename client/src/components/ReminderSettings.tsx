@@ -101,18 +101,18 @@ export function ReminderSettings() {
   const dirty = hour !== user.reminderHour || !sameList || timezone !== user.timezone;
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
-      <p className="font-medium text-slate-100">Напоминания</p>
-      <p className="mt-0.5 text-xs text-slate-500">
+    <div className="rounded-card border border-line bg-surface p-4">
+      <p className="font-medium text-t1">Напоминания</p>
+      <p className="mt-0.5 text-xs text-t3">
         Во сколько присылать сводку и за сколько дней предупреждать о платеже
       </p>
 
       <div className="mt-3">
-        <span className="text-xs text-slate-400">Время сводки</span>
+        <span className="text-xs text-t2">Время сводки</span>
         <select
           value={hour}
           onChange={(e) => setHour(Number(e.target.value))}
-          className="mt-1 w-full rounded-xl border border-white/[0.08] bg-slate-900 px-3 py-2.5 text-slate-100 outline-none transition focus:border-sky-500"
+          className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none transition focus:border-primary"
         >
           {HOURS.map((h) => (
             <option key={h} value={h}>
@@ -123,11 +123,11 @@ export function ReminderSettings() {
       </div>
 
       <div className="mt-3">
-        <span className="text-xs text-slate-400">Часовой пояс</span>
+        <span className="text-xs text-t2">Часовой пояс</span>
         <select
           value={timezone}
           onChange={(e) => setTimezone(e.target.value)}
-          className="mt-1 w-full rounded-xl border border-white/[0.08] bg-slate-900 px-3 py-2.5 text-slate-100 outline-none transition focus:border-sky-500"
+          className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none transition focus:border-primary"
         >
           {TIMEZONES.map((tz) => (
             <option key={tz} value={tz}>
@@ -138,7 +138,7 @@ export function ReminderSettings() {
       </div>
 
       <div className="mt-3">
-        <span className="text-xs text-slate-400">Предупреждать заранее (можно несколько)</span>
+        <span className="text-xs text-t2">Предупреждать заранее (можно несколько)</span>
         <div className="mt-1.5 flex flex-wrap gap-2">
           {LEAD_OPTIONS.map((opt) => {
             const active = leadDaysList.includes(opt.value);
@@ -147,10 +147,10 @@ export function ReminderSettings() {
                 key={opt.value}
                 type="button"
                 onClick={() => toggleDay(opt.value)}
-                className={`rounded-xl border px-3 py-1.5 text-xs transition ${
+                className={`rounded-control border px-3 py-1.5 text-xs transition ${
                   active
-                    ? 'border-sky-500 bg-sky-500/15 text-sky-300'
-                    : 'border-white/[0.08] bg-slate-900 text-slate-400 hover:border-slate-600'
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-line bg-surface text-t2 hover:border-t3'
                 }`}
               >
                 {active ? '✓ ' : ''}
@@ -159,7 +159,7 @@ export function ReminderSettings() {
             );
           })}
         </div>
-        <p className="mt-1.5 text-[11px] text-slate-500">
+        <p className="mt-1.5 text-[11px] text-t3">
           Каждый выбранный день — отдельное уведомление. Например: за 3, за 2, за 1 день и в сам
           день платежа.
         </p>
@@ -170,14 +170,14 @@ export function ReminderSettings() {
           type="button"
           onClick={save}
           disabled={saving || !dirty}
-          className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-sky-400 disabled:opacity-50"
+          className="rounded-control bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary/90 disabled:opacity-50"
         >
           {saving ? 'Сохраняю…' : 'Сохранить'}
         </button>
       </div>
 
-      {error && <p className="mt-2 text-xs text-rose-400">{error}</p>}
-      <p className="mt-2 text-xs text-slate-500">
+      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+      <p className="mt-2 text-xs text-t3">
         Работает без открытого приложения: уведомление приходит, даже если телефон заблокирован
         (нужно разрешить уведомления и включить push выше).
       </p>

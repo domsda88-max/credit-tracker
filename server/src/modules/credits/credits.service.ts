@@ -189,6 +189,7 @@ export const creditsService = {
     let totalPaidSum = 0;
     let scheduledTotal = 0; // сколько всего ещё и уже запланировано по графику
     let lastDueDate: Date | null = null;
+    let monthlyPayments = 0; // ближайшие обязательные платежи по всем активным долгам
 
     for (const c of active) {
       principalSum += toNumber(c.principal);
@@ -201,7 +202,23 @@ export const creditsService = {
           lastDueDate = item.dueDate;
         }
       }
+
+      // Ежемесячная нагрузка: ближайший платёж из графика. У карт в цикле
+      // заморозки платежа нет — но есть обязательная сумма обновления
+      // беспроцентного периода, именно она и ложится на бюджет.
+      const next = c.schedule.find((s) => s.status === 'PENDING');
+      if (next) {
+        monthlyPayments += toNumber(next.amount);
+      } else if (c.frozen && c.graceReplenishSum) {
+        monthlyPayments += toNumber(c.graceReplenishSum);
+      }
     }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { monthlyIncome: true },
+    });
+    const monthlyIncome = user?.monthlyIncome ? toNumber(user.monthlyIncome) : null;
 
     // Переплата: сколько процентов сверх тела уйдёт банку, если платить строго по графику.
     const overpay = scheduledTotal - principalSum;
@@ -261,6 +278,10 @@ export const creditsService = {
       debtFreeDate: lastDueDate ? lastDueDate.toISOString() : null,
       paidLast12Months: round2(toNumber(yearAgg._sum.amount ?? 0)),
       paymentsLast12Months: yearAgg._count,
+      monthlyPayments: round2(monthlyPayments),
+      monthlyIncome: monthlyIncome === null ? null : round2(monthlyIncome),
+      freeMoney:
+        monthlyIncome === null ? null : round2(monthlyIncome - monthlyPayments),
       accelerator,
     };
   },

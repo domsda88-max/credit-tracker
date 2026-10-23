@@ -1,33 +1,59 @@
-import { useState } from 'react';
+import {
+  Banknote,
+  CheckCircle2,
+  CreditCard,
+  HandCoins,
+  House,
+  MoreVertical,
+  Pencil,
+  Receipt,
+  Snowflake,
+  Trash2,
+  TrendingDown,
+  Zap,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import type { CreditListItem } from '../types';
+import type { CreditListItem, CreditType } from '../types';
 import {
   CREDIT_TYPE_LABELS,
-  describeDueDate,
+  daysUntil,
   debtPaidPercent,
-  formatDate,
+  describeDueDate,
+  formatDateShort,
+  formatMoney,
   formatMoneyShort,
+  urgencyTone,
 } from '../utils/format';
 import { BottomSheet } from './BottomSheet';
 import { useToast } from './Toast';
 import { creditsApi } from '../api/credits';
 import { extractErrorMessage } from '../api/client';
 
-function getIcon(type: CreditListItem['type']) {
-  if (type === 'CREDIT_CARD') return '💳';
-  if (type === 'LOAN') return '🤝';
-  if (type === 'MORTGAGE') return '🏠';
-  if (type === 'INSTALLMENT') return '🧾';
-  if (type === 'MICROLOAN') return '⚡';
-  return '💸';
-}
+const TYPE_ICON: Record<CreditType, typeof CreditCard> = {
+  CREDIT_CARD: CreditCard,
+  LOAN: HandCoins,
+  MORTGAGE: House,
+  INSTALLMENT: Receipt,
+  MICROLOAN: Zap,
+  CONSUMER: Banknote,
+};
+
+/** Акцент срочности для плашки ближайшего платежа. */
+const TONE = {
+  danger: { border: 'border-l-danger', text: 'text-danger', dot: 'bg-danger' },
+  warning: { border: 'border-l-warning', text: 'text-warning', dot: 'bg-warning' },
+  muted: { border: 'border-l-line', text: 'text-t2', dot: 'bg-t3' },
+} as const;
 
 interface Props {
   credit: CreditListItem;
+  /** Задержка stagger-анимации появления, мс. */
+  index?: number;
 }
 
-export function CreditRow({ credit }: Props) {
+export function CreditRow({ credit, index = 0 }: Props) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -36,6 +62,14 @@ export function CreditRow({ credit }: Props) {
   const percent = debtPaidPercent(credit.principal, credit.outstanding);
   const isClosed = credit.status === 'CLOSED';
   const next = credit.nextPayment;
+  const Icon = TYPE_ICON[credit.type] ?? Banknote;
+
+  // Анимация заполнения прогресс-бара при появлении (0 → значение, 600ms).
+  const [barWidth, setBarWidth] = useState(0);
+  useEffect(() => {
+    const t = window.setTimeout(() => setBarWidth(percent), 40);
+    return () => window.clearTimeout(t);
+  }, [percent]);
 
   const toggleFreeze = async () => {
     try {
@@ -79,78 +113,98 @@ export function CreditRow({ credit }: Props) {
   const freezeCycle = credit.frozen && credit.type === 'CREDIT_CARD';
   const cycleDay = credit.graceReplenishDay ?? credit.paymentDay;
   const cycleSum = credit.graceReplenishSum ? Number(credit.graceReplenishSum) : null;
+  const tone = next ? TONE[urgencyTone(daysUntil(next.dueDate))] : TONE.muted;
 
   return (
     <>
-      <div className="relative rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-        <Link
-          to={`/credits/${credit.id}`}
-          className="block p-4 pr-12 transition active:scale-[0.99] hover:border-sky-500/40"
-        >
+      <div
+        className="animate-fade-up card tap relative"
+        style={{ animationDelay: `${Math.min(index, 12) * 60}ms` }}
+      >
+        <Link to={`/credits/${credit.id}`} className="block p-4 pr-12">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-lg">
-                {getIcon(credit.type)}
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-primary/12 text-primary">
+                <Icon size={20} />
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="truncate font-semibold text-slate-100">{credit.name}</h3>
-                  {credit.frozen && <span title="Цикл заморозки">🧊</span>}
-                  {isClosed && <span title="Кредит закрыт">✅</span>}
+                <div className="flex items-center gap-1.5">
+                  <h3 className="truncate text-body font-semibold text-t1">{credit.name}</h3>
+                  {credit.frozen && (
+                    <Snowflake size={15} className="shrink-0 text-primary" aria-label="В заморозке" />
+                  )}
+                  {isClosed && (
+                    <CheckCircle2
+                      size={15}
+                      className="shrink-0 text-success"
+                      aria-label="Закрыт"
+                    />
+                  )}
                 </div>
-                <p className="mt-0.5 text-xs text-slate-500">
+                <p className="mt-0.5 truncate text-caption text-t3">
                   {CREDIT_TYPE_LABELS[credit.type]} · {Number(credit.annualRate)}% годовых
                 </p>
               </div>
             </div>
 
-            <div className="text-right">
-              <p className="tabular text-lg font-semibold text-slate-100">
+            <div className="shrink-0 text-right">
+              <p className="tabular text-heading font-bold text-t1">
                 {formatMoneyShort(credit.outstanding)}
               </p>
-              <p className="text-xs text-slate-500">остаток</p>
+              <p className="text-micro text-t3">остаток</p>
             </div>
           </div>
 
-          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-800/80">
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface2">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-sky-400 to-emerald-400"
-              style={{ width: `${percent}%` }}
+              className={`h-full rounded-full transition-[width] duration-[600ms] ease-app ${
+                isClosed
+                  ? 'bg-success'
+                  : 'bg-gradient-to-r from-primary to-success'
+              }`}
+              style={{ width: `${barWidth}%` }}
             />
           </div>
 
           {next && !isClosed && !freezeCycle && (
-            <div className="mt-3 flex items-center justify-between rounded-xl bg-slate-950/40 px-3 py-2 text-sm">
-              <span className="text-slate-400">Ближайший платёж</span>
+            <div
+              className={`card-inner mt-3 flex items-center justify-between border-l-[3px] py-2 pl-2.5 pr-3 text-base ${tone.border}`}
+            >
+              <span className="flex items-center gap-2 text-t2">
+                <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
+                Ближайший платёж
+              </span>
               <span className="text-right">
-                <span className="tabular font-medium text-slate-100">{formatMoneyShort(next.amount)}</span>
-                <span className="ml-2 text-xs text-slate-500">
-                  {formatDate(next.dueDate)} · {describeDueDate(next.dueDate)}
+                <span className="tabular font-semibold text-t1">{formatMoneyShort(next.amount)}</span>
+                <span className={`ml-2 text-caption ${tone.text}`}>
+                  {formatDateShort(next.dueDate)} · {describeDueDate(next.dueDate)}
                 </span>
               </span>
             </div>
           )}
 
           {freezeCycle && !isClosed && (
-            <div className="mt-3 flex items-center justify-between rounded-xl bg-sky-500/[0.07] px-3 py-2 text-sm">
-              <span className="text-slate-400">
-                🧊 Обновить период{cycleDay ? ` до ${cycleDay}-го` : ''}
+            <div className="card-inner mt-3 flex items-center justify-between py-2 pl-2.5 pr-3 text-base">
+              <span className="flex items-center gap-2 text-t2">
+                <Snowflake size={15} className="text-primary" />
+                Обновить период{cycleDay ? ` до ${cycleDay}-го` : ''}
               </span>
               <span className="text-right">
                 {cycleSum !== null ? (
-                  <span className="tabular font-medium text-sky-200">{formatMoneyShort(cycleSum)}</span>
+                  <span className="tabular font-semibold text-t2">{formatMoneyShort(cycleSum)}</span>
                 ) : (
-                  <span className="text-xs text-slate-500">сумма не задана</span>
+                  <span className="text-caption text-t3">сумма не задана</span>
                 )}
                 {credit.nextFreezeCheckAt && (
-                  <span className="ml-2 text-xs text-slate-500">
-                    до {formatDate(credit.nextFreezeCheckAt)}
+                  <span className="ml-2 text-caption text-t3">
+                    до {formatDateShort(credit.nextFreezeCheckAt)}
                   </span>
                 )}
               </span>
             </div>
           )}
         </Link>
+
         <button
           type="button"
           onClick={(e) => {
@@ -158,10 +212,10 @@ export function CreditRow({ credit }: Props) {
             e.stopPropagation();
             setOpen(true);
           }}
-          className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full text-xl text-slate-400 transition active:bg-slate-800/60"
+          className="absolute right-1.5 top-1.5 flex h-10 w-10 items-center justify-center rounded-full text-t3 transition-colors active:bg-surface2"
           aria-label="Меню действий"
         >
-          ⋮
+          <MoreVertical size={20} />
         </button>
       </div>
 
@@ -173,26 +227,26 @@ export function CreditRow({ credit }: Props) {
               setOpen(false);
               navigate(`/credits/${credit.id}`);
             }}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-slate-200 transition active:bg-slate-800/60"
+            className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-t1 transition-colors active:bg-surface2"
           >
-            <span>✏️</span>
+            <Pencil size={18} className="text-t2" />
             <span>Редактировать</span>
           </button>
           <button
             type="button"
             onClick={toggleFreeze}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-slate-200 transition active:bg-slate-800/60"
+            className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-t1 transition-colors active:bg-surface2"
           >
-            <span>❄️</span>
+            <Snowflake size={18} className="text-primary" />
             <span>{credit.frozen ? 'Разморозить' : 'Заморозить'}</span>
           </button>
           {freezeCycle && (
             <button
               type="button"
               onClick={renewCycle}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sky-200 transition active:bg-sky-500/10"
+              className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-primary transition-colors active:bg-primary/10"
             >
-              <span>✅</span>
+              <CheckCircle2 size={18} />
               <span>Я обновил период (внёс сумму)</span>
             </button>
           )}
@@ -203,21 +257,21 @@ export function CreditRow({ credit }: Props) {
                 setOpen(false);
                 navigate(`/credits/${credit.id}`);
               }}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-slate-200 transition active:bg-slate-800/60"
+              className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-t1 transition-colors active:bg-surface2"
             >
-              <span>💸</span>
+              <TrendingDown size={18} className="text-success" />
               <span>Досрочное погашение</span>
             </button>
           )}
           <button
             type="button"
             onClick={remove}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-rose-300 transition active:bg-rose-500/10"
+            className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-danger transition-colors active:bg-danger/10"
           >
-            <span>🗑️</span>
+            <Trash2 size={18} />
             <span>Удалить</span>
           </button>
-          {error && <p className="px-3 pt-1 text-xs text-rose-400">{error}</p>}
+          {error && <p className="px-3 pt-1 text-caption text-danger">{error}</p>}
         </div>
       </BottomSheet>
     </>

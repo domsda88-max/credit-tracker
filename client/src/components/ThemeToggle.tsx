@@ -1,9 +1,10 @@
+import { Monitor, Moon, Sun } from 'lucide-react';
 import { useThemeStore } from '../store/theme';
 
 const LABELS = {
-  system: { icon: '🌗', text: 'Как в телефоне' },
-  light: { icon: '☀️', text: 'Светлая' },
-  dark: { icon: '🌙', text: 'Тёмная' },
+  system: { Icon: Monitor, text: 'Как в телефоне' },
+  light: { Icon: Sun, text: 'Светлая' },
+  dark: { Icon: Moon, text: 'Тёмная' },
 } as const;
 
 /**
@@ -13,18 +14,17 @@ const LABELS = {
 export function ThemeToggle() {
   const mode = useThemeStore((s) => s.mode);
   const cycle = useThemeStore((s) => s.cycle);
-
-  const label = LABELS[mode];
+  const { Icon, text } = LABELS[mode];
 
   return (
     <button
       type="button"
       onClick={cycle}
-      title={`Тема: ${label.text}. Нажмите, чтобы переключить.`}
-      aria-label={`Тема: ${label.text}`}
-      className="shrink-0 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-400 transition active:bg-slate-800/60"
+      title={`Тема: ${text}. Нажмите, чтобы переключить.`}
+      aria-label={`Тема: ${text}`}
+      className="shrink-0 rounded-control p-2 text-t2 transition-colors hover:text-t1 active:bg-surface2"
     >
-      <span className="text-base leading-none">{label.icon}</span>
+      <Icon size={20} className="transition-transform duration-300 ease-app" />
     </button>
   );
 }

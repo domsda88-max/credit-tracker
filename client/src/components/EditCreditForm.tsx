@@ -31,7 +31,7 @@ const schema = z.object({
 type FormValues = z.input<typeof schema>;
 
 const inputClass =
-  'mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-slate-100 outline-none transition focus:border-sky-500';
+  'mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none transition focus:border-primary';
 
 /** Дату из ISO переводим в формат <input type="date">. */
 const toDateInput = (iso: string) => new Date(iso).toISOString().slice(0, 10);
@@ -88,9 +88,9 @@ export function EditCreditForm({
   });
 
   return (
-    <section className="rounded-2xl border border-sky-500/30 bg-sky-500/5 p-4">
-      <h2 className="font-medium text-slate-100">Изменить кредит</h2>
-      <p className="mt-0.5 text-xs text-slate-500">
+    <section className="rounded-card border border-primary/30 bg-primary/5 p-4">
+      <h2 className="font-medium text-t1">Изменить кредит</h2>
+      <p className="mt-0.5 text-xs text-t3">
         Если меняются сумма, ставка, дата или срок — график пересчитается заново
       </p>
 
@@ -99,48 +99,48 @@ export function EditCreditForm({
         className="mt-4 space-y-4"
       >
         <label className="block">
-          <span className="text-sm text-slate-400">Название</span>
+          <span className="text-sm text-t2">Название</span>
           <input {...register('name')} className={inputClass} />
-          {errors.name && <p className="mt-1 text-xs text-rose-400">{errors.name.message}</p>}
+          {errors.name && <p className="mt-1 text-xs text-danger">{errors.name.message}</p>}
         </label>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="text-sm text-slate-400">Сумма долга, ₽</span>
+            <span className="text-sm text-t2">Сумма долга, ₽</span>
             <input type="number" step="0.01" inputMode="decimal" {...register('principal')} className={inputClass} />
             {errors.principal && (
-              <p className="mt-1 text-xs text-rose-400">{errors.principal.message}</p>
+              <p className="mt-1 text-xs text-danger">{errors.principal.message}</p>
             )}
           </label>
 
           <label className="block">
-            <span className="text-sm text-slate-400">Ставка, % годовых</span>
+            <span className="text-sm text-t2">Ставка, % годовых</span>
             <input type="number" step="0.01" inputMode="decimal" {...register('annualRate')} className={inputClass} />
             {errors.annualRate && (
-              <p className="mt-1 text-xs text-rose-400">{errors.annualRate.message}</p>
+              <p className="mt-1 text-xs text-danger">{errors.annualRate.message}</p>
             )}
           </label>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <label className="block">
-            <span className="text-sm text-slate-400">Дата выдачи</span>
+            <span className="text-sm text-t2">Дата выдачи</span>
             <input type="date" {...register('startDate')} className={inputClass} />
             {errors.startDate && (
-              <p className="mt-1 text-xs text-rose-400">{errors.startDate.message}</p>
+              <p className="mt-1 text-xs text-danger">{errors.startDate.message}</p>
             )}
           </label>
 
           <label className="block">
-            <span className="text-sm text-slate-400">Срок, месяцев</span>
+            <span className="text-sm text-t2">Срок, месяцев</span>
             <input type="number" inputMode="numeric" {...register('termMonths')} className={inputClass} />
             {errors.termMonths && (
-              <p className="mt-1 text-xs text-rose-400">{errors.termMonths.message}</p>
+              <p className="mt-1 text-xs text-danger">{errors.termMonths.message}</p>
             )}
           </label>
 
           <label className="block">
-            <span className="text-sm text-slate-400">День платежа</span>
+            <span className="text-sm text-t2">День платежа</span>
             <input
               type="number"
               min={1}
@@ -151,14 +151,14 @@ export function EditCreditForm({
               className={inputClass}
             />
             {errors.paymentDay && (
-              <p className="mt-1 text-xs text-rose-400">{errors.paymentDay.message}</p>
+              <p className="mt-1 text-xs text-danger">{errors.paymentDay.message}</p>
             )}
           </label>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="text-sm text-slate-400">Режим досрочного погашения</span>
+            <span className="text-sm text-t2">Режим досрочного погашения</span>
             <select {...register('prepaymentMode')} className={inputClass}>
               <option value="REDUCE_PAYMENT">Уменьшать платёж</option>
               <option value="REDUCE_TERM">Сокращать срок</option>
@@ -166,8 +166,8 @@ export function EditCreditForm({
           </label>
 
           <label className="block">
-            <span className="text-sm text-slate-400">
-              Остаток долга сейчас, ₽ <span className="text-xs text-slate-500">необязательно</span>
+            <span className="text-sm text-t2">
+              Остаток долга сейчас, ₽ <span className="text-xs text-t3">необязательно</span>
             </span>
             <input
               type="number"
@@ -177,29 +177,29 @@ export function EditCreditForm({
               {...register('outstanding')}
               className={inputClass}
             />
-            <span className="mt-1 block text-xs text-slate-500">
+            <span className="mt-1 block text-xs text-t3">
               Оставьте пустым — рассчитаю сам. Заполните, чтобы точно совпадало с приложением банка.
             </span>
             {errors.outstanding && (
-              <p className="mt-1 text-xs text-rose-400">{errors.outstanding.message}</p>
+              <p className="mt-1 text-xs text-danger">{errors.outstanding.message}</p>
             )}
           </label>
         </div>
 
-        {error && <p className="text-sm text-rose-400">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
 
         <div className="flex gap-3">
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="rounded-xl bg-sky-500 px-4 py-2.5 font-medium text-slate-950 transition hover:bg-sky-400 disabled:opacity-50"
+            className="rounded-control bg-primary px-4 py-2.5 font-medium text-white transition hover:bg-primary/90 disabled:opacity-50"
           >
             {mutation.isPending ? 'Сохраняю…' : 'Сохранить изменения'}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-slate-700 px-4 py-2.5 text-slate-300 transition hover:border-slate-500"
+            className="rounded-control border border-line px-4 py-2.5 text-t2 transition hover:border-slate-500"
           >
             Отмена
           </button>

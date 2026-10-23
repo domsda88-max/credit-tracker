@@ -38,11 +38,11 @@ export function MotivationSettings() {
   };
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+    <div className="rounded-card border border-line bg-surface p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="font-medium text-slate-100">Ежедневная мотивация</p>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p className="font-medium text-t1">Ежедневная мотивация</p>
+          <p className="mt-0.5 text-xs text-t3">
             Каждый день в 9:30 — короткое напоминание про досрочное погашение
           </p>
         </div>
@@ -54,7 +54,7 @@ export function MotivationSettings() {
           onClick={() => void toggle()}
           disabled={saving}
           className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:opacity-50 ${
-            enabled ? 'bg-sky-500' : 'bg-slate-700'
+            enabled ? 'bg-primary' : 'bg-surface2'
           }`}
           aria-label="Включить ежедневную мотивацию"
         >
@@ -67,13 +67,13 @@ export function MotivationSettings() {
       </div>
 
       {enabled && (
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-t3">
           Тексты подстраиваются под твои кредиты: самый дорогой долг, карты в заморозке,
           ипотека, сумма и дата свободы. Всего 30 сценариев, потом цикл повторяется.
-          Сейчас день <span className="text-slate-300">{user.motivationDay ?? 1}</span> из 30.
+          Сейчас день <span className="text-t2">{user.motivationDay ?? 1}</span> из 30.
         </p>
       )}
-      <p className="mt-2 text-xs text-slate-500">
+      <p className="mt-2 text-xs text-t3">
         Нужны включённые push-уведомления (блок выше).
       </p>
     </div>

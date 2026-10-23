@@ -47,7 +47,7 @@ const schema = z.object({
 type FormValues = z.input<typeof schema>;
 
 const inputClass =
-  'mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-slate-100 outline-none transition focus:border-sky-500';
+  'mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none transition focus:border-primary';
 
 export function AddCreditPage() {
   const navigate = useNavigate();
@@ -107,13 +107,13 @@ export function AddCreditPage() {
   });
 
   return (
-    <div>
-      <h1 className="text-xl font-semibold text-slate-100">Новый кредит</h1>
-      <p className="mt-1 text-sm text-slate-500">
+    <div className="min-w-0 w-full max-w-full space-y-4">
+      <h1 className="text-heading font-bold text-t1">Добавить долг</h1>
+      <p className="mt-1 text-sm text-t3">
         График платежей будет построен автоматически по выбранному типу
       </p>
       {Object.keys(errors).length > 0 && (
-        <p className="mt-3 rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+        <p className="mt-3 rounded-control border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
           Проверьте выделенные поля — форма не отправится, пока они не заполнены верно.
         </p>
       )}
@@ -123,14 +123,14 @@ export function AddCreditPage() {
         className="mt-5 space-y-4"
       >
         <label className="block">
-          <span className="text-sm text-slate-400">Название</span>
+          <span className="text-sm text-t2">Название</span>
           <input placeholder="Например, Альфа-Банк" {...register('name')} className={inputClass} />
-          {errors.name && <p className="mt-1 text-xs text-rose-400">{errors.name.message}</p>}
+          {errors.name && <p className="mt-1 text-xs text-danger">{errors.name.message}</p>}
         </label>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="text-sm text-slate-400">Тип продукта</span>
+            <span className="text-sm text-t2">Тип продукта</span>
             <select {...register('type')} className={inputClass}>
               <option value="CONSUMER">Потребительский кредит</option>
               <option value="CREDIT_CARD">Кредитная карта</option>
@@ -143,7 +143,7 @@ export function AddCreditPage() {
 
           {!isLoan && (
             <label className="block">
-              <span className="text-sm text-slate-400">Тип платежа</span>
+              <span className="text-sm text-t2">Тип платежа</span>
               <select {...register('paymentType')} className={inputClass}>
                 <option value="ANNUITY">Аннуитетный</option>
                 <option value="DIFFERENTIAL">Дифференцированный</option>
@@ -155,44 +155,44 @@ export function AddCreditPage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="text-sm text-slate-400">Сумма долга, ₽</span>
+            <span className="text-sm text-t2">Сумма долга, ₽</span>
             <input type="number" step="0.01" {...register('principal')} className={inputClass} />
             {errors.principal && (
-              <p className="mt-1 text-xs text-rose-400">{errors.principal.message}</p>
+              <p className="mt-1 text-xs text-danger">{errors.principal.message}</p>
             )}
           </label>
 
           <label className="block">
-            <span className="text-sm text-slate-400">Ставка, % годовых</span>
+            <span className="text-sm text-t2">Ставка, % годовых</span>
             <input type="number" step="0.01" {...register('annualRate')} className={inputClass} />
             {errors.annualRate && (
-              <p className="mt-1 text-xs text-rose-400">{errors.annualRate.message}</p>
+              <p className="mt-1 text-xs text-danger">{errors.annualRate.message}</p>
             )}
           </label>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <label className="block">
-            <span className="text-sm text-slate-400">Дата выдачи</span>
+            <span className="text-sm text-t2">Дата выдачи</span>
             <input type="date" {...register('startDate')} className={inputClass} />
             {errors.startDate && (
-              <p className="mt-1 text-xs text-rose-400">{errors.startDate.message}</p>
+              <p className="mt-1 text-xs text-danger">{errors.startDate.message}</p>
             )}
           </label>
 
           {!isLoan && (
             <label className="block">
-              <span className="text-sm text-slate-400">Срок, месяцев</span>
+              <span className="text-sm text-t2">Срок, месяцев</span>
               <input type="number" {...register('termMonths')} className={inputClass} />
               {errors.termMonths && (
-                <p className="mt-1 text-xs text-rose-400">{errors.termMonths.message}</p>
+                <p className="mt-1 text-xs text-danger">{errors.termMonths.message}</p>
               )}
             </label>
           )}
 
           {!isLoan && (
             <label className="block">
-              <span className="text-sm text-slate-400">День платежа</span>
+              <span className="text-sm text-t2">День платежа</span>
               <input
                 type="number"
                 min={1}
@@ -203,24 +203,24 @@ export function AddCreditPage() {
                 className={inputClass}
               />
               {errors.paymentDay && (
-                <p className="mt-1 text-xs text-rose-400">{errors.paymentDay.message}</p>
+                <p className="mt-1 text-xs text-danger">{errors.paymentDay.message}</p>
               )}
             </label>
           )}
         </div>
 
         {isCard && !isLoan && (
-          <fieldset className="space-y-4 rounded-2xl border border-sky-500/30 bg-sky-500/5 p-4">
-            <legend className="px-1 text-sm font-medium text-sky-300">Льготный период карты</legend>
+          <fieldset className="space-y-4 rounded-card border border-primary/30 bg-primary/5 p-4">
+            <legend className="px-1 text-sm font-medium text-primary">Льготный период карты</legend>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
-                <span className="text-sm text-slate-400">Мин. платёж, ₽</span>
+                <span className="text-sm text-t2">Мин. платёж, ₽</span>
                 <input type="number" step="0.01" {...register('minPayment')} className={inputClass} />
               </label>
 
               <label className="block">
-                <span className="text-sm text-slate-400">Сумма для продления, ₽</span>
+                <span className="text-sm text-t2">Сумма для продления, ₽</span>
                 <input
                   type="number"
                   step="0.01"
@@ -231,7 +231,7 @@ export function AddCreditPage() {
               </label>
 
               <label className="block">
-                <span className="text-sm text-slate-400">День пополнения</span>
+                <span className="text-sm text-t2">День пополнения</span>
                 <input
                   type="number"
                   min={1}
@@ -243,7 +243,7 @@ export function AddCreditPage() {
             </div>
 
             <label className="block">
-              <span className="text-sm text-slate-400">Льготный период до</span>
+              <span className="text-sm text-t2">Льготный период до</span>
               <input type="date" {...register('gracePeriodEnds')} className={inputClass} />
             </label>
           </fieldset>
@@ -251,7 +251,7 @@ export function AddCreditPage() {
 
         {!isLoan && (
           <label className="block">
-            <span className="text-sm text-slate-400">Режим досрочного погашения</span>
+            <span className="text-sm text-t2">Режим досрочного погашения</span>
             <select {...register('prepaymentMode')} className={inputClass}>
               <option value="REDUCE_PAYMENT">Уменьшать платёж</option>
               <option value="REDUCE_TERM">Сокращать срок</option>
@@ -260,16 +260,16 @@ export function AddCreditPage() {
         )}
 
         {!isLoan && (
-          <div className="space-y-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4">
-            <label className="flex items-start gap-2 text-sm text-slate-300">
+          <div className="space-y-3 rounded-card border border-success/30 bg-success/5 p-4">
+            <label className="flex items-start gap-2 text-sm text-t2">
               <input
                 type="checkbox"
                 {...register('markPastAsPaid')}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-500"
+                className="mt-0.5 h-4 w-4 shrink-0 accent-success"
               />
               <span>
                 Кредит оформлен раньше — платежи, срок которых уже прошёл, считать внесёнными
-                <span className="mt-0.5 block text-xs text-slate-500">
+                <span className="mt-0.5 block text-xs text-t3">
                   {startInPast
                     ? 'Дата выдачи в прошлом: график будет построен целиком, прошедшие платежи отметятся оплаченными, а остаток долга уменьшится на их «тело».'
                     : 'Укажите прошедшую дату выдачи, чтобы это сработало.'}
@@ -279,8 +279,8 @@ export function AddCreditPage() {
 
             {markPast && (
               <label className="block">
-                <span className="text-sm text-slate-400">
-                  Остаток долга сейчас, ₽ <span className="text-xs text-slate-500">необязательно</span>
+                <span className="text-sm text-t2">
+                  Остаток долга сейчас, ₽ <span className="text-xs text-t3">необязательно</span>
                 </span>
                 <input
                   type="number"
@@ -290,11 +290,11 @@ export function AddCreditPage() {
                   {...register('outstanding')}
                   className={inputClass}
                 />
-                <span className="mt-1 block text-xs text-slate-500">
+                <span className="mt-1 block text-xs text-t3">
                   Если знаете точный остаток из приложения банка — введите его, и он заменит расчёт.
                 </span>
                 {errors.outstanding && (
-                  <p className="mt-1 text-xs text-rose-400">{errors.outstanding.message}</p>
+                  <p className="mt-1 text-xs text-danger">{errors.outstanding.message}</p>
                 )}
               </label>
             )}
@@ -303,20 +303,20 @@ export function AddCreditPage() {
 
         {/* Заморозка убрана */}
 
-        {error && <p className="text-sm text-rose-400">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
 
         <div className="flex gap-3">
           <button
             type="submit"
             disabled={isSubmitting || mutation.isPending}
-            className="rounded-xl bg-sky-500 px-4 py-2.5 font-medium text-slate-950 transition hover:bg-sky-400 disabled:opacity-50"
+            className="rounded-control bg-primary px-4 py-2.5 font-medium text-white transition hover:bg-primary/90 disabled:opacity-50"
           >
             {mutation.isPending ? 'Сохраняю…' : isLoan ? 'Сохранить' : 'Сохранить и построить график'}
           </button>
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="rounded-xl border border-slate-700 px-4 py-2.5 text-slate-300 transition hover:border-slate-500"
+            className="rounded-control border border-line px-4 py-2.5 text-t2 transition hover:border-slate-500"
           >
             Отмена
           </button>

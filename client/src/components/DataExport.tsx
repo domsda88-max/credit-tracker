@@ -70,9 +70,9 @@ export function DataExport() {
   };
 
   return (
-    <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-      <h2 className="font-medium text-slate-100">Экспорт данных</h2>
-      <p className="mt-0.5 text-xs text-slate-500">
+    <section className="rounded-card border border-line bg-surface/80 p-4">
+      <h2 className="font-medium text-t1">Экспорт данных</h2>
+      <p className="mt-0.5 text-xs text-t3">
         Сохраните копию на устройство. JSON — полный бэкап, CSV — график для Excel.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -80,7 +80,7 @@ export function DataExport() {
           type="button"
           onClick={exportCsv}
           disabled={busy}
-          className="rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-sky-500/50 disabled:opacity-50"
+          className="rounded-control border border-line px-3 py-2 text-sm text-t2 transition hover:border-primary/50 disabled:opacity-50"
         >
           📄 Скачать CSV
         </button>
@@ -88,12 +88,12 @@ export function DataExport() {
           type="button"
           onClick={exportJson}
           disabled={busy}
-          className="rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-sky-500/50 disabled:opacity-50"
+          className="rounded-control border border-line px-3 py-2 text-sm text-t2 transition hover:border-primary/50 disabled:opacity-50"
         >
           💾 Скачать JSON (бэкап)
         </button>
       </div>
-      {error && <p className="mt-2 text-xs text-rose-400">{error}</p>}
+      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
     </section>
   );
 }

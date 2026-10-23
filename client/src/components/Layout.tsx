@@ -1,12 +1,13 @@
+import { Home, Plus, Settings } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth';
 import { ThemeToggle } from './ThemeToggle';
 
-const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  [
-    'flex flex-col items-center gap-0.5 rounded-xl px-4 py-1 text-xs font-medium transition',
-    isActive ? 'text-sky-300' : 'text-slate-500 active:text-slate-300',
-  ].join(' ');
+const NAV = [
+  { to: '/', label: 'Главная', icon: Home, end: true },
+  { to: '/credits/new', label: 'Добавить', icon: Plus, end: false },
+  { to: '/settings', label: 'Настройки', icon: Settings, end: false },
+] as const;
 
 export function Layout() {
   const navigate = useNavigate();
@@ -22,30 +23,30 @@ export function Layout() {
     // h-full + overflow-hidden: экран не двигается, скроллится только <main>
     <div className="mx-auto flex h-full w-full max-w-3xl flex-col overflow-hidden px-4 sm:px-6">
       <header className="flex shrink-0 items-center justify-between gap-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <div className="flex min-w-0 items-center gap-2">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-lg font-bold text-sky-400">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary/15 text-heading font-bold text-primary">
             ₽
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-slate-100">Credit Tracker</p>
-            <p className="truncate text-xs text-slate-500">{user?.email}</p>
+            <p className="truncate text-body font-semibold text-t1">Credit Tracker</p>
+            <p className="truncate text-caption text-t3">{user?.email}</p>
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-0.5">
           <ThemeToggle />
           <button
             type="button"
             onClick={() => navigate('/settings')}
-            className="shrink-0 rounded-lg px-2 py-1.5 text-base text-slate-400 transition active:bg-slate-800/60"
-            title="Настройки"
+            className="shrink-0 rounded-control p-2 text-t2 transition-colors hover:text-t1 active:bg-surface2"
+            aria-label="Настройки"
           >
-            ⚙️
+            <Settings size={20} />
           </button>
           <button
             type="button"
             onClick={handleLogout}
-            className="shrink-0 rounded-lg px-2 py-1.5 text-sm text-slate-400 transition active:bg-slate-800/60"
+            className="shrink-0 rounded-control px-2 py-2 text-caption font-medium text-t3 transition-colors hover:text-t2 active:bg-surface2"
           >
             Выйти
           </button>
@@ -57,19 +58,32 @@ export function Layout() {
         <Outlet />
       </main>
 
-      <nav className="flex shrink-0 items-center justify-around border-t border-white/[0.06] pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1.5">
-        <NavLink to="/" end className={navLinkClass}>
-          <span className="text-base leading-none">🏠</span>
-          Главная
-        </NavLink>
-        <NavLink to="/credits/new" className={navLinkClass}>
-          <span className="text-base leading-none">＋</span>
-          Добавить
-        </NavLink>
-        <NavLink to="/settings" className={navLinkClass}>
-          <span className="text-base leading-none">⚙️</span>
-          Настройки
-        </NavLink>
+      <nav className="flex shrink-0 items-stretch justify-around border-t border-line pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1.5">
+        {NAV.map(({ to, label, icon: Icon, end }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            className={({ isActive }) =>
+              [
+                'flex flex-1 flex-col items-center gap-1 rounded-control px-2 py-1 text-micro font-medium transition-colors duration-200',
+                isActive ? 'text-primary' : 'text-t3',
+              ].join(' ')
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <Icon
+                  size={24}
+                  strokeWidth={isActive ? 2.4 : 2}
+                  className="transition-transform duration-200 ease-app"
+                  style={{ transform: isActive ? 'scale(1.08)' : 'scale(1)' }}
+                />
+                {label}
+              </>
+            )}
+          </NavLink>
+        ))}
       </nav>
     </div>
   );

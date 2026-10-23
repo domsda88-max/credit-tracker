@@ -1,9 +1,13 @@
 import type { CreditType, InstallmentStatus, PaymentType } from '../types';
 
-/** 12345.6 → «12 345,60 ₽» */
+/** Копейки показываем только когда они есть: 7 965,65 ₽ но 40 000 ₽ */
 export function formatMoney(value: string | number | null | undefined): string {
   const num = Number(value ?? 0);
-  return `${num.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₽`;
+  const hasCents = Math.round(Math.abs(num) * 100) % 100 !== 0;
+  return `${num.toLocaleString('ru-RU', {
+    minimumFractionDigits: hasCents ? 2 : 0,
+    maximumFractionDigits: hasCents ? 2 : 0,
+  })} ₽`;
 }
 
 /** Компактно: 1 234 567 → «1,23 млн ₽» */
@@ -19,6 +23,20 @@ export function formatDate(value: string | Date | null | undefined): string {
   if (!value) return '—';
   const date = typeof value === 'string' ? new Date(value) : value;
   return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+/** ISO-дата → «26 октября» (для списков). */
+export function formatDateShort(value: string | Date | null | undefined): string {
+  if (!value) return '—';
+  const date = typeof value === 'string' ? new Date(value) : value;
+  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+}
+
+/** Тон срочности платежа: danger ≤3 дн., warning 4–7 дн., иначе нейтрально. */
+export function urgencyTone(days: number): 'danger' | 'warning' | 'muted' {
+  if (days <= 3) return 'danger';
+  if (days <= 7) return 'warning';
+  return 'muted';
 }
 
 /** Сколько дней до даты (отрицательное — просрочка). */
