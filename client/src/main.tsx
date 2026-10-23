@@ -22,6 +22,14 @@ const queryClient = new QueryClient({
   },
 });
 
+// DEBUG: log every query state change
+queryClient.getQueryCache().subscribe((event) => {
+  if (event.type === 'updated' || event.type === 'added' || event.type === 'removed') {
+    const q = event.query;
+    console.log('[RQ]', Date.now(), event.type, JSON.stringify(q.queryKey), 'status=', q.state.status, 'fetchStatus=', q.state.fetchStatus, 'error=', q.state.error?.message);
+  }
+});
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
@@ -40,6 +48,7 @@ createRoot(document.getElementById('root')!).render(
 if ('serviceWorker' in navigator) {
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    console.log('[SW] controllerchange');
     if (reloading) return;
     reloading = true;
     window.location.reload();
@@ -49,9 +58,11 @@ if ('serviceWorker' in navigator) {
     try {
       const registration = await navigator.serviceWorker.getRegistration();
       if (!registration) return;
+      registration.addEventListener('updatefound', () => console.log('[SW] updatefound'));
       await registration.update();
       // Если уже ждёт новая версия — активируем её немедленно.
       if (registration.waiting) {
+        console.log('[SW] waiting -> SKIP_WAITING');
         registration.waiting.postMessage({ type: 'SKIP_WAITING' });
       }
     } catch {
