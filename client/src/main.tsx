@@ -10,6 +10,8 @@ import './index.css';
 // Тема ставится до первого рендера — чтобы не мигало белым/тёмным.
 initTheme();
 
+console.info('build: a798c67');
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
