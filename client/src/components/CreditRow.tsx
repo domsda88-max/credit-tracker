@@ -89,6 +89,9 @@ export function CreditRow({ credit, index = 0 }: Props) {
       setError(extractErrorMessage(err));
       toast.show('Ошибка заморозки');
     },
+    onSuccess: (_data, variables) => {
+      toast.show(variables.newFrozenState ? 'Грейс активен' : 'Грейс слетел');
+    },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['credits'], refetchType: 'none' });
       queryClient.invalidateQueries({ queryKey: ['summary'], refetchType: 'none' });
@@ -257,7 +260,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
             className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-t1 transition-colors active:bg-surface2"
           >
             <Snowflake size={18} className="text-primary" />
-            <span>{credit.frozen ? 'Разморозить' : 'Заморозить'}</span>
+            <span>{credit.frozen ? 'Грейс слетел' : 'Грейс активен'}</span>
           </button>
           {freezeCycle && (
             <button
