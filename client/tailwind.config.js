@@ -74,7 +74,7 @@ export default {
       animation: {
         'fade-up': 'fade-up 350ms cubic-bezier(0.4, 0, 0.2, 1) both',
         'fade-in': 'fade-in 300ms cubic-bezier(0.4, 0, 0.2, 1) both',
-        'sheet-up': 'sheet-up 300ms cubic-bezier(0.16, 1, 0.3, 1) both',
+        'sheet-up': 'sheet-up 150ms cubic-bezier(0.16, 1, 0.3, 1) both',
       },
     },
   },
