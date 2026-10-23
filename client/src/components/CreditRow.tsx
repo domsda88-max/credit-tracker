@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CreditListItem, CreditType } from '../types';
 import {
   CREDIT_TYPE_LABELS,
@@ -71,30 +71,34 @@ export function CreditRow({ credit, index = 0 }: Props) {
     return () => window.clearTimeout(t);
   }, [percent]);
 
-  const toggleFreeze = () => {
-    // 1. вибрация — синхронно
+  const freezeMutation = useMutation({
+    mutationFn: ({ id, newFrozenState }: { id: string; newFrozenState: boolean }) =>
+      creditsApi.toggleFreeze(id, newFrozenState),
+    onMutate: async ({ id, newFrozenState }) => {
+      await queryClient.cancelQueries({ queryKey: ['credits'] });
+      const previousCredits = queryClient.getQueryData(['credits']);
+      queryClient.setQueryData(['credits'], (old: any) =>
+        Array.isArray(old)
+          ? old.map((c: any) => (c.id === id ? { ...c, frozen: newFrozenState } : c))
+          : old,
+      );
+      return { previousCredits };
+    },
+    onError: (err, variables, context: any) => {
+      queryClient.setQueryData(['credits'], context?.previousCredits);
+      setError(extractErrorMessage(err));
+      toast.show('Ошибка заморозки');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['credits'], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['summary'], refetchType: 'none' });
+    },
+  });
+
+  const handleFreezeClick = () => {
     navigator.vibrate?.(25);
-    // 2. закрыть шторку — синхронно
     setOpen(false);
-    // 3. оптимистичное обновление кэша — синхронно
-    queryClient.setQueryData(['credits'], (old: any) =>
-      Array.isArray(old)
-        ? old.map((c: any) => (c.id === credit.id ? { ...c, frozen: !credit.frozen } : c))
-        : old,
-    );
-    // 4. мутация в фоне
-    creditsApi
-      .toggleFreeze(credit.id, !credit.frozen)
-      .then(() => {
-        queryClient.invalidateQueries({ queryKey: ['credits'], refetchType: 'active' });
-        queryClient.invalidateQueries({ queryKey: ['summary'], refetchType: 'active' });
-        toast.show(credit.frozen ? 'Кредит разморожен' : 'Кредит заморожен');
-      })
-      .catch((err) => {
-        queryClient.invalidateQueries({ queryKey: ['credits'], refetchType: 'active' });
-        setError(extractErrorMessage(err));
-        toast.show('Ошибка заморозки');
-      });
+    freezeMutation.mutate({ id: credit.id, newFrozenState: !credit.frozen });
   };
 
   const remove = async () => {
@@ -249,7 +253,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
           </button>
           <button
             type="button"
-            onClick={toggleFreeze}
+            onClick={handleFreezeClick}
             className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-t1 transition-colors active:bg-surface2"
           >
             <Snowflake size={18} className="text-primary" />
