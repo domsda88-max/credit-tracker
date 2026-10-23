@@ -26,9 +26,9 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="absolute inset-0 bg-bg/60 backdrop-blur-sm" onClick={onClose} />
       <div
-        className="relative w-full max-w-3xl rounded-t-3xl border border-line bg-[#0b1020] pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 shadow-2xl"
+        className="relative w-full max-w-3xl rounded-t-card border border-line bg-surface pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 shadow-sheet"
         role="dialog"
         aria-modal="true"
       >

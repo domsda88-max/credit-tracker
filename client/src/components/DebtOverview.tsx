@@ -47,6 +47,10 @@ export function DebtOverview() {
   });
 
   const [extra, setExtra] = useState(10000);
+  const activeDebtsExist = useMemo(() => {
+    if (!credits) return false;
+    return (credits as CreditListItem[]).some((c) => c.status === 'ACTIVE' && Number(c.outstanding) > 0);
+  }, [credits]);
 
   const baselineMonths = useMemo(() => {
     if (!summary?.debtFreeDate) return 0;
@@ -131,25 +135,33 @@ export function DebtOverview() {
         </div>
       )}
 
-      {accelerator && accelerator.savedMonths > 0 && (
-        <div className="mt-3 rounded-control border border-success/20 bg-success/[0.07] px-4 py-3" style={{ minHeight: 120 }}>
+      {activeDebtsExist && (
+        <div className="mt-3 rounded-control border border-success/20 bg-success/[0.07] px-4 py-3" style={{ minHeight: 150, overflowAnchor: 'none' }}>
           <p className="flex items-center gap-1.5 text-micro uppercase tracking-[0.04em] text-success">
             <Zap size={14} />
             Ускорь свободу
           </p>
           <p className="mt-1.5 text-caption leading-relaxed text-t1" style={{ minHeight: 44 }}>
-            Если вносить{' '}
-            <span className="tabular font-semibold text-success">{formatMoney(extra)}</span>
-            {' '}дополнительно каждый месяц в самый дорогой долг (
-            <span className="font-medium text-success">{accelerator.targetName}</span>), ты
-            освободишься{' '}
-            <span className="font-semibold text-success">
-              через {monthsLabel(accelerator.acceleratedMonths)}
-            </span>{' '}
-            вместо {monthsLabel(accelerator.baselineMonths)}
+            {accelerator && accelerator.savedMonths > 0 ? (
+              <>
+                Если вносить{' '}
+                <span className="tabular font-semibold text-success">{formatMoney(extra)}</span>
+                {' '}дополнительно каждый месяц в самый дорогой долг (
+                <span className="font-medium text-success">{accelerator.targetName}</span>), ты
+                освободишься{' '}
+                <span className="font-semibold text-success">
+                  через {monthsLabel(accelerator.acceleratedMonths)}
+                </span>{' '}
+                вместо {monthsLabel(accelerator.baselineMonths)}
+              </>
+            ) : (
+              <>Перетащи слайдер, чтобы увидеть, как дополнительный платёж ускорит погашение.</>
+            )}
           </p>
           <p className="mt-1 text-micro text-success/80" style={{ minHeight: 14 }}>
-            Экономия: {monthsLabel(accelerator.savedMonths)}
+            {accelerator && accelerator.savedMonths > 0
+              ? `Экономия: ${monthsLabel(accelerator.savedMonths)}`
+              : '\u00A0'}
           </p>
 
           <div className="mt-3">
