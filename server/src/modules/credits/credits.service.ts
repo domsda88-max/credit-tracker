@@ -355,12 +355,12 @@ export const creditsService = {
 
     const freezeChanged = dto.frozen !== undefined && dto.frozen !== current.frozen;
     const financialChanged =
-      FINANCIAL_FIELDS.some((field) => dto[field] !== undefined) || dto.outstanding !== undefined || freezeChanged;
+      FINANCIAL_FIELDS.some((field) => dto[field] !== undefined) || dto.outstanding !== undefined;
 
     // Меняются сами условия (сумма/ставка/дата/срок) — тогда график действительно пересобираем.
     // Заморозка меняет эффективную ставку (🧊 = 0%), поэтому тоже требует пересборки.
     const termsChanged =
-      FINANCIAL_FIELDS.some((field) => dto[field] !== undefined) || freezeChanged;
+      FINANCIAL_FIELDS.some((field) => dto[field] !== undefined) || dto.outstanding !== undefined;
 
     // Управление «снежинкой» 🧊
     if (dto.frozen !== undefined) {
