@@ -176,7 +176,7 @@ export const creditsService = {
    * Дата свободы = последний платёж по графику среди активных кредитов.
    * Переплата = сумма всех платежей по графику − первоначальный долг (если бы платили по графику).
    */
-  async summary(userId: string) {
+  async summary(userId: string, extraPerMonth: number = ACCELERATOR_EXTRA) {
     const credits = await prisma.credit.findMany({
       where: { userId },
       include: { schedule: { orderBy: { dueDate: 'asc' } } },
@@ -240,7 +240,7 @@ export const creditsService = {
     const baselineMonths = lastDueDate ? Math.max(0, monthsBetween(utcToday(), lastDueDate)) : 0;
 
     const accelerator = simulateAccelerator({
-      extraPerMonth: ACCELERATOR_EXTRA,
+      extraPerMonth,
       baselineMonths,
       debts: active
         .map((c) => {

@@ -1,4 +1,5 @@
 import { Target, Zap } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { creditsApi } from '../api/credits';
 import { debtPaidPercent, formatDate, formatMoney, formatMoneyShort } from '../utils/format';
@@ -29,14 +30,12 @@ function monthsLabel(months: number): string {
   return parts.join(' ');
 }
 
-/**
- * Общая картина по всем кредитам: прогресс погашения, дата свободы и прогноз
- * ускорения. Данные — с сервера (/credits/summary).
- */
 export function DebtOverview() {
+  const [extra, setExtra] = useState(10000);
   const { data } = useQuery({
-    queryKey: ['summary'],
-    queryFn: () => creditsApi.summary(),
+    queryKey: ['summary', extra],
+    queryFn: () => creditsApi.summary(extra),
+    staleTime: 30_000,
   });
 
   if (!data || data.activeCount === 0) return null;
@@ -84,9 +83,7 @@ export function DebtOverview() {
             </span>
             <div>
               <p className="text-micro uppercase tracking-[0.04em] text-t2">Свобода от долгов</p>
-              <p className="tabular text-heading font-bold text-t1">
-                {formatDate(data.debtFreeDate)}
-              </p>
+              <p className="tabular text-heading font-bold text-t1">{formatDate(data.debtFreeDate)}</p>
             </div>
           </div>
           <p className="text-caption text-t2">{untilLabel(data.debtFreeDate)}</p>
@@ -101,10 +98,8 @@ export function DebtOverview() {
           </p>
           <p className="mt-1.5 text-caption leading-relaxed text-t1">
             Если вносить{' '}
-            <span className="tabular font-semibold text-success">
-              +{formatMoney(data.accelerator.extraPerMonth)}
-            </span>{' '}
-            каждый месяц в самый дорогой долг (
+            <span className="tabular font-semibold text-success">{formatMoney(extra)}</span>
+            {' '}дополнительно каждый месяц в самый дорогой долг (
             <span className="font-medium text-success">{data.accelerator.targetName}</span>), ты
             освободишься{' '}
             <span className="font-semibold text-success">
@@ -115,6 +110,22 @@ export function DebtOverview() {
           <p className="mt-1 text-micro text-success/80">
             Экономия: {monthsLabel(data.accelerator.savedMonths)}
           </p>
+
+          <div className="mt-3">
+            <input
+              type="range"
+              min={0}
+              max={100000}
+              step={5000}
+              value={extra}
+              onChange={(e) => setExtra(Number(e.target.value))}
+              className="w-full accent-success"
+            />
+            <div className="mt-1 flex justify-between text-micro text-t3">
+              <span>0 ₽</span>
+              <span>100 000 ₽</span>
+            </div>
+          </div>
         </div>
       )}
 

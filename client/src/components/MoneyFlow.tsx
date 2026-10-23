@@ -12,7 +12,7 @@ import { formatMoney } from '../utils/format';
 export function MoneyFlow() {
   const { data } = useQuery({
     queryKey: ['summary'],
-    queryFn: creditsApi.summary,
+    queryFn: () => creditsApi.summary(),
   });
 
   if (!data || data.activeCount === 0) return null;

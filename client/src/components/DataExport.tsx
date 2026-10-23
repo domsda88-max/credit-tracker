@@ -1,3 +1,4 @@
+import { FileSpreadsheet, Save } from 'lucide-react';
 import { useState } from 'react';
 import { creditsApi } from '../api/credits';
 import { extractErrorMessage } from '../api/client';
@@ -17,7 +18,7 @@ function download(filename: string, content: string, mime: string) {
 }
 
 /**
- * Экспорт данных: JSON (полный бэкап) и CSV (график платежей для таблиц).
+          <FileSpreadsheet size={16} className="inline-block" /> Экспорт CSV
  * У конкурентов это платная функция — здесь бесплатно, данные и так на сервере.
  */
 export function DataExport() {
@@ -73,16 +74,16 @@ export function DataExport() {
     <section className="rounded-card border border-line bg-surface/80 p-4">
       <h2 className="font-medium text-t1">Экспорт данных</h2>
       <p className="mt-0.5 text-xs text-t3">
-        Сохраните копию на устройство. JSON — полный бэкап, CSV — график для Excel.
+          <FileSpreadsheet size={16} className="inline-block" /> Экспорт CSV
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={exportCsv}
           disabled={busy}
-          className="rounded-control border border-line px-3 py-2 text-sm text-t2 transition hover:border-primary/50 disabled:opacity-50"
+          className="rounded-control border border-line inline-flex items-center gap-1.5 px-3 py-2 text-sm text-t2 transition hover:border-primary/50 disabled:opacity-50"
         >
-          📄 Скачать CSV
+          <FileSpreadsheet size={16} className="inline-block" /> Экспорт CSV
         </button>
         <button
           type="button"
@@ -90,7 +91,7 @@ export function DataExport() {
           disabled={busy}
           className="rounded-control border border-line px-3 py-2 text-sm text-t2 transition hover:border-primary/50 disabled:opacity-50"
         >
-          💾 Скачать JSON (бэкап)
+          <Save size={16} className="inline-block" /> Экспорт JSON
         </button>
       </div>
       {error && <p className="mt-2 text-xs text-danger">{error}</p>}

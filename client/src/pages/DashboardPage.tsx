@@ -42,7 +42,7 @@ export function DashboardPage() {
   });
   const { data: summary } = useQuery({
     queryKey: ['summary'],
-    queryFn: creditsApi.summary,
+    queryFn: () => creditsApi.summary(),
   });
 
   if (isLoading) {

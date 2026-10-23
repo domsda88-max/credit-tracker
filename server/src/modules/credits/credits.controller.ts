@@ -8,7 +8,8 @@ export const creditsController = {
   },
 
   async summary(req: Request, res: Response) {
-    res.json(await creditsService.summary(req.user!.sub));
+    const extra = Number(req.query.extra);
+    res.json(await creditsService.summary(req.user!.sub, Number.isFinite(extra) && extra > 0 ? extra : undefined));
   },
 
   async exportData(req: Request, res: Response) {

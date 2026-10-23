@@ -7,8 +7,10 @@ export const creditsApi = {
     return data;
   },
 
-  async summary(): Promise<CreditSummary> {
-    const { data } = await api.get<CreditSummary>('/credits/summary');
+  async summary(extra?: number): Promise<CreditSummary> {
+    const { data } = await api.get<CreditSummary>('/credits/summary', {
+      params: extra ? { extra } : undefined,
+    });
     return data;
   },
 
