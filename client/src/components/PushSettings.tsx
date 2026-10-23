@@ -44,7 +44,7 @@ export function PushSettings() {
             type="button"
             onClick={() => void subscribe()}
             disabled={status === 'loading' || status === 'unsupported'}
-            className="shrink-0 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white transition hover:bg-primary/90 disabled:opacity-50"
+            className="shrink-0 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white transition hover:bg-primary/90 disabled:opacity-50 max-w-xs"
           >
             {status === 'loading' ? 'Включаю…' : 'Включить'}
           </button>

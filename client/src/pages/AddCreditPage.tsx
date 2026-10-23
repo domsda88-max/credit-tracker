@@ -236,6 +236,8 @@ export function AddCreditPage() {
         markPastAsPaid: parsed.markPastAsPaid,
         outstanding: parsed.outstanding ?? null,
         paymentType: parsed.paymentType ?? 'ANNUITY',
+        // Кредитная карта — revolving-продукт, срок не нужен
+        termMonths: parsed.type === 'CREDIT_CARD' ? undefined : parsed.termMonths,
       });
     },
     onSuccess: async (credit) => {
@@ -248,7 +250,7 @@ export function AddCreditPage() {
   const sectionClass = 'transition-all duration-300 ease-in-out';
 
   return (
-    <div className="min-w-0 w-full max-w-full space-y-4 px-4 safe-area-bottom">
+    <div className="min-w-0 w-full max-w-full space-y-4 px-4 pb-28 safe-area-bottom">
       <h1 className="text-heading font-bold text-t1">Добавить долг</h1>
       <p className="mt-1 text-sm text-t3">
         График платежей будет построен автоматически по выбранному типу

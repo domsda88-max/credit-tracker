@@ -37,8 +37,8 @@ const baseFields = {
 export const createCreditSchema = z
   .object(baseFields)
   .superRefine((data, ctx) => {
-    if (data.type === 'LOAN') {
-      // Для займа минимальный платёж и срок не обязательны
+    if (data.type === 'LOAN' || data.type === 'CREDIT_CARD') {
+      // Для займа и кредитной карты срок не обязателен (revolving-продукт)
       if (data.termMonths !== undefined && data.termMonths !== null && data.termMonths < 0) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Срок некорректен', path: ['termMonths'] });
       }

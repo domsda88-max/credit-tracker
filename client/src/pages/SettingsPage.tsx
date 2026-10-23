@@ -10,7 +10,7 @@ export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-24 safe-area-bottom touch-manipulation">
       <header>
         <h1 className="text-title font-bold text-t1">Настройки</h1>
         <p className="mt-1 text-caption text-t3">Деньги, уведомления, оформление и данные</p>
