@@ -231,28 +231,6 @@ export function CreditDetailPage() {
           </button>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div>
-            <p className="text-xs text-t3">Остаток долга</p>
-            <p className="tabular font-semibold text-t1">{formatMoney(credit.outstanding)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-t3">Первоначально</p>
-            <p className="tabular font-semibold text-t1">{formatMoney(credit.principal)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-t3">Выплачено</p>
-            <p className="tabular font-semibold text-success">{formatMoney(credit.totalPaid)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-t3">Срок / день платежа</p>
-            <p className="font-semibold text-t1">
-              {credit.termMonths} мес.
-              {credit.paymentDay ? ` · ${credit.paymentDay}-е` : ''}
-            </p>
-          </div>
-        </div>
-
         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-surface2">
           <div
             className="h-full rounded-full bg-gradient-to-r from-primary to-success"
