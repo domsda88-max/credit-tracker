@@ -67,11 +67,18 @@ export function MotivationSettings() {
       </div>
 
       {enabled && (
-        <p className="mt-2 text-xs text-t3">
-          Тексты подстраиваются под твои кредиты: самый дорогой долг, карты в заморозке,
-          ипотека, сумма и дата свободы. Всего 30 сценариев, потом цикл повторяется.
-          Сейчас день <span className="text-t2">{user.motivationDay ?? 1}</span> из 30.
-        </p>
+        <div className="mt-3">
+          <div className="flex items-center justify-between text-caption">
+            <span className="text-t3">Прогресс цикла</span>
+            <span className="tabular text-t2">день {user.motivationDay ?? 1} из 30</span>
+          </div>
+          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface2">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-primary to-success"
+              style={{ width: `${((user.motivationDay ?? 1) / 30) * 100}%` }}
+            />
+          </div>
+        </div>
       )}
       <p className="mt-2 text-xs text-t3">
         Нужны включённые push-уведомления (блок выше).
