@@ -12,15 +12,25 @@ export const creditTypeEnum = z.enum([
 export const paymentTypeEnum = z.enum(['ANNUITY', 'DIFFERENTIAL', 'MIN_PAYMENT']);
 export const prepaymentModeEnum = z.enum(['REDUCE_TERM', 'REDUCE_PAYMENT']);
 
+const optionalDays = () =>
+  z
+    .union([z.literal(''), z.coerce.number()])
+    .optional()
+    .transform((v) => (v === '' || v == null ? undefined : v))
+    .refine((v) => v === undefined || (v >= 1 && v <= 365), {
+      message: 'Значение от 1 до 365 дней',
+    });
+
 const baseFields = {
   name: z.string().min(1, 'Укажите название').max(100),
   type: creditTypeEnum,
   paymentType: paymentTypeEnum.optional(),
   prepaymentMode: prepaymentModeEnum.optional(),
   principal: z.number().positive('Сумма должна быть больше 0').max(1_000_000_000),
-  annualRate: z.number().min(0, 'Ставка не может быть отрицательной').max(100, 'Ставка слишком высокая'),
-  startDate: z.coerce.date(),
+  annualRate: z.number().min(0, 'Ставка не может быть отрицательной').max(100, 'Ставка слишком высокая').optional(),
+  startDate: z.coerce.date().optional(),
   termMonths: z.number().int().min(0).max(600).optional().nullable(),
+  termDays: optionalDays(),
   paymentDay: z.number().int().min(1).max(31).optional().nullable(),
   minPayment: z.number().min(0).optional().nullable(),
   gracePeriodEnds: z.coerce.date().optional().nullable(),
@@ -37,18 +47,66 @@ const baseFields = {
 export const createCreditSchema = z
   .object(baseFields)
   .superRefine((data, ctx) => {
-    if (data.type === 'LOAN' || data.type === 'CREDIT_CARD') {
-      // Для займа и кредитной карты срок не обязателен (revolving-продукт)
-      if (data.termMonths !== undefined && data.termMonths !== null && data.termMonths < 0) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Срок некорректен', path: ['termMonths'] });
+    // ----- Кредитная карта -----
+    if (data.type === 'CREDIT_CARD') {
+      if (data.annualRate === undefined || data.annualRate === null || Number.isNaN(data.annualRate)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите ставку % годовых', path: ['annualRate'] });
+      }
+      if (!data.paymentDay) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите день платежа', path: ['paymentDay'] });
       }
       return;
     }
-    if (!data.paymentType) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите тип платежа', path: ['paymentType'] });
+
+    // ----- Потребительский кредит / Ипотека -----
+    if (data.type === 'CONSUMER' || data.type === 'MORTGAGE') {
+      if (!data.paymentType) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Выберите тип платежа', path: ['paymentType'] });
+      }
+      if (data.annualRate === undefined || data.annualRate === null || Number.isNaN(data.annualRate)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите ставку % годовых', path: ['annualRate'] });
+      }
+      if (!data.startDate) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите дату выдачи', path: ['startDate'] });
+      }
+      if (!data.termMonths || data.termMonths <= 0) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите срок в месяцах', path: ['termMonths'] });
+      }
+      if (!data.paymentDay) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите день платежа', path: ['paymentDay'] });
+      }
+      return;
     }
-    if (data.termMonths === undefined || data.termMonths === null || data.termMonths < 1) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Срок — минимум 1 месяц', path: ['termMonths'] });
+
+    // ----- Рассрочка / Сплит -----
+    if (data.type === 'INSTALLMENT') {
+      if (!data.termMonths || data.termMonths <= 0) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите срок в месяцах', path: ['termMonths'] });
+      }
+      if (!data.paymentDay) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите день платежа', path: ['paymentDay'] });
+      }
+      return;
+    }
+
+    // ----- Займ / МФО -----
+    if (data.type === 'MICROLOAN') {
+      if (data.annualRate === undefined || data.annualRate === null || Number.isNaN(data.annualRate)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите ставку % годовых', path: ['annualRate'] });
+      }
+      if (!data.termDays) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите срок в днях (1–365)', path: ['termDays'] });
+      }
+      if (!data.paymentDay) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите день платежа', path: ['paymentDay'] });
+      }
+      return;
+    }
+
+    // ----- Заем (частный) — PRIVATE_LOAN -----
+    if (data.type === 'LOAN') {
+      // Ставка не обязательна — по умолчанию 0%. Срок не нужен.
+      return;
     }
   });
 
@@ -62,6 +120,7 @@ export const updateCreditSchema = z
     annualRate: baseFields.annualRate.optional(),
     startDate: z.coerce.date().optional(),
     termMonths: baseFields.termMonths.optional(),
+    termDays: baseFields.termDays,
   })
   .partial();
 

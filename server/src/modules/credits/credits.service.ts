@@ -2,6 +2,7 @@ import type { Credit, PaymentType, Prisma, PrepaymentMode } from '@prisma/client
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middlewares/errorHandler';
 import { addMonths, addUTCDays, monthsBetween, utcToday } from '../../utils/finance/date';
+import { buildMicroloanSchedule } from '../../utils/finance/microloan';
 import { planPastPayments } from '../../utils/finance/pastPayments';
 import { rebuildSchedule } from '../../utils/finance/earlyRepayment';
 import { generateSchedule } from '../../utils/finance/schedule';
@@ -19,6 +20,7 @@ const FINANCIAL_FIELDS: (keyof UpdateCreditDto)[] = [
   'annualRate',
   'startDate',
   'termMonths',
+  'termDays',
   'paymentType',
   'paymentDay',
 ];
@@ -34,20 +36,22 @@ export const creditsService = {
   async create(userId: string, dto: CreateCreditDto) {
     const frozen = dto.frozen ?? false;
     const isLoan = dto.type === 'LOAN';
+    const isMicroloan = dto.type === 'MICROLOAN';
 
     if (isLoan) {
+      // Частный заём — без графика, ставка 0%
       return prisma.credit.create({
         data: {
           userId,
           name: dto.name,
           type: 'LOAN' as any,
-          paymentType: (dto.paymentType ?? 'ANNUITY') as any,
+          paymentType: 'ANNUITY' as any,
           prepaymentMode: (dto.prepaymentMode ?? 'REDUCE_PAYMENT') as PrepaymentMode,
           principal: dto.principal,
           outstanding: dto.outstanding ?? dto.principal,
-          annualRate: dto.annualRate,
-          startDate: dto.startDate,
-          termMonths: dto.termMonths ?? 0,
+          annualRate: 0,
+          startDate: dto.startDate ?? new Date(),
+          termMonths: 0,
           paymentDay: null,
           minPayment: null,
           gracePeriodEnds: null,
@@ -62,13 +66,68 @@ export const creditsService = {
       });
     }
 
+    if (isMicroloan) {
+      // МФО — баллонный платёж в конце срока (в днях)
+      const termDays = dto.termDays ?? 30;
+      const termMonthsForStorage = Math.max(1, Math.ceil(termDays / 30));
+      const startDate = dto.startDate ?? new Date();
+
+      const schedule = buildMicroloanSchedule({
+        principal: dto.principal,
+        annualRate: dto.annualRate ?? 0,
+        startDate,
+        termDays,
+        paymentDay: dto.paymentDay,
+      });
+
+      return prisma.$transaction(async (tx) => {
+        const credit = await tx.credit.create({
+          data: {
+            userId,
+            name: dto.name,
+            type: 'MICROLOAN' as any,
+            paymentType: 'ANNUITY' as any,
+            prepaymentMode: (dto.prepaymentMode ?? 'REDUCE_PAYMENT') as PrepaymentMode,
+            principal: dto.principal,
+            outstanding: dto.principal,
+            annualRate: dto.annualRate ?? 0,
+            startDate,
+            termMonths: termMonthsForStorage,
+            paymentDay: dto.paymentDay ?? null,
+            minPayment: null,
+            gracePeriodEnds: null,
+            graceReplenishSum: null,
+            graceReplenishDay: null,
+            frozen: false,
+            freezeCycleDays: null,
+            freezeStartedAt: null,
+            nextFreezeCheckAt: null,
+            totalPaid: 0,
+          },
+        });
+
+        await tx.paymentSchedule.createMany({
+          data: schedule.map((item) => ({
+            creditId: credit.id,
+            dueDate: item.dueDate,
+            amount: item.amount,
+            principalPart: item.principalPart,
+            interestPart: item.interestPart,
+            status: 'PENDING',
+          })),
+        });
+
+        return credit;
+      });
+    }
+
     const schedule = generateSchedule({
       type: dto.paymentType!,
       principal: dto.principal,
       // Замороженная кредитка: проценты не начисляются → считаем как 0%.
-      annualRate: effectiveAnnualRate(dto.annualRate, frozen),
-      startDate: dto.startDate,
-      termMonths: dto.termMonths!,
+      annualRate: effectiveAnnualRate(dto.annualRate ?? 0, frozen),
+      startDate: dto.startDate ?? new Date(),
+      termMonths: dto.termMonths ?? 0,
       paymentDay: dto.paymentDay,
       minPayment: dto.minPayment,
       gracePeriodEnds: dto.gracePeriodEnds,
@@ -88,7 +147,8 @@ export const creditsService = {
     // сразу помечаем внесёнными и вычитаем их тело из остатка долга.
     const markPast =
       dto.markPastAsPaid ??
-      (dto.startDate.getTime() < utcToday().getTime() && dto.paymentType !== 'MIN_PAYMENT');
+      ((dto.startDate ? dto.startDate.getTime() < utcToday().getTime() : false) &&
+        dto.paymentType !== 'MIN_PAYMENT');
     const past = markPast ? planPastPayments(schedule) : null;
 
     return prisma.$transaction(async (tx) => {
@@ -101,8 +161,8 @@ export const creditsService = {
           prepaymentMode: (dto.prepaymentMode ?? 'REDUCE_PAYMENT') as PrepaymentMode,
           principal: dto.principal,
           outstanding: dto.outstanding ?? past?.outstanding ?? dto.principal,
-          annualRate: dto.annualRate,
-          startDate: dto.startDate,
+          annualRate: dto.annualRate ?? 0,
+          startDate: dto.startDate ?? new Date(),
           termMonths: dto.termMonths!,
           paymentDay: dto.paymentDay ?? null,
           minPayment: dto.minPayment ?? null,

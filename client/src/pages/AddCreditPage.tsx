@@ -16,6 +16,15 @@ const optionalNumber = (min: number, max: number) =>
       message: `Значение от ${min} до ${max}`,
     });
 
+const optionalDays = () =>
+  z
+    .union([z.literal(''), z.coerce.number()])
+    .optional()
+    .transform((v) => (v === '' || v == null ? undefined : v))
+    .refine((v) => v === undefined || (v >= 1 && v <= 365), {
+      message: 'Значение от 1 до 365 дней',
+    });
+
 const schema = z
   .object({
     name: z.string().min(1, 'Укажите название банка или продукта'),
@@ -26,6 +35,7 @@ const schema = z
     annualRate: optionalNumber(0, 100),
     startDate: z.string().optional(),
     termMonths: z.coerce.number().int().min(0).max(600).optional(),
+    termDays: optionalDays(),
     paymentDay: optionalNumber(1, 31),
     minPayment: optionalNumber(0, Number.MAX_SAFE_INTEGER),
     gracePeriodEnds: z.string().optional(),
@@ -85,19 +95,17 @@ const schema = z
       if (data.annualRate == null || Number.isNaN(data.annualRate)) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите ставку % годовых', path: ['annualRate'] });
       }
-      if (!data.termMonths || data.termMonths <= 0) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите срок в месяцах', path: ['termMonths'] });
+      if (!data.termDays || data.termDays < 1 || data.termDays > 365) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите срок в днях (1–365)', path: ['termDays'] });
       }
       if (!data.paymentDay) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите день платежа', path: ['paymentDay'] });
       }
     }
 
-    // ----- Заем (частный) -----
+    // ----- Заем (частный) — PRIVATE_LOAN -----
     if (data.type === 'LOAN') {
-      if (data.annualRate == null || Number.isNaN(data.annualRate)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите ставку % годовых', path: ['annualRate'] });
-      }
+      // Ставка не обязательна — по умолчанию 0%. Срок не нужен.
     }
   });
 
@@ -157,6 +165,7 @@ export function AddCreditPage() {
         setValue('prepaymentMode', undefined);
         setValue('startDate', undefined);
         setValue('termMonths', undefined);
+        setValue('termDays', undefined);
         setValue('markPastAsPaid', true);
         setValue('outstanding', undefined);
         break;
@@ -174,10 +183,10 @@ export function AddCreditPage() {
         break;
 
       case 'INSTALLMENT':
-        setValue('paymentType', undefined);
+        setValue('paymentType', 'ANNUITY');
         setValue('prepaymentMode', undefined);
         setValue('startDate', undefined);
-        setValue('annualRate', 0);
+        setValue('termDays', undefined);
         setValue('minPayment', undefined);
         setValue('gracePeriodEnds', undefined);
         setValue('graceReplenishSum', undefined);
@@ -192,6 +201,7 @@ export function AddCreditPage() {
         setValue('paymentType', undefined);
         setValue('prepaymentMode', undefined);
         setValue('startDate', undefined);
+        setValue('termMonths', undefined);
         setValue('minPayment', undefined);
         setValue('gracePeriodEnds', undefined);
         setValue('graceReplenishSum', undefined);
@@ -207,6 +217,8 @@ export function AddCreditPage() {
         setValue('prepaymentMode', undefined);
         setValue('startDate', undefined);
         setValue('termMonths', undefined);
+        setValue('termDays', undefined);
+        setValue('annualRate', undefined);
         setValue('minPayment', undefined);
         setValue('gracePeriodEnds', undefined);
         setValue('graceReplenishSum', undefined);
@@ -224,7 +236,7 @@ export function AddCreditPage() {
       const parsed = schema.parse(values);
       return creditsApi.create({
         ...parsed,
-        annualRate: parsed.annualRate ?? 0,
+        annualRate: parsed.type === 'LOAN' ? 0 : parsed.annualRate ?? 0,
         startDate: parsed.startDate ? new Date(parsed.startDate).toISOString() : new Date().toISOString(),
         gracePeriodEnds: parsed.gracePeriodEnds ? new Date(parsed.gracePeriodEnds).toISOString() : null,
         paymentDay: parsed.paymentDay ?? null,
@@ -237,7 +249,8 @@ export function AddCreditPage() {
         outstanding: parsed.outstanding ?? null,
         paymentType: parsed.paymentType ?? 'ANNUITY',
         // Кредитная карта — revolving-продукт, срок не нужен
-        termMonths: parsed.type === 'CREDIT_CARD' ? undefined : parsed.termMonths,
+        termMonths:
+          parsed.type === 'CREDIT_CARD' || parsed.type === 'MICROLOAN' ? undefined : parsed.termMonths,
       });
     },
     onSuccess: async (credit) => {
@@ -489,21 +502,69 @@ export function AddCreditPage() {
 
               <label className="block">
                 <span className="text-sm text-t2">Ставка, % годовых</span>
+                <input type="number" step="0.01" {...register('annualRate')} className={inputClass} />
+                {errors.annualRate && (
+                  <p className="mt-1 text-xs text-danger">{errors.annualRate.message}</p>
+                )}
+                <span className="mt-1 block text-xs text-t3">0% — без процентов, либо укажите свою ставку</span>
+              </label>
+            </div>
+          </section>
+        )}
+
+        {/* === ОПЦИОННЫЙ БЛОК: «рассрочка оформлена раньше» (для INSTALLMENT) === */}
+        {type === 'INSTALLMENT' && markPast && (
+          <div className={`space-y-3 rounded-card border border-success/30 bg-success/5 p-4 ${sectionClass}`}>
+            <label className="flex items-start gap-2 text-sm text-t2">
+              <input
+                type="checkbox"
+                {...register('markPastAsPaid')}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-success"
+              />
+              <span>
+                Рассрочка оформлена раньше — платежи, срок которых уже прошёл, считать внесёнными
+                <span className="mt-0.5 block text-xs text-t3">
+                  Укажите дату выдачи, чтобы прошедшие платежи отметились оплаченными
+                </span>
+              </span>
+            </label>
+
+            {markPast && (
+              <label className="block">
+                <span className="text-sm text-t2">Дата выдачи</span>
+                <input
+                  type="date"
+                  {...register('startDate')}
+                  className={inputClass}
+                />
+                {errors.startDate && (
+                  <p className="mt-1 text-xs text-danger">{errors.startDate.message}</p>
+                )}
+              </label>
+            )}
+
+            {markPast && (
+              <label className="block">
+                <span className="text-sm text-t2">
+                  Остаток долга сейчас, ₽ <span className="text-xs text-t3">необязательно</span>
+                </span>
                 <input
                   type="number"
                   step="0.01"
-                  value={0}
-                  readOnly
-                  className={inputClass + ' bg-surface2 text-t3 cursor-not-allowed'}
+                  inputMode="decimal"
+                  placeholder="оставьте пустым — посчитаю сам"
+                  {...register('outstanding')}
+                  className={inputClass}
                 />
-                <span className="mt-1 block text-xs text-t3">0% — ставка фиксирована для рассрочки</span>
+                <span className="mt-1 block text-xs text-t3">
+                  Если знаете точный остаток из приложения банка — введите его, и он заменит расчёт.
+                </span>
+                {errors.outstanding && (
+                  <p className="mt-1 text-xs text-danger">{errors.outstanding.message}</p>
+                )}
               </label>
-            </div>
-
-            <p className="mt-2 text-xs text-t3">
-              Тип платежа и дата выдачи не нужны — график строится равномерными платежами.
-            </p>
-          </section>
+            )}
+          </div>
         )}
 
         {type === 'MICROLOAN' && (
@@ -520,10 +581,15 @@ export function AddCreditPage() {
               </label>
 
               <label className="block">
-                <span className="text-sm text-t2">Срок, месяцев</span>
-                <input type="number" {...register('termMonths')} className={inputClass} />
-                {errors.termMonths && (
-                  <p className="mt-1 text-xs text-danger">{errors.termMonths.message}</p>
+                <span className="text-sm text-t2">Срок, дней</span>
+                <input
+                  type="number"
+                  {...register('termDays')}
+                  placeholder="напр. 30"
+                  className={inputClass}
+                />
+                {errors.termDays && (
+                  <p className="mt-1 text-xs text-danger">{errors.termDays.message}</p>
                 )}
               </label>
 
@@ -545,29 +611,15 @@ export function AddCreditPage() {
             </div>
 
             <p className="mt-2 text-xs text-t3">
-              Дата выдачи и тип платежа не нужны — займ краткосрочный.
+              Один баллонный платёж в конце срока. Дата выдачи не нужна — займ краткосрочный.
             </p>
           </section>
         )}
 
         {type === 'LOAN' && (
-          <section className={`space-y-4 rounded-card border border-line bg-surface p-4 ${sectionClass}`}>
-            <h3 className="text-sm font-medium text-t2">Параметры займа</h3>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <label className="block">
-                <span className="text-sm text-t2">Ставка, % годовых</span>
-                <input type="number" step="0.01" {...register('annualRate')} className={inputClass} />
-                {errors.annualRate && (
-                  <p className="mt-1 text-xs text-danger">{errors.annualRate.message}</p>
-                )}
-              </label>
-            </div>
-
-            <p className="mt-2 text-xs text-t3">
-              Простой заем без графика — только ставка и остаток.
-            </p>
-          </section>
+          <p className="mt-2 text-xs text-t3">
+            Частный заём без графика — только название и сумма. Ставка 0%.
+          </p>
         )}
 
         {/* === ОПЦИОННЫЙ БЛОК: «кредит оформлен раньше» (только для CONSUMER/MORTGAGE) === */}
