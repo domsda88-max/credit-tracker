@@ -116,6 +116,7 @@ export const paymentsService = {
 
   /** Досрочное погашение (частичное или полное) с пересборкой графика. */
   async earlyRepayment(userId: string, creditId: string, dto: EarlyRepaymentDto) {
+    console.log('earlyRepayment start', { creditId, amount: dto.amount, date: dto.date });
     const credit = await prisma.credit.findFirst({
       where: { id: creditId, userId },
       include: {
@@ -130,6 +131,7 @@ export const paymentsService = {
 
     const amount = round2(toNumber(dto.amount));
     if (!amount || amount <= 0) throw new AppError(400, 'Сумма должна быть больше 0');
+    console.log('earlyRepayment amount normalized', { amount });
 
     const prepaymentDate = dto.date ? new Date(dto.date) : utcToday();
     const prepaymentDateUTC = utcToday(prepaymentDate);
@@ -150,6 +152,7 @@ export const paymentsService = {
     const anchorDate = lastPaidDue ? utcToday(lastPaidDue) : startDateUTC;
     const days = diffInDaysUTC(anchorDate, prepaymentDateUTC);
     const accruedInterest = annualRate > 0 ? round2((outstanding * annualRate * days) / 100 / 365) : 0;
+    console.log('accruedInterest calculated', { accruedInterest, days, anchor: anchorDate.toISOString(), outstanding });
     const principalPart = round2(amount - accruedInterest);
 
     if (principalPart <= 0) {
@@ -157,6 +160,7 @@ export const paymentsService = {
     }
 
     const newOutstanding = round2(outstanding - principalPart);
+    console.log('principalPart calculated', { principalPart, accruedInterest, newOutstanding });
     const isFull = newOutstanding <= CLOSE_THRESHOLD;
     const mode = (dto.mode ?? credit.prepaymentMode) as PrepaymentMode;
     const prevPercent = paidPercent(toNumber(credit.principal), toNumber(credit.outstanding));
@@ -211,7 +215,8 @@ export const paymentsService = {
             closedAt: new Date(),
           },
         });
-        await tx.paymentSchedule.deleteMany({ where: { creditId, status: 'PENDING' } });
+        console.log('schedule updated/merged done');
+      await tx.paymentSchedule.deleteMany({ where: { creditId, status: 'PENDING' } });
         return { credit: closed, schedule: [] as { dueDate: Date; amount: number }[] };
       }
 
@@ -292,6 +297,7 @@ export const paymentsService = {
     );
     await notifyMilestone(userId, creditId, credit.name, prevPercent, newPercent);
 
+    console.log('earlyRepayment success');
     return result;
   },
 
