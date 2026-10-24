@@ -204,9 +204,19 @@ input[type='range'] {
   }
 }
 
-input[type="date"] {
-  width: 100%;
+form input[type="date"],
+.add-credit-form input[type="date"],
+.edit-credit-form input[type="date"],
+.date-input-fix {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+form > div,
+.add-credit-form > div,
+.edit-credit-form > div {
   max-width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
+  overflow: hidden;
 }
