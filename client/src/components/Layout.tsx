@@ -33,16 +33,8 @@ export function Layout() {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-0.5">
+        <div className="flex shrink-0 items-center gap-1 pr-1">
           <ThemeToggle />
-          <button
-            type="button"
-            onClick={() => navigate('/settings')}
-            className="shrink-0 rounded-control p-2 pr-4 text-t2 transition-colors hover:text-t1 active:bg-surface2"
-            aria-label="Настройки"
-          >
-            <Settings size={20} />
-          </button>
           <button
             type="button"
             onClick={handleLogout}

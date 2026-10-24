@@ -20,14 +20,14 @@ export function GraceReplenishBlock() {
 
   return (
     <section
-      className={`card animate-fade-up p-4 ${overdue ? 'border-sky-400 bg-sky-900/40' : 'border-sky-400/50 bg-sky-900/20'}`}
+      className={`card animate-fade-up p-4 ${overdue ? 'border-sky-400/70 bg-sky-950/60 dark:bg-sky-950/60' : 'border-sky-300 bg-sky-50 dark:border-sky-400/60 dark:bg-sky-950/60'}`}
     >
       <div className="flex items-center gap-2">
-        <span className={`flex h-8 w-8 items-center justify-center rounded-chip ${overdue ? 'bg-sky-400/20 text-sky-300' : 'bg-sky-400/20 text-sky-300'}`}>
+        <span className={`flex h-8 w-8 items-center justify-center rounded-chip ${overdue ? 'bg-sky-400/25 text-sky-300' : 'bg-sky-200 text-sky-700 dark:bg-sky-400/25 dark:text-sky-300'}`}>
           {overdue ? <AlertTriangle size={18} /> : <Snowflake size={18} />}
         </span>
         <div>
-          <p className={`text-body font-semibold ${overdue ? 'text-sky-300' : 'text-sky-300'}`}>
+          <p className={`text-body font-semibold ${overdue ? 'text-sky-200 dark:text-sky-200' : 'text-sky-700 dark:text-sky-200'}}`}>
             {overdue ? 'ВНИМАНИЕ: грейс-период сбрасывается!' : 'Для сохранения грейса'}
           </p>
           <p className="text-caption text-t2">
@@ -36,7 +36,7 @@ export function GraceReplenishBlock() {
               : 'Рекомендованные платежи (не в расходах)'}
           </p>
         </div>
-        <span className="ml-auto tabular text-heading font-bold text-sky-100">
+        <span className="ml-auto tabular text-heading font-bold ${overdue ? 'text-sky-100 dark:text-sky-100' : 'text-sky-900 dark:text-sky-100'}">
           {formatMoney(maxPayment)}
         </span>
       </div>

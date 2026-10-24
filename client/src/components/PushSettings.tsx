@@ -23,7 +23,7 @@ export function PushSettings() {
 
   return (
     <div className="rounded-card border border-line bg-surface p-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="font-medium text-t1">Push-уведомления</p>
           <p className="mt-0.5 text-xs text-t3">
@@ -44,7 +44,7 @@ export function PushSettings() {
             type="button"
             onClick={() => void subscribe()}
             disabled={status === 'loading' || status === 'unsupported'}
-            className="shrink-0 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white transition hover:bg-primary/90 disabled:opacity-50 max-w-xs"
+            className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white transition hover:bg-primary/90 disabled:opacity-50 sm:w-auto sm:max-w-xs"
           >
             {status === 'loading' ? 'Включаю…' : 'Включить'}
           </button>
