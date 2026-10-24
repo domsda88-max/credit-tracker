@@ -5,7 +5,7 @@ import { PushSettings } from '../components/PushSettings';
 import { ReminderSettings } from '../components/ReminderSettings';
 import { MotivationSettings } from '../components/MotivationSettings';
 import { IncomeSettings } from '../components/IncomeSettings';
-import { ThemeToggle } from '../components/ThemeToggle';
+import { useThemeStore } from '../store/theme';
 import { DataExport } from '../components/DataExport';
 import { useAuthStore } from '../store/auth';
 
@@ -46,6 +46,8 @@ export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const themeMode = useThemeStore((s) => s.mode);
+  const setThemeMode = useThemeStore((s) => s.setMode);
   const handleLogout = () => { logout(); navigate('/login', { replace: true }); };
 
   return (
@@ -77,12 +79,33 @@ export function SettingsPage() {
 
       <section className="space-y-2">
         <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Оформление</h2>
-        <div className="flex items-center justify-between gap-3 rounded-card border border-line bg-surface p-4">
-          <div>
-            <p className="font-medium text-t1">Тема оформления</p>
-            <p className="mt-0.5 text-xs text-t3">Светлая или тёмная</p>
+        <div className="rounded-card border border-line bg-surface p-4">
+          <p className="font-medium text-t1">Тема оформления</p>
+          <p className="mt-0.5 text-xs text-t3">Светлая или тёмная</p>
+          <div className="mt-3 grid grid-cols-2 gap-2 w-full">
+            <button
+              type="button"
+              onClick={() => setThemeMode('dark')}
+              className={`rounded-control border px-3 py-2.5 text-sm font-medium transition ${
+                themeMode === 'dark'
+                  ? 'border-primary bg-primary text-white'
+                  : 'border-line text-t2 hover:border-primary/50'
+              }`}
+            >
+              🌙 Тёмная
+            </button>
+            <button
+              type="button"
+              onClick={() => setThemeMode('light')}
+              className={`rounded-control border px-3 py-2.5 text-sm font-medium transition ${
+                themeMode === 'light'
+                  ? 'border-primary bg-primary text-white'
+                  : 'border-line text-t2 hover:border-primary/50'
+              }`}
+            >
+              ☀️ Светлая
+            </button>
           </div>
-          <ThemeToggle />
         </div>
       </section>
 

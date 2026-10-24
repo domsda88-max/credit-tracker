@@ -3,6 +3,7 @@ import { extractErrorMessage } from '../api/client';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/auth';
 import { useToast } from './Toast';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 /**
  * Ежедневная мотивационная рассылка.
@@ -14,6 +15,7 @@ export function MotivationSettings() {
   const setUser = useAuthStore((s) => s.setUser);
   const toast = useToast();
   const [saving, setSaving] = useState(false);
+  const { status } = usePushNotifications();
 
   if (!user) return null;
 
@@ -52,7 +54,7 @@ export function MotivationSettings() {
           role="switch"
           aria-checked={enabled}
           onClick={() => void toggle()}
-          disabled={saving}
+          disabled={saving || status !== 'subscribed'}
           className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:opacity-50 ${
             enabled ? 'bg-primary' : 'bg-surface2'
           }`}

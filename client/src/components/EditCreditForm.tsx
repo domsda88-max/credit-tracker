@@ -26,6 +26,7 @@ const schema = z.object({
   paymentDay: optionalNumber(1, 31),
   prepaymentMode: z.enum(['REDUCE_TERM', 'REDUCE_PAYMENT']),
   outstanding: optionalNumber(0, Number.MAX_SAFE_INTEGER),
+  markPastAsPaid: z.boolean().default(false),
 });
 
 type FormValues = z.input<typeof schema>;
@@ -77,6 +78,7 @@ export function EditCreditForm({
         paymentDay: parsed.paymentDay ?? null,
         prepaymentMode: parsed.prepaymentMode,
         outstanding: parsed.outstanding ?? null,
+        markPastAsPaid: parsed.markPastAsPaid,
       });
     },
     onSuccess: async () => {
@@ -186,13 +188,25 @@ export function EditCreditForm({
           </label>
         </div>
 
-        {error && <p className="text-sm text-danger">{error}</p>}
+        <div className="space-y-3 rounded-card border border-success/30 bg-success/5 p-4">
+        <label className="flex items-start gap-2 text-sm text-t2">
+          <input type="checkbox" {...register('markPastAsPaid')} className="mt-0.5 h-4 w-4 shrink-0 accent-success" />
+          <span>
+            Кредит оформлен раньше — платежи, срок которых уже прошёл, считать внесёнными
+            <span className="mt-0.5 block text-xs text-t3">
+              Снять галочку, если прошедшие платежи НЕ внесены — иначе система сама отметит их оплаченными.
+            </span>
+          </span>
+        </label>
+      </div>
 
-        <div className="flex gap-3">
+      {error && <p className="text-sm text-danger">{error}</p>}
+
+        <div className="flex flex-col gap-3 sm:flex-row">
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="inline-flex items-center justify-center gap-2 min-w-[150px] whitespace-nowrap rounded-control bg-primary px-4 py-2.5 font-medium text-white disabled:opacity-70"
+            className="inline-flex w-full items-center justify-center gap-2 min-w-[150px] whitespace-nowrap rounded-control bg-primary px-5 py-2.5 font-medium text-white disabled:opacity-70 sm:w-auto"
           >
             {mutation.isPending ? (<><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />Сохраняю…</>) : 'Сохранить изменения'}
           </button>

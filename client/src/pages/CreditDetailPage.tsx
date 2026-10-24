@@ -278,7 +278,7 @@ export function CreditDetailPage() {
 
       {credit.status === 'ACTIVE' && credit.type !== 'LOAN' && (
         <section className="rounded-card border border-line bg-surface p-4">
-          <h2 className="font-medium text-t1">Досрочное погашение</h2>
+            <h2 className="font-medium text-t1">Досрочное погашение</h2>
           <p className="mt-0.5 text-xs text-t3">
             График пересчитается автоматически: {credit.prepaymentMode === 'REDUCE_TERM' ? 'сократится срок' : 'уменьшится платёж'}
           </p>
@@ -303,7 +303,7 @@ export function CreditDetailPage() {
                   {...register('date')}
                   min={credit.startDate ? new Date(credit.startDate).toISOString().slice(0, 10) : undefined}
                   max={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
-                  className={inputClass}
+                  className={inputClass + " w-full max-w-full box-border"}
                 />
                 {formState.errors.date && (
                   <p className="mt-1 text-xs text-danger">{formState.errors.date.message}</p>
@@ -365,8 +365,8 @@ export function CreditDetailPage() {
 
       {credit.type !== 'LOAN' && (
       <section className="rounded-card border border-line bg-surface p-4">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-medium text-t1">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="min-w-0 whitespace-nowrap text-sm font-medium text-t1">
             График платежей{' '}
             {pending.length > 0 && <span className="text-t3">· к оплате {pending.length}</span>}
           </h2>
@@ -374,7 +374,7 @@ export function CreditDetailPage() {
             <button
               type="button"
               onClick={() => setShowAllPaid((v) => !v)}
-              className="shrink-0 rounded-lg border border-line px-2.5 py-1.5 text-xs text-t2 transition hover:border-primary/50"
+              className="w-full shrink-0 rounded-lg sm:w-auto border border-line px-2.5 py-1.5 text-xs text-t2 transition hover:border-primary/50"
             >
               {showAllPaid ? 'Свернуть оплаченные' : `Показать оплаченные (${paid.length})`}
             </button>
@@ -483,7 +483,7 @@ export function CreditDetailPage() {
 
       {credit.events.length > 0 && (
         <section className="rounded-card border border-line bg-surface p-4">
-          <h2 className="font-medium text-t1">История платежей</h2>
+            <h2 className="font-medium text-t1">История платежей</h2>
           <div className="mt-3 space-y-2">
             {credit.events.map((event) => (
               <div key={event.id} className="flex items-center justify-between text-sm">

@@ -415,12 +415,12 @@ export const creditsService = {
 
     const freezeChanged = dto.frozen !== undefined && dto.frozen !== current.frozen;
     const financialChanged =
-      FINANCIAL_FIELDS.some((field) => dto[field] !== undefined) || dto.outstanding !== undefined;
+      FINANCIAL_FIELDS.some((field) => dto[field] !== undefined) || dto.outstanding !== undefined || dto.markPastAsPaid !== undefined;
 
     // Меняются сами условия (сумма/ставка/дата/срок) — тогда график действительно пересобираем.
     // Заморозка меняет эффективную ставку (🧊 = 0%), поэтому тоже требует пересборки.
     const termsChanged =
-      FINANCIAL_FIELDS.some((field) => dto[field] !== undefined) || dto.outstanding !== undefined;
+      FINANCIAL_FIELDS.some((field) => dto[field] !== undefined) || dto.outstanding !== undefined || dto.markPastAsPaid !== undefined;
 
     // Управление «снежинкой» 🧊
     if (dto.frozen !== undefined) {
@@ -500,10 +500,17 @@ export const creditsService = {
       const items = rebuildFromStart
         ? (() => {
             const rebuilt = generateSchedule(mergeInput);
-            const pastPlan = planPastPayments(rebuilt);
-            totalPaidValue = pastPlan.paidTotal;
-            outstandingValue = dto.outstanding ?? pastPlan.outstanding;
-            pastToMark = pastPlan.paidCount;
+            const markPast = dto.markPastAsPaid === true;
+            if (markPast) {
+              const pastPlan = planPastPayments(rebuilt);
+              totalPaidValue = pastPlan.paidTotal;
+              outstandingValue = dto.outstanding ?? pastPlan.outstanding;
+              pastToMark = pastPlan.paidCount;
+            } else {
+              totalPaidValue = undefined;
+              outstandingValue = dto.outstanding !== undefined ? (dto.outstanding ?? undefined) : outstandingValue;
+              pastToMark = 0;
+            }
             return rebuilt;
           })()
         : (() => {
