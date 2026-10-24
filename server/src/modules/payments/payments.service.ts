@@ -228,35 +228,27 @@ export const paymentsService = {
       });
 
       // �'�?��?���'��?�?��? ��?��?��?������� ��?��?�? ?�?�?�?�?�? (�? ���?�? ?�?��?��?�?�?��? ?�?�?���)
-      const existingPartial = await tx.paymentSchedule.findUnique({
+      await tx.paymentSchedule.upsert({
         where: { creditId_dueDate: { creditId, dueDate: prepaymentDateUTC } },
+        update: {
+          status: 'PAID',
+          paidAt: prepaymentDateUTC,
+          amount: { increment: amount },
+          paidAmount: { increment: amount },
+          principalPart: { increment: principalPart },
+          interestPart: { increment: accruedInterest },
+        },
+        create: {
+          creditId,
+          dueDate: prepaymentDateUTC,
+          amount,
+          principalPart,
+          interestPart: accruedInterest,
+          status: 'PAID',
+          paidAt: prepaymentDateUTC,
+          paidAmount: amount,
+        },
       });
-      if (existingPartial) {
-        await tx.paymentSchedule.update({
-          where: { id: existingPartial.id },
-          data: {
-            amount: { increment: amount },
-            principalPart: { increment: principalPart },
-            interestPart: { increment: accruedInterest },
-            paidAmount: { increment: amount },
-            paidAt: prepaymentDateUTC,
-            status: 'PAID',
-          },
-        });
-      } else {
-        await tx.paymentSchedule.create({
-          data: {
-            creditId,
-            dueDate: prepaymentDateUTC,
-            amount,
-            principalPart,
-            interestPart: accruedInterest,
-            status: 'PAID',
-            paidAt: prepaymentDateUTC,
-            paidAmount: amount,
-          },
-        });
-      }
 
       await tx.paymentSchedule.deleteMany({ where: { creditId, status: 'PENDING' } });
 
@@ -287,6 +279,7 @@ export const paymentsService = {
             principalPart: item.principalPart,
             interestPart: item.interestPart,
           })),
+        skipDuplicates: true,
         });
       }
 
