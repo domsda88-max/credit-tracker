@@ -173,6 +173,18 @@ export const paymentsService = {
       });
 
       if (isFull) {
+        await tx.paymentSchedule.create({
+          data: {
+            creditId,
+            dueDate: prepaymentDateUTC,
+            amount,
+            principalPart: round2(outstanding),
+            interestPart: round2(amount - outstanding),
+            status: 'PAID',
+            paidAt: prepaymentDateUTC,
+            paidAmount: amount,
+          },
+        });
         const closed = await tx.credit.update({
           where: { id: creditId },
           data: {
@@ -189,6 +201,20 @@ export const paymentsService = {
       const updated = await tx.credit.update({
         where: { id: creditId },
         data: { outstanding: newOutstanding, totalPaid: { increment: amount } },
+      });
+
+      // �'�?��?���'��?�?��? ��?��?��?������� ��?��?�? ?�?�?�?�?�? (�? ���?�? ?�?��?��?�?�?��? ?�?�?���)
+      await tx.paymentSchedule.create({
+        data: {
+          creditId,
+          dueDate: prepaymentDateUTC,
+          amount,
+          principalPart,
+          interestPart: accruedInterest,
+          status: 'PAID',
+          paidAt: prepaymentDateUTC,
+          paidAmount: amount,
+        },
       });
 
       await tx.paymentSchedule.deleteMany({ where: { creditId, status: 'PENDING' } });

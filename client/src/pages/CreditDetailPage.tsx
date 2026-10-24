@@ -32,9 +32,9 @@ const inputClass =
   'mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none transition focus:border-primary';
 
 const EVENT_LABELS: Record<PaymentEvent['kind'], string> = {
-  SCHEDULED: 'Платёж по графику',
-  EARLY_PARTIAL: 'Досрочное частичное',
-  EARLY_FULL: 'Досрочное полное',
+  SCHEDULED: 'По графику',
+  EARLY_PARTIAL: 'Досрочно',
+  EARLY_FULL: 'Закрытие кредита',
   MIN_PAYMENT: 'Минимальный платёж',
 };
 
@@ -147,6 +147,11 @@ export function CreditDetailPage() {
   const interestPaid = Math.max(0, Number(credit.totalPaid) - principalPaid);
   const pending = credit.schedule.filter((item) => item.status !== 'PAID');
   const paid = credit.schedule.filter((item) => item.status === 'PAID');
+  const earlyKeys = new Set(
+    (credit.events || [])
+      .filter((e) => e.kind === 'EARLY_PARTIAL' || e.kind === 'EARLY_FULL')
+      .map((e) => `${new Date(e.paidAt).toISOString().slice(0, 10)}|${Number(e.amount)}`),
+  );
   const visible = showAllPaid ? credit.schedule : pending;
   const collapsedCount = showAllPaid ? 0 : paid.length;
   return (
@@ -406,7 +411,11 @@ export function CreditDetailPage() {
                       {formatMoney(item.amount)}
                     </span>
                     {item.status === 'PAID' ? (
-                      <StatusBadge status="PAID" />
+                      earlyKeys.has(`${new Date(item.paidAt ?? item.dueDate).toISOString().slice(0, 10)}|${Number(item.paidAmount ?? item.amount)}`) ? (
+                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">Досрочно</span>
+                      ) : (
+                        <StatusBadge status="PAID" />
+                      )
                     ) : (
                       <button
                         type="button"
