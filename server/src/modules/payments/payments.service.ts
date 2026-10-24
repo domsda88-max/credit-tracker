@@ -173,18 +173,35 @@ export const paymentsService = {
       });
 
       if (isFull) {
-        await tx.paymentSchedule.create({
-          data: {
-            creditId,
-            dueDate: prepaymentDateUTC,
-            amount,
-            principalPart: round2(outstanding),
-            interestPart: round2(amount - outstanding),
-            status: 'PAID',
-            paidAt: prepaymentDateUTC,
-            paidAmount: amount,
-          },
+        const existingFull = await tx.paymentSchedule.findUnique({
+          where: { creditId_dueDate: { creditId, dueDate: prepaymentDateUTC } },
         });
+        if (existingFull) {
+          await tx.paymentSchedule.update({
+            where: { id: existingFull.id },
+            data: {
+              amount: { increment: amount },
+              principalPart: { increment: round2(outstanding) },
+              interestPart: { increment: round2(amount - outstanding) },
+              paidAmount: { increment: amount },
+              paidAt: prepaymentDateUTC,
+              status: 'PAID',
+            },
+          });
+        } else {
+          await tx.paymentSchedule.create({
+            data: {
+              creditId,
+              dueDate: prepaymentDateUTC,
+              amount,
+              principalPart: round2(outstanding),
+              interestPart: round2(amount - outstanding),
+              status: 'PAID',
+              paidAt: prepaymentDateUTC,
+              paidAmount: amount,
+            },
+          });
+        }
         const closed = await tx.credit.update({
           where: { id: creditId },
           data: {
@@ -204,18 +221,35 @@ export const paymentsService = {
       });
 
       // �'�?��?���'��?�?��? ��?��?��?������� ��?��?�? ?�?�?�?�?�? (�? ���?�? ?�?��?��?�?�?��? ?�?�?���)
-      await tx.paymentSchedule.create({
-        data: {
-          creditId,
-          dueDate: prepaymentDateUTC,
-          amount,
-          principalPart,
-          interestPart: accruedInterest,
-          status: 'PAID',
-          paidAt: prepaymentDateUTC,
-          paidAmount: amount,
-        },
+      const existingPartial = await tx.paymentSchedule.findUnique({
+        where: { creditId_dueDate: { creditId, dueDate: prepaymentDateUTC } },
       });
+      if (existingPartial) {
+        await tx.paymentSchedule.update({
+          where: { id: existingPartial.id },
+          data: {
+            amount: { increment: amount },
+            principalPart: { increment: principalPart },
+            interestPart: { increment: accruedInterest },
+            paidAmount: { increment: amount },
+            paidAt: prepaymentDateUTC,
+            status: 'PAID',
+          },
+        });
+      } else {
+        await tx.paymentSchedule.create({
+          data: {
+            creditId,
+            dueDate: prepaymentDateUTC,
+            amount,
+            principalPart,
+            interestPart: accruedInterest,
+            status: 'PAID',
+            paidAt: prepaymentDateUTC,
+            paidAmount: amount,
+          },
+        });
+      }
 
       await tx.paymentSchedule.deleteMany({ where: { creditId, status: 'PENDING' } });
 
