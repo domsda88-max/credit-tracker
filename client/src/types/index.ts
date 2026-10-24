@@ -149,6 +149,7 @@ export interface EarlyRepaymentPayload {
   amount: number;
   mode?: PrepaymentMode;
   note?: string;
+  date?: string;
 }
 
 /** ��������� ������������� ���������� ��������� (POST /payments/credits/:id/early-preview). */

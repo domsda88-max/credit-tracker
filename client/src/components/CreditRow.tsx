@@ -29,6 +29,7 @@ import {
 import { BottomSheet } from './BottomSheet';
 import { useToast } from './Toast';
 import { creditsApi } from '../api/credits';
+import { paymentsApi } from '../api/payments';
 import { extractErrorMessage } from '../api/client';
 
 const TYPE_ICON: Record<CreditType, typeof CreditCard> = {
@@ -59,6 +60,12 @@ export function CreditRow({ credit, index = 0 }: Props) {
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [earlyOpen, setEarlyOpen] = useState(false);
+  const [earlyAmount, setEarlyAmount] = useState('');
+  const [earlyMode, setEarlyMode] = useState('REDUCE_PAYMENT');
+  const [earlyDate, setEarlyDate] = useState(new Date().toISOString().slice(0,10));
+  const [earlyPending, setEarlyPending] = useState(false);
+  const [earlyError, setEarlyError] = useState<string | null>(null);
   const percent = debtPaidPercent(credit.principal, credit.outstanding);
   const isClosed = credit.status === 'CLOSED';
   const next = credit.nextPayment;
@@ -277,7 +284,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
               type="button"
               onClick={() => {
                 setOpen(false);
-                navigate(`/credits/${credit.id}`);
+                setEarlyOpen(true);
               }}
               className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-t1 transition-colors active:bg-surface2"
             >
@@ -296,6 +303,73 @@ export function CreditRow({ credit, index = 0 }: Props) {
           {error && <p className="px-3 pt-1 text-caption text-danger">{error}</p>}
         </div>
       </BottomSheet>
+
+      <BottomSheet open={earlyOpen} onClose={() => setEarlyOpen(false)} title="Досрочное погашение">
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const amount = Number(earlyAmount);
+            if (!amount || amount <= 0) { setEarlyError('Сумма должна быть больше 0'); return; }
+            setEarlyPending(true);
+            setEarlyError(null);
+            try {
+              await paymentsApi.earlyRepayment(credit.id, { amount, mode: earlyMode as any, date: earlyDate });
+              await queryClient.invalidateQueries({ queryKey: ['credits'] });
+              await queryClient.invalidateQueries({ queryKey: ['credit', credit.id] });
+              await queryClient.invalidateQueries({ queryKey: ['summary'] });
+              toast.show('Досрочный платёж внесён');
+              setEarlyOpen(false);
+              setEarlyAmount('');
+            } catch (err) {
+              setEarlyError(extractErrorMessage(err));
+            } finally {
+              setEarlyPending(false);
+            }
+          }}
+          className="space-y-3"
+        >
+          <label className="block">
+            <span className="text-sm text-t2">Сумма, ₽</span>
+            <input
+              type="number"
+              step="0.01"
+              inputMode="decimal"
+              value={earlyAmount}
+              onChange={(e) => setEarlyAmount(e.target.value)}
+              className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none focus:border-primary"
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm text-t2">Дата внесения</span>
+            <input
+              type="date"
+              value={earlyDate}
+              onChange={(e) => setEarlyDate(e.target.value)}
+              className="mt-1 w-full max-w-full box-border rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none focus:border-primary"
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm text-t2">Режим</span>
+            <select
+              value={earlyMode}
+              onChange={(e) => setEarlyMode(e.target.value)}
+              className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none focus:border-primary"
+            >
+              <option value="REDUCE_PAYMENT">Уменьшить платёж</option>
+              <option value="REDUCE_TERM">Сократить срок</option>
+            </select>
+          </label>
+          {earlyError && <p className="text-sm text-danger">{earlyError}</p>}
+          <button
+            type="submit"
+            disabled={earlyPending}
+            className="w-full rounded-control bg-success px-4 py-2.5 font-medium text-white disabled:opacity-50"
+          >
+            {earlyPending ? 'Пересчитываю…' : 'Внести'}
+          </button>
+        </form>
+      </BottomSheet>
     </>
   );
 }
+

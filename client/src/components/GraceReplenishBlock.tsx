@@ -14,39 +14,48 @@ export function GraceReplenishBlock() {
   const today = new Date();
   const overdue = data.graceItems.some((g) => g.dueDate && new Date(g.dueDate) < today);
 
-  // Карусель грейса: одни и те же деньги ходят по картам.
-  // Показываем最大单次 платёж, а не сумму всех карт.
   const maxPayment = Math.max(...data.graceItems.map((g) => g.amount));
 
   return (
     <section
-      className={`card animate-fade-up p-4 ${overdue ? 'border-sky-400/70 bg-sky-950/60 dark:bg-sky-950/60' : 'border-sky-300 bg-sky-50 dark:border-sky-400/60 dark:bg-sky-950/60'}`}
+      className={`card animate-fade-up p-4 ${overdue
+          ? 'border-sky-500/40 bg-sky-950/40 dark:border-sky-500/40 dark:bg-sky-950/40'
+          : 'border-sky-300 bg-sky-50 dark:border-sky-500/40 dark:bg-sky-950/40'
+        }`}
     >
       <div className="flex items-center gap-2">
-        <span className={`flex h-8 w-8 items-center justify-center rounded-chip ${overdue ? 'bg-sky-400/25 text-sky-300' : 'bg-sky-200 text-sky-700 dark:bg-sky-400/25 dark:text-sky-300'}`}>
+        <span className={`flex h-8 w-8 items-center justify-center rounded-chip ${
+          overdue
+            ? 'bg-sky-500/20 text-sky-300'
+            : 'bg-sky-200 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300'
+        }`}>
           {overdue ? <AlertTriangle size={18} /> : <Snowflake size={18} />}
         </span>
         <div>
-          <p className={`text-body font-semibold ${overdue ? 'text-sky-200 dark:text-sky-200' : 'text-sky-700 dark:text-sky-200'}}`}>
-            {overdue ? 'ВНИМАНИЕ: грейс-период сбрасывается!' : 'Для сохранения грейса'}
+          <p className={`text-body font-semibold ${
+            overdue ? 'text-sky-300' : 'text-sky-700 dark:text-sky-300'
+          }`}>
+            {overdue ? 'Внимание: грейс-период слетает!' : 'Резерв для сохранения грейса'}
           </p>
-          <p className="text-caption text-t2">
+          <p className="text-caption text-slate-600 dark:text-slate-400">
             {overdue
-              ? 'Начнут капать проценты 34–53%. Внесите сумму срочно.'
-              : 'Рекомендованные платежи (не в расходах)'}
+              ? 'Необходимо пополнить карту для продления льготного периода.'
+              : 'Платёж для обновления льготного периода (карусель)'}
           </p>
         </div>
-        <span className="ml-auto tabular text-heading font-bold ${overdue ? 'text-sky-100 dark:text-sky-100' : 'text-sky-900 dark:text-sky-100'}">
+        <span className={`ml-auto tabular text-heading font-bold ${
+          overdue ? 'text-sky-200' : 'text-sky-900 dark:text-sky-200'
+        }`}>
           {formatMoney(maxPayment)}
         </span>
       </div>
       <ul className="mt-3 space-y-1.5">
         {data.graceItems.map((g, i) => (
-          <li key={i} className="flex items-center justify-between text-caption text-t2">
+          <li key={i} className="flex items-center justify-between text-caption text-slate-700 dark:text-slate-200">
             <span className="truncate">{g.name}</span>
             <span className="tabular">
               {formatMoney(g.amount)}
-              {g.dueDate && <span className="ml-2 text-t3">до {formatDateShort(g.dueDate)}</span>}
+              {g.dueDate && <span className="ml-2 text-slate-400 dark:text-slate-400">до {formatDateShort(g.dueDate)}</span>}
             </span>
           </li>
         ))}

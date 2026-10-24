@@ -268,14 +268,20 @@ export const creditsService = {
       // Ежемесячная нагрузка: сумма платежей, приходящих в ТЕКУЩЕМ
       // календарном месяце (с 1 по последнее число). Не «все платежи
       // по всем кредитам навсегда», а только те, что в этом месяце.
-      const now = new Date();
-      const curYear = now.getUTCFullYear();
-      const curMonth = now.getUTCMonth();
-      for (const item of c.schedule) {
-        const d = new Date(item.dueDate);
-        if (d.getUTCFullYear() === curYear && d.getUTCMonth() === curMonth) {
-          monthlyPayments += toNumber(item.amount);
+      const isCreditCard = c.type === 'CREDIT_CARD';
+      if (!(c.frozen && isCreditCard)) {
+        const pending = (c.schedule || []).filter((i: any) => i.status === 'PENDING');
+        let mp = 0;
+        if (isCreditCard) {
+          const nonGrace = pending.find((i: any) => !(toNumber(i.interestPart) === 0 && toNumber(i.amount) === toNumber(c.graceReplenishSum)));
+          const first = nonGrace || pending[0];
+          if (first) mp = toNumber(first.amount);
+          else mp = toNumber(c.minPayment ?? 0);
+        } else {
+          const first = pending[0];
+          if (first) mp = toNumber(first.amount);
         }
+        monthlyPayments += mp;
       }
 
       // Карты в цикле заморозки: нет обязательного платежа по графику,
