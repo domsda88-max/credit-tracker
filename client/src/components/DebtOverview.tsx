@@ -24,8 +24,9 @@ function untilLabel(iso: string): string {
 /** Число месяцев человеческим языком: «2 года 3 мес.». */
 function monthsLabel(months: number): string {
   if (months <= 0) return 'меньше месяца';
-  const years = Math.floor(months / 12);
-  const rest = months % 12;
+  const whole = Math.floor(months);
+  const years = Math.floor(whole / 12);
+  const rest = whole % 12;
   const parts: string[] = [];
   if (years > 0) parts.push(`${years} ${years === 1 ? 'год' : years < 5 ? 'года' : 'лет'}`);
   if (rest > 0) parts.push(`${rest} мес.`);

@@ -71,6 +71,7 @@ export function simulateAccelerator(input: AcceleratorInput): AcceleratorResult 
   const pool = round2(debts.reduce((acc, d) => acc + d.minPayment, 0) + input.extraPerMonth);
 
   let months = 0;
+  let finalAvailable = 0;
   while (balances.some((b) => b > 0.01) && months < MAX_MONTHS) {
     months += 1;
     let available = pool;
@@ -99,14 +100,15 @@ export function simulateAccelerator(input: AcceleratorInput): AcceleratorResult 
       const pay = Math.min(available, balances[targetIndex]);
       balances[targetIndex] = round2(balances[targetIndex] - pay);
     }
+    finalAvailable = available;
   }
 
   if (months >= MAX_MONTHS) return null;
 
   return {
     baselineMonths: input.baselineMonths,
-    acceleratedMonths: months,
-    savedMonths: Math.max(0, input.baselineMonths - months),
+    acceleratedMonths: pool > 0 ? Math.max(0, months - finalAvailable / pool) : months,
+    savedMonths: Math.max(0, input.baselineMonths - (pool > 0 ? Math.max(0, months - finalAvailable / pool) : months)),
     targetName: target.name,
     extraPerMonth: round2(input.extraPerMonth),
   };
