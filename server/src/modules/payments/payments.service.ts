@@ -1,12 +1,24 @@
 import type { PaymentType, PrepaymentMode } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middlewares/errorHandler';
-import { addMonths, monthsBetween, utcToday } from '../../utils/finance/date';
+import { addMonths, daysInMonth, monthsBetween, utcToday, withDayOfMonth } from '../../utils/finance/date';
 import { rebuildSchedule } from '../../utils/finance/earlyRepayment';
 import { crossedMilestone, milestoneMessage, paidPercent } from '../../utils/finance/milestones';
 import { round2, toNumber } from '../../utils/finance/round';
 import { sendUniquePush } from '../push/push.service';
 import type { EarlyRepaymentDto, PayInstallmentDto } from './payments.schemas';
+
+function diffInDaysUTC(a: Date, b: Date): number {
+  const da = Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate());
+  const db = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate());
+  const diff = Math.floor((db - da) / 86400000);
+  return diff < 0 ? 0 : diff;
+}
+
+function nextDueDateAfter(date: Date, paymentDay?: number | null): Date {
+  const base = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
+  return withDayOfMonth(base, paymentDay ?? date.getUTCDate());
+}
 
 const CLOSE_THRESHOLD = 0.01; // меньше копейки — считаем долг закрытым
 
@@ -107,15 +119,44 @@ export const paymentsService = {
     const credit = await prisma.credit.findFirst({
       where: { id: creditId, userId },
       include: {
-        schedule: { where: { status: 'PENDING' }, orderBy: { dueDate: 'asc' }, take: 1 },
+        schedule: { where: { status: 'PENDING' }, orderBy: { dueDate: 'asc' } },
+        events: { orderBy: { paidAt: 'asc' } },
       },
     });
 
     if (!credit) throw new AppError(404, 'Кредит не найден');
     if (credit.status === 'CLOSED') throw new AppError(409, 'Кредит уже закрыт');
+    if (credit.type === 'LOAN') throw new AppError(400, 'Для частного займа досрочное погашение не поддерживается');
+
+    const amount = round2(toNumber(dto.amount));
+    if (!amount || amount <= 0) throw new AppError(400, 'Сумма должна быть больше 0');
+
+    const prepaymentDate = dto.date ? new Date(dto.date) : utcToday();
+    const prepaymentDateUTC = utcToday(prepaymentDate);
+
+    const startDate = new Date(credit.startDate);
+    const startDateUTC = utcToday(startDate);
+    if (prepaymentDateUTC < startDateUTC) throw new AppError(400, 'Дата внесения не может быть раньше даты выдачи');
+    const maxDate = new Date();
+    maxDate.setFullYear(maxDate.getFullYear() + 1);
+    if (prepaymentDateUTC > utcToday(maxDate)) throw new AppError(400, 'Дата внесения не может быть позже чем на 1 год');
 
     const outstanding = toNumber(credit.outstanding);
-    const newOutstanding = round2(outstanding - dto.amount);
+    const annualRate = toNumber(credit.annualRate);
+
+    // anchor = дата последнего начисления процентов: последний PAID-платёж графика или startDate
+    const paidEvents = credit.schedule.filter((s) => s.status === 'PAID').sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+    const lastPaidDue = paidEvents[paidEvents.length - 1]?.dueDate;
+    const anchorDate = lastPaidDue ? utcToday(lastPaidDue) : startDateUTC;
+    const days = diffInDaysUTC(anchorDate, prepaymentDateUTC);
+    const accruedInterest = annualRate > 0 ? round2((outstanding * annualRate * days) / 100 / 365) : 0;
+    const principalPart = round2(amount - accruedInterest);
+
+    if (principalPart <= 0) {
+      throw new AppError(400, `Сумма не покрывает начисленные проценты (${accruedInterest.toFixed(2)} ₽)`);
+    }
+
+    const newOutstanding = round2(outstanding - principalPart);
     const isFull = newOutstanding <= CLOSE_THRESHOLD;
     const mode = (dto.mode ?? credit.prepaymentMode) as PrepaymentMode;
     const prevPercent = paidPercent(toNumber(credit.principal), toNumber(credit.outstanding));
@@ -125,8 +166,9 @@ export const paymentsService = {
         data: {
           creditId,
           kind: isFull ? 'EARLY_FULL' : 'EARLY_PARTIAL',
-          amount: dto.amount,
-          note: dto.note,
+          amount,
+          paidAt: prepaymentDateUTC,
+          note: `проценты ${accruedInterest.toFixed(2)}, тело ${principalPart.toFixed(2)}${dto.note ? `; ${dto.note}` : ''}`,
         },
       });
 
@@ -135,7 +177,7 @@ export const paymentsService = {
           where: { id: creditId },
           data: {
             outstanding: 0,
-            totalPaid: { increment: dto.amount },
+            totalPaid: { increment: amount },
             status: 'CLOSED',
             closedAt: new Date(),
           },
@@ -146,20 +188,20 @@ export const paymentsService = {
 
       const updated = await tx.credit.update({
         where: { id: creditId },
-        data: { outstanding: newOutstanding, totalPaid: { increment: dto.amount } },
+        data: { outstanding: newOutstanding, totalPaid: { increment: amount } },
       });
 
       await tx.paymentSchedule.deleteMany({ where: { creditId, status: 'PENDING' } });
 
       const remainingTerm = Math.max(
         1,
-        monthsBetween(utcToday(), addMonths(credit.startDate, credit.termMonths)),
+        monthsBetween(prepaymentDateUTC, addMonths(credit.startDate, credit.termMonths)),
       );
-      const nextDueDate = credit.schedule[0]?.dueDate ?? addMonths(utcToday(), 1);
+      const nextDueDate = nextDueDateAfter(prepaymentDateUTC, credit.paymentDay);
 
       const items = rebuildSchedule({
         outstanding: newOutstanding,
-        annualRate: toNumber(credit.annualRate),
+        annualRate,
         paymentType: credit.paymentType as PaymentType,
         mode,
         remainingTermMonths: remainingTerm,

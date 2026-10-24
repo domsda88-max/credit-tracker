@@ -23,6 +23,7 @@ import {
 const earlySchema = z.object({
   amount: z.coerce.number().positive('Сумма должна быть больше 0'),
   mode: z.enum(['REDUCE_TERM', 'REDUCE_PAYMENT']),
+  date: z.string().min(1, 'Укажите дату внесения'),
 });
 
 type EarlyFormValues = z.input<typeof earlySchema>;
@@ -53,14 +54,16 @@ export function CreditDetailPage() {
     enabled: Boolean(id),
   });
 
+  const todayStr = new Date().toISOString().slice(0, 10);
   const { register, handleSubmit, reset, formState, watch } = useForm<EarlyFormValues>({
     resolver: zodResolver(earlySchema),
-    defaultValues: { mode: 'REDUCE_PAYMENT' },
+    defaultValues: { mode: 'REDUCE_PAYMENT', date: todayStr },
   });
 
   const [preview, setPreview] = useState<EarlyPreview | null>(null);
   const watchAmount = watch('amount');
   const watchMode = watch('mode');
+  const watchDate = watch('date');
 
   // Живой предпросмотр: считаем экономию, когда пользователь ввёл сумму.
   useEffect(() => {
@@ -105,10 +108,11 @@ export function CreditDetailPage() {
   const earlyMutation = useMutation({
     mutationFn: (values: EarlyFormValues) => {
       const parsed = earlySchema.parse(values);
-      return paymentsApi.earlyRepayment(id, parsed);
+      return paymentsApi.earlyRepayment(id, { amount: parsed.amount, mode: parsed.mode, date: parsed.date } as any);
     },
     onSuccess: async () => {
-      reset({ amount: undefined as unknown as number, mode: 'REDUCE_PAYMENT' });
+      reset({ amount: undefined as unknown as number, mode: 'REDUCE_PAYMENT', date: todayStr });
+      setPreview(null);
       await invalidate();
       toast.show('Досрочное погашение внесено');
     },
@@ -281,31 +285,49 @@ export function CreditDetailPage() {
 
           <form
             onSubmit={handleSubmit((values) => earlyMutation.mutate(values))}
-            className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end"
+            className="mt-3 space-y-3"
           >
-            <label className="block sm:w-40">
-              <span className="text-sm text-t2">Сумма, ₽</span>
-              <input type="number" step="0.01" {...register('amount')} className={inputClass} />
-              {formState.errors.amount && (
-                <p className="mt-1 text-xs text-danger">{formState.errors.amount.message}</p>
-              )}
-            </label>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <label className="block sm:w-40">
+                <span className="text-sm text-t2">Сумма, ₽</span>
+                <input type="number" step="0.01" inputMode="decimal" {...register('amount')} className={inputClass} />
+                {formState.errors.amount && (
+                  <p className="mt-1 text-xs text-danger">{formState.errors.amount.message}</p>
+                )}
+              </label>
 
-            <label className="block sm:w-48">
-              <span className="text-sm text-t2">Режим</span>
-              <select {...register('mode')} className={inputClass}>
-                <option value="REDUCE_PAYMENT">Уменьшить платёж</option>
-                <option value="REDUCE_TERM">Сократить срок</option>
-              </select>
-            </label>
+              <label className="block sm:w-44">
+                <span className="text-sm text-t2">Дата внесения</span>
+                <input
+                  type="date"
+                  {...register('date')}
+                  min={credit.startDate ? new Date(credit.startDate).toISOString().slice(0, 10) : undefined}
+                  max={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+                  className={inputClass}
+                />
+                {formState.errors.date && (
+                  <p className="mt-1 text-xs text-danger">{formState.errors.date.message}</p>
+                )}
+              </label>
 
-            <button
-              type="submit"
-              disabled={earlyMutation.isPending}
-              className="rounded-control bg-success px-4 py-2.5 font-medium text-white transition hover:bg-emerald-400 disabled:opacity-50"
-            >
-              {earlyMutation.isPending ? 'Пересчитываю…' : 'Внести'}
-            </button>
+              <label className="block sm:w-48">
+                <span className="text-sm text-t2">Режим</span>
+                <select {...register('mode')} className={inputClass}>
+                  <option value="REDUCE_PAYMENT">Уменьшить платёж</option>
+                  <option value="REDUCE_TERM">Сократить срок</option>
+                </select>
+              </label>
+
+            </div>
+            <div>
+              <button
+                type="submit"
+                disabled={earlyMutation.isPending}
+                className="rounded-control bg-success px-4 py-2.5 font-medium text-white transition hover:bg-emerald-400 disabled:opacity-50"
+              >
+                {earlyMutation.isPending ? 'Пересчитываю…' : 'Внести'}
+              </button>
+            </div>
           </form>
 
           {preview && (
