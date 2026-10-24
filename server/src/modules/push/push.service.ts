@@ -81,12 +81,15 @@ export async function sendUniquePush(
   dedupKey: string,
   payload: PushPayload,
 ): Promise<boolean> {
+  const existing = await prisma.notificationLog.findUnique({ where: { dedupKey } });
+  if (existing) return false;
   try {
     await prisma.notificationLog.create({
       data: { userId, creditId, type, dedupKey, payload: { ...payload } },
     });
-  } catch {
-    return false; // уже отправлялось — защита от дублей при рестарте cron
+  } catch (err: any) {
+    if (err?.code === 'P2002') return false;
+    throw err;
   }
 
   await pushService.sendToUser(userId, payload);
