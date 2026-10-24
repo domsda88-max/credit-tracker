@@ -61,6 +61,7 @@ export function CreditDetailPage() {
   });
 
   const [preview, setPreview] = useState<EarlyPreview | null>(null);
+  const [cancelingId, setCancelingId] = useState<string | null>(null);
   const watchAmount = watch('amount');
   const watchMode = watch('mode');
   const watchDate = watch('date');
@@ -411,11 +412,35 @@ export function CreditDetailPage() {
                       {formatMoney(item.amount)}
                     </span>
                     {item.status === 'PAID' ? (
-                      earlyKeys.has(`${new Date(item.paidAt ?? item.dueDate).toISOString().slice(0, 10)}|${Number(item.paidAmount ?? item.amount)}`) ? (
-                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">Досрочно</span>
-                      ) : (
-                        <StatusBadge status="PAID" />
-                      )
+                      <div className="flex items-center gap-2">
+                        {earlyKeys.has(`${new Date(item.paidAt ?? item.dueDate).toISOString().slice(0, 10)}|${Number(item.paidAmount ?? item.amount)}`) ? (
+                          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">Досрочно</span>
+                        ) : (
+                          <StatusBadge status="PAID" />
+                        )}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!window.confirm(`Отменить платёж ${formatMoney(item.amount)} от ${formatDate(item.dueDate)}? Статус изменится на «Не оплачен», график пересчитается.`)) return;
+                            setCancelingId(item.id);
+                            try {
+                              await (paymentsApi as any).cancelSchedule(item.id);
+                              await queryClient.invalidateQueries({ queryKey: ['credit', id] });
+                              await queryClient.invalidateQueries({ queryKey: ['credits'] });
+                              await queryClient.invalidateQueries({ queryKey: ['summary'] });
+                              toast.show('Платёж отменён');
+                            } catch (err) {
+                              setError(extractErrorMessage(err));
+                            } finally {
+                              setCancelingId(null);
+                            }
+                          }}
+                          disabled={cancelingId === item.id}
+                          className="rounded-lg border border-danger/40 px-2 py-1 text-[11px] font-medium text-danger transition hover:bg-danger/10 disabled:opacity-50"
+                        >
+                          {cancelingId === item.id ? 'Отменяю…' : 'Отменить'}
+                        </button>
+                      </div>
                     ) : (
                       <button
                         type="button"

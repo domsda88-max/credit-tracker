@@ -114,6 +114,44 @@ export const paymentsService = {
     return result;
   },
 
+  /** Отмена оплаченного платежа: возврат статуса в PENDING. */
+  async cancelPayment(userId: string, installmentId: string) {
+    const installment = await prisma.paymentSchedule.findUnique({
+      where: { id: installmentId },
+      include: { credit: true },
+    });
+    if (!installment || installment.credit.userId !== userId) {
+      throw new AppError(404, 'Платёж не найден');
+    }
+    if (installment.status !== 'PAID') {
+      throw new AppError(400, 'Платёж ещё не оплачен');
+    }
+
+    const credit = installment.credit;
+    const amount = round2(toNumber(installment.paidAmount ?? installment.amount));
+    const principalPart = round2(toNumber(installment.principalPart));
+    const newOutstanding = round2(toNumber(credit.outstanding) + principalPart);
+    const newTotalPaid = round2(Math.max(0, toNumber(credit.totalPaid) - amount));
+
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedCredit = await tx.credit.update({
+        where: { id: credit.id },
+        data: {
+          outstanding: newOutstanding,
+          totalPaid: newTotalPaid,
+          status: newOutstanding <= 0.01 ? 'CLOSED' : 'ACTIVE',
+        },
+      });
+      await tx.paymentSchedule.update({
+        where: { id: installmentId },
+        data: { status: 'PENDING', paidAt: null, paidAmount: null },
+      });
+      return updatedCredit;
+    });
+
+    return result;
+  },
+
   /** Досрочное погашение (частичное или полное) с пересборкой графика. */
   async earlyRepayment(userId: string, creditId: string, dto: EarlyRepaymentDto) {
     console.log('earlyRepayment start', { creditId, amount: dto.amount, date: dto.date });

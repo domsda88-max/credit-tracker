@@ -9,6 +9,8 @@ export const paymentsRouter = Router();
 
 paymentsRouter.use(requireAuth);
 
+paymentsRouter.post('/schedule/:installmentId/cancel', asyncHandler(paymentsController.cancelPayment));
+
 /** «Я оплатил» — отметить конкретный платёж графика (можно с фактической суммой и датой). */
 paymentsRouter.post(
   '/installments/:installmentId/pay',

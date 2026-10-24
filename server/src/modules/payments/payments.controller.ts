@@ -3,6 +3,11 @@ import type { EarlyRepaymentDto, PayInstallmentDto } from './payments.schemas';
 import { paymentsService } from './payments.service';
 
 export const paymentsController = {
+  async cancelPayment(req: Request, res: Response) {
+    const result = await paymentsService.cancelPayment(req.user!.sub, req.params.installmentId);
+    res.json(result);
+  },
+
   async payInstallment(req: Request, res: Response) {
     const result = await paymentsService.payInstallment(
       req.user!.sub,
