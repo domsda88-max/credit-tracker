@@ -48,7 +48,7 @@ export function DebtOverview() {
     placeholderData: keepPreviousData,
   });
 
-  const [extra, setExtra] = useState(10000);
+  const [extra, setExtra] = useState(1000);
   const activeDebtsExist = useMemo(() => {
     if (!credits) return false;
     return (credits as CreditListItem[]).some((c) => c.status === 'ACTIVE' && Number(c.outstanding) > 0);
@@ -83,7 +83,8 @@ export function DebtOverview() {
         };
       })
       .filter((d): d is NonNullable<typeof d> => d !== null);
-    const res = simulateAccelerator({ extraPerMonth: extra, baselineMonths, debts });
+    const extraPerMonth = extra >= 1000 ? extra : 0;
+    const res = simulateAccelerator({ extraPerMonth, baselineMonths, debts });
     if (res) lastAccel.current = res;
     return res ?? lastAccel.current;
   }, [credits, extra, baselineMonths]);
@@ -147,7 +148,7 @@ export function DebtOverview() {
             Ускорь свободу
           </p>
           <p className="mt-1.5 text-caption leading-relaxed text-t1" style={{ minHeight: 44 }}>
-            {accelerator && accelerator.savedMonths > 0 ? (
+            {extra >= 1000 && accelerator && accelerator.savedMonths > 0 ? (
               <>
                 Если вносить{' '}
                 <span className="tabular font-semibold text-success">{formatMoney(extra)}</span>
@@ -160,7 +161,7 @@ export function DebtOverview() {
                 вместо {monthsLabel(accelerator.baselineMonths)}
               </>
             ) : (
-              <>Перетащи слайдер, чтобы увидеть, как дополнительный платёж ускорит погашение.</>
+              <>Без досрочных платежей ты освободишься через <span className="font-semibold text-t1">{monthsLabel(baselineMonths)}</span>.</>
             )}
           </p>
           <p className="mt-1 text-micro text-success/80" style={{ minHeight: 14 }}>
@@ -172,15 +173,15 @@ export function DebtOverview() {
           <div className="mt-3">
             <input
               type="range"
-              min={0}
+              min={1000}
               max={100000}
-              step={5000}
+              step={1000}
               value={extra}
               onChange={(e) => setExtra(Number(e.target.value))}
               className="w-full"
             />
             <div className="mt-1 flex justify-between text-micro text-t3">
-              <span>0 ₽</span>
+              <span>1 000 ₽</span>
               <span>100 000 ₽</span>
             </div>
           </div>

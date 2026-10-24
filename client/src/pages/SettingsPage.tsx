@@ -1,5 +1,6 @@
 import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PushSettings } from '../components/PushSettings';
 import { ReminderSettings } from '../components/ReminderSettings';
 import { MotivationSettings } from '../components/MotivationSettings';
@@ -43,6 +44,9 @@ function Accordion({ title, subtitle, defaultOpen = false, children }: {
 
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const navigate = useNavigate();
+  const handleLogout = () => { logout(); navigate('/login', { replace: true }); };
 
   return (
     <div className="w-full max-w-full space-y-5 overflow-x-hidden pb-24 safe-area-bottom touch-manipulation">
@@ -94,6 +98,7 @@ export function SettingsPage() {
         <div className="rounded-card border border-line bg-surface p-4">
           <p className="text-xs text-t3">Вы вошли как</p>
           <p className="mt-0.5 text-sm text-t1 break-all">{user?.email}</p>
+          <button type="button" onClick={handleLogout} className="mt-3 w-full rounded-control border border-danger/40 bg-danger/10 px-4 py-2.5 text-sm font-medium text-danger transition hover:bg-danger/20">Выйти из аккаунта</button>
         </div>
       </section>
     </div>

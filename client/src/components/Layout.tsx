@@ -33,8 +33,7 @@ export function Layout() {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1 pr-1">
-          <ThemeToggle />
+        <div className="ml-auto flex items-center gap-3 pr-4">
           <button
             type="button"
             onClick={handleLogout}
@@ -42,6 +41,7 @@ export function Layout() {
           >
             Выйти
           </button>
+          <ThemeToggle />
         </div>
       </header>
 

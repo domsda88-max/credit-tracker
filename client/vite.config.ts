@@ -12,6 +12,7 @@ export default defineConfig({
       filename: 'sw.ts',
       registerType: 'autoUpdate',
       injectRegister: 'auto',
+      workbox: { skipWaiting: true, clientsClaim: true },
       includeAssets: ['favicon.svg','icon.svg','apple-touch-icon.png','pwa-192x192.png','pwa-512x512.png','pwa-maskable-512.png'],
       manifest: {
         name: 'Credit Tracker',
