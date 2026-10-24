@@ -128,6 +128,8 @@ export const paymentsService = {
     if (!credit) throw new AppError(404, 'Кредит не найден');
     if (credit.status === 'CLOSED') throw new AppError(409, 'Кредит уже закрыт');
     if (credit.type === 'LOAN') throw new AppError(400, 'Для частного займа досрочное погашение не поддерживается');
+    if (credit.type === 'CREDIT_CARD') throw new AppError(400, 'Для кредитной карты досрочное погашение недоступно');
+    if (!credit.termMonths || Number(credit.termMonths) <= 0) throw new AppError(400, 'Невозможно пересчитать график: не указан срок кредита');
 
     const amount = round2(toNumber(dto.amount));
     if (!amount || amount <= 0) throw new AppError(400, 'Сумма должна быть больше 0');
