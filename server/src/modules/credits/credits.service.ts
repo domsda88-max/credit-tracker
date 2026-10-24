@@ -274,8 +274,8 @@ export const creditsService = {
         let mp = 0;
         if (isCreditCard) {
           const nonGrace = pending.find((i: any) => !(toNumber(i.interestPart) === 0 && toNumber(i.amount) === toNumber(c.graceReplenishSum)));
-          const first = nonGrace || pending[0];
-          if (first) mp = toNumber(first.amount);
+          if (nonGrace) mp = toNumber(nonGrace.amount);
+          else if (pending.length > 0) mp = 0; // в грейсе — живёт в блоке грейса
           else mp = toNumber(c.minPayment ?? 0);
         } else {
           const first = pending[0];

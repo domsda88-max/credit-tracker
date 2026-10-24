@@ -20,6 +20,7 @@ export function MoneyFlow() {
   const income = data.monthlyIncome;
   const payments = data.monthlyPayments;
   const free = data.freeMoney;
+  const graceTotal = (data as any).graceReplenishTotal ?? 0;
   const hasIncome = income !== null;
 
   return (
@@ -42,12 +43,18 @@ export function MoneyFlow() {
           </p>
         </div>
         <div className="card-inner px-3 py-2.5">
-          <p className="text-micro text-t3">Платежи в месяц</p>
+          <p className="text-micro text-t3">Платежи в месяц (регулярные платежи по всем активным долгам)</p>
           <p className="tabular mt-0.5 text-body font-semibold text-t1">
             {formatMoney(payments)}
           </p>
         </div>
       </div>
+
+      {graceTotal > 0 && (
+        <p className="mt-2 text-micro text-t3">
+          С учётом обслуживания грейса: <span className="tabular font-medium text-t2">{formatMoney(payments + graceTotal)}</span> ₽
+        </p>
+      )}
 
       <div
         className={`mt-3 flex items-center justify-between gap-3 rounded-control px-3 py-2.5 ${
