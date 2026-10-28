@@ -14,6 +14,8 @@ const publicUserSelect = {
   leadDaysList: true,
   motivationEnabled: true,
   motivationDay: true,
+  motivationTime: true,
+  motivationPerDay: true,
   monthlyIncome: true,
 } as const;
 
@@ -63,6 +65,8 @@ export const authService = {
         reminderHour: dto.reminderHour,
         leadDaysList: dto.leadDaysList,
         ...(dto.motivationEnabled !== undefined ? { motivationEnabled: dto.motivationEnabled } : {}),
+        ...(dto.motivationTime !== undefined ? { motivationTime: dto.motivationTime } : {}),
+        ...(dto.motivationPerDay !== undefined ? { motivationPerDay: dto.motivationPerDay } : {}),
         ...(dto.monthlyIncome !== undefined ? { monthlyIncome: dto.monthlyIncome } : {}),
       },
       select: publicUserSelect,

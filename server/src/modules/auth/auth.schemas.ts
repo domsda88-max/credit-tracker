@@ -36,6 +36,8 @@ export const updateSettingsSchema = z.object({
     .max(15)
     .transform((days) => [...new Set(days)].sort((a, b) => b - a)),
   motivationEnabled: z.boolean().optional(),
+  motivationTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  motivationPerDay: z.coerce.number().int().min(1).max(4).optional(),
   /** Доход в месяц, ₽. null / пусто — не задан. */
   monthlyIncome: z
     .union([z.null(), z.literal(''), z.coerce.number().min(0).max(1_000_000_000)])

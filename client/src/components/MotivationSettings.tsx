@@ -5,17 +5,15 @@ import { useAuthStore } from '../store/auth';
 import { useToast } from './Toast';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 
-/**
- * Ежедневная мотивационная рассылка.
- * Раз в день в 9:30 по локальному времени приходит вдохновляющее уведомление
- * (30 текстов по циклу). Можно включить/выключить.
- */
 export function MotivationSettings() {
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const toast = useToast();
   const [saving, setSaving] = useState(false);
   const { status } = usePushNotifications();
+
+  const [time, setTime] = useState(user?.motivationTime ?? '09:30');
+  const [perDay, setPerDay] = useState(user?.motivationPerDay ?? 1);
 
   if (!user) return null;
 
@@ -39,16 +37,36 @@ export function MotivationSettings() {
     }
   };
 
+  const save = async () => {
+    setSaving(true);
+    try {
+      const updated = await authApi.updateSettings({
+        timezone: user.timezone,
+        reminderHour: user.reminderHour,
+        leadDaysList: user.leadDaysList,
+        motivationTime: time,
+        motivationPerDay: perDay,
+      });
+      setUser(updated);
+      toast.show('Настройки мотивации сохранены');
+    } catch (err) {
+      toast.show(extractErrorMessage(err), 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const interval = perDay > 0 ? Math.round(24 / perDay) : 24;
+
   return (
     <div className="rounded-card border border-line bg-surface p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="font-medium text-t1">Ежедневная мотивация</p>
           <p className="mt-0.5 text-xs text-t3">
-            Каждый день в 9:30 — короткое напоминание про досрочное погашение
+            Каждый день — короткое напоминание про досрочное погашение
           </p>
         </div>
-
         <button
           type="button"
           role="switch"
@@ -69,7 +87,42 @@ export function MotivationSettings() {
       </div>
 
       {enabled && (
-        <div className="mt-3">
+        <div className="mt-4 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className="text-sm text-t2">Время</span>
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2 text-t1"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm text-t2">Раз в день</span>
+              <select
+                value={perDay}
+                onChange={(e) => setPerDay(Number(e.target.value))}
+                className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2 text-t1"
+              >
+                <option value={1}>1 раз</option>
+                <option value={2}>2 раза</option>
+                <option value={3}>3 раза</option>
+                <option value={4}>4 раза</option>
+              </select>
+            </label>
+          </div>
+          <p className="text-xs text-t3">
+            Уведомления в {time} и каждые {interval} ч.
+          </p>
+          <button
+            type="button"
+            onClick={() => void save()}
+            disabled={saving}
+            className="w-full rounded-control bg-primary px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {saving ? 'Сохраняю…' : 'Сохранить'}
+          </button>
           <div className="flex items-center justify-between text-caption">
             <span className="text-t3">Прогресс цикла</span>
             <span className="tabular text-t2">день {user.motivationDay ?? 1} из 30</span>
@@ -82,9 +135,7 @@ export function MotivationSettings() {
           </div>
         </div>
       )}
-      <p className="mt-2 text-xs text-t3">
-        Нужны включённые push-уведомления (блок выше).
-      </p>
+      <p className="mt-2 text-xs text-t3">Нужны включённые push-уведомления (блок выше).</p>
     </div>
   );
 }

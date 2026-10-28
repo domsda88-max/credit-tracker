@@ -39,35 +39,36 @@ export function localTime(timezone: string): { hour: number; minute: number } {
 export async function sendMotivationForUser(
   userId: string,
   day: number,
+  slot = 0,
 ): Promise<boolean> {
   const today = utcToday();
 
-  // Текст собирается под ЭТОГО пользователя: его долги, ставки, циклы, суммы.
   const context = await buildMotivationContext(userId);
   const text = motivationForDay(context, day);
 
-  // Идемпотентность: одна мотивация в сутки на пользователя.
   const sent = await sendUniquePush(
     userId,
     null,
     'MOTIVATION',
-    `${userId}:MOTIVATION:${isoDate(today)}`,
+    `${userId}:MOTIVATION:${isoDate(today)}:slot${slot}`,
     {
       title: text.title,
       body: text.body,
       url: '/',
-      tag: 'motivation',
+      tag: `motivation-${slot}`,
     },
   );
 
   if (!sent) return false;
 
-  // Переходим к следующему дню цикла (после последнего — снова день 1).
-  const nextDay = (day % MOTIVATION_CYCLE) + 1;
-  await prisma.user.update({
-    where: { id: userId },
-    data: { motivationDay: nextDay, motivationSentOn: today },
-  });
+  // Продвигаем день цикла только после первого слота дня.
+  if (slot === 0) {
+    const nextDay = (day % MOTIVATION_CYCLE) + 1;
+    await prisma.user.update({
+      where: { id: userId },
+      data: { motivationDay: nextDay },
+    });
+  }
 
   return true;
 }
@@ -80,12 +81,30 @@ export async function sendMotivationForUser(
  * ещё не отправлялось. Так пропущенный из-за сна сервера запуск
  * «догоняется» при первом пробуждении, а дубли отсекает журнал.
  */
+function parseTime(s: string | null | undefined): { h: number; m: number } {
+  const v = s ?? '09:30';
+  const [hh, mm] = v.split(':');
+  return { h: Number(hh) || 9, m: Number(mm) || 30 };
+}
+
+/** Локальное время в минутах от полуночи. */
+function localMinutes(timezone: string): number {
+  const { hour, minute } = localTime(timezone);
+  return hour * 60 + minute;
+}
+
 export async function runMotivationJob(
   force = false,
 ): Promise<{ processedUsers: number; pushed: number }> {
   const users = await prisma.user.findMany({
     where: { motivationEnabled: true },
-    select: { id: true, timezone: true, motivationDay: true },
+    select: {
+      id: true,
+      timezone: true,
+      motivationDay: true,
+      motivationTime: true,
+      motivationPerDay: true,
+    },
   });
 
   let processedUsers = 0;
@@ -93,15 +112,24 @@ export async function runMotivationJob(
 
   for (const user of users) {
     try {
-      if (!force) {
-        const { hour, minute } = localTime(user.timezone);
-        if (hour < MOTIVATION_HOUR) continue;
-        if (hour === MOTIVATION_HOUR && minute < MOTIVATION_MINUTE) continue;
+      const perDay = user.motivationPerDay ?? 1;
+      const { h, m } = parseTime(user.motivationTime);
+      const base = h * 60 + m;
+      const step = Math.round(1440 / perDay);
+      const slots: number[] = [];
+      for (let k = 0; k < perDay; k++) {
+        slots.push((base + k * step) % 1440);
       }
+
+      const nowMin = localMinutes(user.timezone);
       processedUsers += 1;
 
-      const ok = await sendMotivationForUser(user.id, user.motivationDay ?? 1);
-      if (ok) pushed += 1;
+      for (let k = 0; k < slots.length; k++) {
+        const slotMin = slots[k];
+        if (!force && nowMin < slotMin) continue;
+        const ok = await sendMotivationForUser(user.id, user.motivationDay ?? 1, k);
+        if (ok) pushed += 1;
+      }
     } catch (error) {
       console.error(`[cron] Ошибка мотивации для ${user.id}:`, (error as Error).message);
     }

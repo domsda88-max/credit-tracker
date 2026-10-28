@@ -1,4 +1,4 @@
-import { Home, Plus, Settings } from 'lucide-react';
+import { Bell, Home, Plus, Settings } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth';
 import { ThemeToggle } from './ThemeToggle';
@@ -33,24 +33,17 @@ export function Layout() {
           </div>
         </div>
 
-        <div className="ml-auto flex items-center gap-3 pr-4">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="shrink-0 rounded-control px-2 py-2 text-caption font-medium text-t3 transition-colors hover:text-t2 active:bg-surface2"
-          >
-            Выйти
-          </button>
+        <div className="ml-auto flex items-center pr-4">
           <ThemeToggle />
         </div>
       </header>
 
       {/* Единственная прокручиваемая область приложения */}
-      <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain pb-2 [-webkit-overflow-scrolling:touch]">
+      <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain pb-[calc(100px+env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch]">
         <Outlet />
       </main>
 
-      <nav className="flex shrink-0 items-stretch justify-around border-t border-line bg-surface/80 backdrop-blur-xl pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1.5">
+      <nav className="flex shrink-0 items-stretch justify-around border-t border-line bg-surface/80 backdrop-blur-xl pb-[calc(env(safe-area-inset-bottom)+20px)] pt-1.5">
         {NAV.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}

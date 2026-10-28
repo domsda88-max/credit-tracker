@@ -22,6 +22,8 @@ export const authApi = {
     reminderHour: number;
     leadDaysList: number[];
     motivationEnabled?: boolean;
+    motivationTime?: string;
+    motivationPerDay?: number;
     monthlyIncome?: number | null;
   }): Promise<User> {
     const { data } = await api.put<User>('/auth/settings', payload);

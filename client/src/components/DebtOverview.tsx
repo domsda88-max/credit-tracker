@@ -21,16 +21,19 @@ function untilLabel(iso: string): string {
   return parts.length ? `через ${parts.join(' ')}` : 'меньше месяца';
 }
 
-/** Число месяцев человеческим языком: «2 года 3 мес.». */
+/** Число месяцев человеческим языком с днями: «1 год 6 мес. 12 дн.». */
 function monthsLabel(months: number): string {
   if (months <= 0) return 'меньше месяца';
-  const whole = Math.floor(months);
-  const years = Math.floor(whole / 12);
-  const rest = whole % 12;
+  const totalDays = Math.round(months * 30.44);
+  const years = Math.floor(totalDays / 365);
+  const restDays = totalDays % 365;
+  const restMonths = Math.floor(restDays / 30.44);
+  const days = Math.round(restDays % 30.44);
   const parts: string[] = [];
   if (years > 0) parts.push(`${years} ${years === 1 ? 'год' : years < 5 ? 'года' : 'лет'}`);
-  if (rest > 0) parts.push(`${rest} мес.`);
-  return parts.join(' ');
+  if (restMonths > 0) parts.push(`${restMonths} мес.`);
+  if (days > 0 && years === 0) parts.push(`${days} дн.`);
+  return parts.join(' ') || '0 дн.';
 }
 
 function monthsBetween(from: Date, to: Date): number {

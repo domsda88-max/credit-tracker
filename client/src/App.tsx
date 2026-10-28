@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AddCreditPage } from './pages/AddCreditPage';
+import { AppSettingsPage } from './pages/AppSettingsPage';
 import { CreditDetailPage } from './pages/CreditDetailPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
@@ -25,6 +26,7 @@ export function App() {
         <Route path="/credits/new" element={<AddCreditPage />} />
         <Route path="/credits/:id" element={<CreditDetailPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/app-settings" element={<AppSettingsPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

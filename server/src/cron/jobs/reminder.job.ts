@@ -65,7 +65,11 @@ async function sendDigestForUser(userId: string, leadDaysList: number[]): Promis
     orderBy: { dueDate: 'asc' },
   });
 
-  if (pending.length === 0) return;
+  console.log('[digest] user:', userId, 'pending count:', pending.length);
+  if (pending.length === 0) {
+    console.log('[digest] no pending payments, skip');
+    return;
+  }
 
   const overdue: DueItem[] = [];
   const byLead = new Map<number, DueItem[]>();
@@ -186,7 +190,12 @@ export async function runReminderJob(force = false): Promise<{ processedUsers: n
   for (const user of users) {
     try {
       const hour = user.reminderHour ?? DEFAULT_REMINDER_HOUR;
-      if (!force && localHour(user.timezone) < hour) continue;
+      const lh = localHour(user.timezone);
+      console.log('[cron] user:', user.id, 'timezone:', user.timezone, 'localHour:', lh, 'REMINDER_HOUR:', hour);
+      if (!force && lh < hour) {
+        console.log('[cron] skip user:', user.id, 'hour mismatch');
+        continue;
+      }
       processedUsers += 1;
 
       const before = await prisma.notificationLog.count({

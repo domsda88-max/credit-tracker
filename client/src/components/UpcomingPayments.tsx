@@ -55,11 +55,19 @@ export function UpcomingPayments({ credits }: Props) {
     }))
     .filter((item) => {
       const d = new Date(item.dueDate);
-      return (
-        d.getUTCFullYear() === curYear && d.getUTCMonth() === curMonth && d >= today && d <= endOfMonth
-      );
+      const isOverdue = d.getTime() < today.getTime();
+      const isThisMonth = d.getUTCFullYear() === curYear && d.getUTCMonth() === curMonth;
+      return isOverdue || isThisMonth;
     })
-    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    .sort((a, b) => {
+      const da = new Date(a.dueDate).getTime();
+      const db = new Date(b.dueDate).getTime();
+      const oa = da < today.getTime();
+      const ob = db < today.getTime();
+      if (oa !== ob) return oa ? -1 : 1;
+      if (oa && ob) return da - db; // overdue: oldest first (most overdue)
+      return da - db;
+    });
 
   if (items.length === 0) {
     return (

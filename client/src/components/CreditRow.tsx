@@ -144,6 +144,38 @@ export function CreditRow({ credit, index = 0 }: Props) {
   const cycleSum = credit.graceReplenishSum ? Number(credit.graceReplenishSum) : null;
   const tone = next ? TONE[urgencyTone(daysUntil(next.dueDate))] : TONE.muted;
 
+  const payMutation = useMutation({
+    mutationFn: () => paymentsApi.payInstallment(next!.id, {}),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['credits'] });
+      const prev = queryClient.getQueryData(['credits']);
+      return { prev };
+    },
+    onError: (err, _v, ctx: any) => {
+      queryClient.setQueryData(['credits'], ctx?.prev);
+      toast.show(extractErrorMessage(err), 'error');
+    },
+    onSuccess: () => {
+      toast.show('Платёж отмечен');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['credits'] });
+      queryClient.invalidateQueries({ queryKey: ['summary'] });
+    },
+  });
+
+  const showPayButton = !!next && !isClosed && !freezeCycle && (() => {
+    const diff = daysUntil(next.dueDate);
+    return diff <= 3; // overdue (negative) or within 3 days
+  })();
+
+  const payButtonColor =
+    next && daysUntil(next.dueDate) < 0
+      ? 'bg-danger hover:bg-danger/90'
+      : daysUntil(next!.dueDate) === 0
+      ? 'bg-warning hover:bg-warning/90'
+      : 'bg-primary hover:bg-primary/90';
+
   return (
     <>
       <div
@@ -197,18 +229,34 @@ export function CreditRow({ credit, index = 0 }: Props) {
 
           {next && !isClosed && !freezeCycle && (
             <div
-              className={`card-inner mt-3 flex items-center justify-between border-l-[3px] py-2 pl-2.5 pr-3 text-base ${tone.border}`}
+              className={`card-inner mt-3 flex flex-col gap-2 border-l-[3px] py-2 pl-2.5 pr-3 text-base ${tone.border}`}
             >
-              <span className="flex items-center gap-2 text-t2">
-                <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
-                Ближайший платёж
-              </span>
-              <span className="text-right">
-                <span className="tabular font-semibold text-t1">{formatMoneyShort(next.amount)}</span>
-                <span className={`ml-2 text-caption ${tone.text}`}>
-                  {formatDateShort(next.dueDate)} · {describeDueDate(next.dueDate)}
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-t2">
+                  <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
+                  Ближайший платёж
                 </span>
-              </span>
+                <span className="text-right">
+                  <span className="tabular font-semibold text-t1">{formatMoneyShort(next.amount)}</span>
+                  <span className={`ml-2 text-caption ${tone.text}`}>
+                    {formatDateShort(next.dueDate)} · {describeDueDate(next.dueDate)}
+                  </span>
+                </span>
+              </div>
+              {showPayButton && (
+                <button
+                  type="button"
+                  disabled={payMutation.isPending}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    payMutation.mutate();
+                  }}
+                  className={`w-full rounded-control px-3 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${payButtonColor}`}
+                >
+                  {payMutation.isPending ? 'Отмечаю…' : 'Оплатить'}
+                </button>
+              )}
             </div>
           )}
 

@@ -14,6 +14,8 @@ export interface User {
   leadDaysList: number[];
   motivationEnabled: boolean;
   motivationDay: number;
+  motivationTime?: string;
+  motivationPerDay?: number;
   /** ����� � �����, ?. null � �� �����. */
   monthlyIncome: number | null;
 }

@@ -43,13 +43,12 @@ createRoot(document.getElementById('root')!).render(
 );
 
 // PWA: автообновление при новой версии Service Worker.
-// Проверяем при старте, раз в минуту, при возврате в приложение и при появлении сети —
-// чтобы установленное на рабочий стол приложение не «залипало» на старой версии.
 if ('serviceWorker' in navigator) {
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    console.log('[SW] controllerchange');
-    // Do NOT auto-reload — causes reload loop. User can refresh manually.
+    if (reloading) return;
+    reloading = true;
+    window.location.reload();
   });
 
   const checkUpdate = async () => {
@@ -58,9 +57,7 @@ if ('serviceWorker' in navigator) {
       if (!registration) return;
       registration.addEventListener('updatefound', () => console.log('[SW] updatefound'));
       await registration.update();
-      // Если уже ждёт новая версия — активируем её немедленно.
       if (registration.waiting) {
-        console.log('[SW] waiting -> SKIP_WAITING');
         registration.waiting.postMessage({ type: 'SKIP_WAITING' });
       }
     } catch {
@@ -69,7 +66,7 @@ if ('serviceWorker' in navigator) {
   };
 
   void checkUpdate();
-  // Removed setInterval polling to prevent SW update loop
+  const interval = setInterval(() => void checkUpdate(), 60_000);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') void checkUpdate();
   });
