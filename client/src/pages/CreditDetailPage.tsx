@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useParams } from 'react-router-dom';
 import { z } from 'zod';
@@ -8,6 +8,8 @@ import { extractErrorMessage } from '../api/client';
 import { creditsApi } from '../api/credits';
 import { paymentsApi } from '../api/payments';
 import { StatusBadge } from '../components/StatusBadge';
+import { SkeletonCard } from '../components/Skeleton';
+import { SegmentedControl } from '../components/SegmentedControl';
 import { BalanceChart } from '../components/BalanceChart';
 import { EditCreditForm } from '../components/EditCreditForm';
 import { useToast } from '../components/Toast';
@@ -55,13 +57,14 @@ export function CreditDetailPage() {
   });
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const { register, handleSubmit, reset, formState, watch } = useForm<EarlyFormValues>({
+  const { register, handleSubmit, reset, formState, watch, setValue } = useForm<EarlyFormValues>({
     resolver: zodResolver(earlySchema),
     defaultValues: { mode: 'REDUCE_PAYMENT', date: todayStr },
   });
 
   const [preview, setPreview] = useState<EarlyPreview | null>(null);
   const [cancelingId, setCancelingId] = useState<string | null>(null);
+  const submitting = useRef(false);
   const watchAmount = watch('amount');
   const watchMode = watch('mode');
   const watchDate = watch('date');
@@ -116,6 +119,7 @@ export function CreditDetailPage() {
       setPreview(null);
       await invalidate();
       toast.show('Досрочное погашение внесено');
+      navigator.vibrate?.([30, 40, 30]);
     },
     onError: (err) => setError(extractErrorMessage(err)),
   });
@@ -129,7 +133,7 @@ export function CreditDetailPage() {
     onError: (err) => setError(extractErrorMessage(err)),
   });
 
-  if (isLoading) return <p className="text-sm text-t3">Загружаю кредит…</p>;
+  if (isLoading) return <div className="space-y-4"><SkeletonCard /><SkeletonCard /></div>;
   if (loadError || !credit) {
     return (
       <div>
@@ -282,7 +286,7 @@ export function CreditDetailPage() {
         />
       )}
 
-      {credit.status === 'ACTIVE' && credit.type !== 'LOAN' && (
+      {credit.status === 'ACTIVE' && credit.type !== 'LOAN' && credit.type !== 'CREDIT_CARD' && (
         <section className="rounded-card border border-line bg-surface p-4">
             <h2 className="font-medium text-t1">Досрочное погашение</h2>
           <p className="mt-0.5 text-xs text-t3">
@@ -290,7 +294,15 @@ export function CreditDetailPage() {
           </p>
 
           <form
-            onSubmit={handleSubmit((values) => earlyMutation.mutate(values))}
+            onSubmit={handleSubmit((values) => {
+              if (submitting.current) return;
+              submitting.current = true;
+              earlyMutation.mutate(values, {
+                onSettled: () => {
+                  submitting.current = false;
+                },
+              });
+            })}
             className="mt-3 space-y-3"
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -316,28 +328,37 @@ export function CreditDetailPage() {
                 )}
               </label>
 
-              <label className="block sm:w-48">
+              <div className="block sm:w-48">
                 <span className="text-sm text-t2">Режим</span>
-                <select {...register('mode')} className={inputClass}>
-                  <option value="REDUCE_PAYMENT">Уменьшить платёж</option>
-                  <option value="REDUCE_TERM">Сократить срок</option>
-                </select>
-              </label>
+                <div className="mt-1">
+                  <SegmentedControl
+                    ariaLabel="Режим досрочного погашения"
+                    value={(watch('mode') ?? 'REDUCE_PAYMENT') as 'REDUCE_PAYMENT' | 'REDUCE_TERM'}
+                    options={[
+                      { value: 'REDUCE_PAYMENT', label: 'Уменьшить платёж' },
+                      { value: 'REDUCE_TERM', label: 'Сократить срок' },
+                    ]}
+                    onChange={(v) => setValue('mode', v)}
+                  />
+                </div>
+              </div>
 
             </div>
             <div>
               <button
                 type="submit"
-                disabled={earlyMutation.isPending}
-                className="rounded-control bg-success px-4 py-2.5 font-medium text-white transition hover:bg-emerald-400 disabled:opacity-50"
+                className="rounded-control bg-success px-4 py-2.5 font-medium text-white transition hover:bg-emerald-400"
               >
-                {earlyMutation.isPending ? 'Пересчитываю…' : 'Внести'}
+                Внести
               </button>
             </div>
           </form>
 
           {preview && (
             <div className="mt-3 rounded-control border border-success/30 bg-success/10 px-4 py-3 text-sm">
+              <p className="text-xs text-success/70">
+                Проценты за период: {formatMoney(preview.accruedInterest)} · в тело: {formatMoney(preview.principalPart)}
+              </p>
               {preview.isFull ? (
                 <p className="font-medium text-success">
                   🎉 Полное закрытие кредита: сэкономите{' '}
@@ -372,7 +393,7 @@ export function CreditDetailPage() {
       {credit.type !== 'LOAN' && (
       <section className="rounded-card border border-line bg-surface p-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="min-w-0 whitespace-nowrap text-sm font-medium text-t1">
+            <h2 className="min-w-0 text-sm font-medium text-t1">
             График платежей{' '}
             {pending.length > 0 && <span className="text-t3">· к оплате {pending.length}</span>}
           </h2>
@@ -438,7 +459,7 @@ export function CreditDetailPage() {
                           disabled={cancelingId === item.id}
                           className="rounded-lg border border-danger/40 px-2 py-1 text-[11px] font-medium text-danger transition hover:bg-danger/10 disabled:opacity-50"
                         >
-                          {cancelingId === item.id ? 'Отменяю…' : 'Отменить'}
+                          {cancelingId === item.id ? '…' : 'Отменить'}
                         </button>
                       </div>
                     ) : (
@@ -504,7 +525,7 @@ export function CreditDetailPage() {
                       disabled={payMutation.isPending}
                       className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition hover:bg-primary/90 disabled:opacity-50"
                     >
-                      {payMutation.isPending ? 'Записываю…' : 'Подтвердить оплату'}
+                      {payMutation.isPending ? '…' : 'Подтвердить оплату'}
                     </button>
                   </form>
                 )}

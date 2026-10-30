@@ -1,11 +1,24 @@
 /// <reference lib="webworker" />
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+import { NetworkFirst } from 'workbox-strategies';
+import { registerRoute } from 'workbox-routing';
 
 declare let self: ServiceWorkerGlobalScope;
 
 // Precache статики (Vite подставит список файлов на этапе сборки)
-precacheAndRoute(self.__WB_MANIFEST);
+precacheAndRoute(
+  self.__WB_MANIFEST.filter((entry: any) => {
+    const url = typeof entry === 'string' ? entry : entry.url;
+    return !url.endsWith('index.html') && url !== '/' && url !== 'index.html';
+  }),
+);
 cleanupOutdatedCaches();
+
+// Навигации — network-first, чтобы новые версии приезжали без ручной очистки кэша.
+registerRoute(
+  ({ request }) => request.mode === 'navigate',
+  new NetworkFirst({ cacheName: 'pages', networkTimeoutSeconds: 3 }),
+);
 
 interface PushData {
   title?: string;

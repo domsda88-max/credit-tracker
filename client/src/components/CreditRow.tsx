@@ -254,7 +254,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
                   }}
                   className={`w-full rounded-control px-3 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${payButtonColor}`}
                 >
-                  {payMutation.isPending ? 'Отмечаю…' : 'Оплатить'}
+                  {payMutation.isPending ? '…' : 'Оплатить'}
                 </button>
               )}
             </div>
@@ -327,7 +327,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
               <span>Я обновил период (внёс сумму)</span>
             </button>
           )}
-          {credit.type !== 'LOAN' && !isClosed && (
+          {credit.type !== 'LOAN' && credit.type !== 'CREDIT_CARD' && !isClosed && (
             <button
               type="button"
               onClick={() => {
@@ -413,7 +413,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
             disabled={earlyPending}
             className="w-full rounded-control bg-success px-4 py-2.5 font-medium text-white disabled:opacity-50"
           >
-            {earlyPending ? 'Пересчитываю…' : 'Внести'}
+            {earlyPending ? '…' : 'Внести'}
           </button>
         </form>
       </BottomSheet>

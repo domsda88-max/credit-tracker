@@ -1,0 +1,125 @@
+diff --git a/server/.gitignore b/server/.gitignore
+index aa0926a..2f3238f 100644
+--- a/server/.gitignore
++++ b/server/.gitignore
+@@ -2,3 +2,4 @@ node_modules/
+ dist/
+ .env
+ *.log
++.env.test
+diff --git a/server/src/modules/credits/credits.service.ts b/server/src/modules/credits/credits.service.ts
+index faa5034..240cbf3 100644
+--- a/server/src/modules/credits/credits.service.ts
++++ b/server/src/modules/credits/credits.service.ts
+@@ -149,7 +149,13 @@ export const creditsService = {
+       dto.markPastAsPaid ??
+       ((dto.startDate ? dto.startDate.getTime() < utcToday().getTime() : false) &&
+         dto.paymentType !== 'MIN_PAYMENT');
+-    const past = markPast ? planPastPayments(schedule) : null;
++    // markPastAsPaid — явное разрешение импорта; сама по себе дата не считается
++    // подтверждением оплаты. Без явного флага поведение остаётся осторожным.
++    const past = markPast
++      ? planPastPayments(schedule, undefined, {
++          assumeAllDuePaid: dto.markPastAsPaid === true,
++        })
++      : null;
+ 
+     return prisma.$transaction(async (tx) => {
+       const credit = await tx.credit.create({
+@@ -508,7 +514,9 @@ export const creditsService = {
+             const rebuilt = generateSchedule(mergeInput);
+             const markPast = dto.markPastAsPaid === true;
+             if (markPast) {
+-              const pastPlan = planPastPayments(rebuilt);
++              const pastPlan = planPastPayments(rebuilt, undefined, {
++                assumeAllDuePaid: dto.markPastAsPaid === true,
++              });
+               totalPaidValue = pastPlan.paidTotal;
+               outstandingValue = dto.outstanding ?? pastPlan.outstanding;
+               pastToMark = pastPlan.paidCount;
+@@ -596,8 +604,18 @@ export const creditsService = {
+     const today = utcToday();
+ 
+     return prisma.$transaction(async (tx) => {
+-      const updated = await tx.credit.update({
+-        where: { id: creditId },
++      // Атомарная проверка цикла. Конкурентный или повторный вызов получает
++      // count = 0 и не изменяет Credit, даты, балансы и журнал.
++      const renewal = await tx.credit.updateMany({
++        where: {
++          id: creditId,
++          userId,
++          frozen: true,
++          OR: [
++            { nextFreezeCheckAt: null },
++            { nextFreezeCheckAt: { lte: today } },
++          ],
++        },
+         data: {
+           freezeStartedAt: today,
+           nextFreezeCheckAt: addUTCDays(today, cycleDays),
+@@ -610,6 +628,10 @@ export const creditsService = {
+         },
+       });
+ 
++      if (renewal.count !== 1) {
++        throw new AppError(409, 'Льготный период уже обновлён в текущем цикле');
++      }
++
+       if (amount > 0) {
+         await tx.paymentEvent.create({
+           data: {
+@@ -622,7 +644,7 @@ export const creditsService = {
+         });
+       }
+ 
+-      return updated;
++      return tx.credit.findUnique({ where: { id: creditId } });
+     });
+   },
+ 
+diff --git a/server/src/utils/finance/pastPayments.ts b/server/src/utils/finance/pastPayments.ts
+index 49dd1e0..51b2fcb 100644
+--- a/server/src/utils/finance/pastPayments.ts
++++ b/server/src/utils/finance/pastPayments.ts
+@@ -29,7 +29,21 @@ export interface PastPaymentsPlan {
+  * кроме последней) считаются внесёнными. Из суммы основного долга вычитается
+  * «телесная» часть этих платежей, поэтому остаток соответствует реальности.
+  */
+-export function planPastPayments(schedule: ScheduleItem[], now: Date = new Date()): PastPaymentsPlan {
++export interface PlanPastPaymentsOptions {
++  /**
++   * Явный режим `markPastAsPaid: true` (импорт/создание).
++   * Означает, что caller осознанно считает прошедшие по дате платежи оплаченными.
++   * Не является подтверждением фактической оплаты сам по себе — это разрешение
++   * эвристики для сценария создания/импорта.
++   */
++  assumeAllDuePaid?: boolean;
++}
++
++export function planPastPayments(
++  schedule: ScheduleItem[],
++  now: Date = new Date(),
++  options?: PlanPastPaymentsOptions,
++): PastPaymentsPlan {
+   const today = utcToday(now);
+   const totalCount = schedule.length;
+ 
+@@ -38,8 +52,16 @@ export function planPastPayments(schedule: ScheduleItem[], now: Date = new Date(
+ 
+   // Незакрытый кредит: последний платёж ещё не наступил — исключаем его,
+   // иначе остаток обнулился бы и кредит считался бы погашенным.
++  const assumeAllDuePaid = options?.assumeAllDuePaid === true;
++
+   let paidCount = cutoffIndex;
+-  if (paidCount >= totalCount && totalCount > 1) paidCount = totalCount - 1;
++  // По умолчанию последний платёж не закрывается одной датой: это защита от
++  // автозакрытия кредита при импорте/пересчёте без явного подтверждения оплаты.
++  // Явный режим assumeAllDuePaid разрешает считать прошедшие по дате платежи
++  // оплаченными (см. markPastAsPaid: true), но не подменяет статус PAID в БД.
++  if (!assumeAllDuePaid && paidCount >= totalCount) {
++    paidCount = Math.max(0, totalCount - 1);
++  }
+ 
+   const paid = schedule.slice(0, paidCount);
+   const paidTotal = round2(paid.reduce((sum, item) => sum + item.amount, 0));

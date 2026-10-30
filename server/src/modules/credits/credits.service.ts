@@ -149,7 +149,13 @@ export const creditsService = {
       dto.markPastAsPaid ??
       ((dto.startDate ? dto.startDate.getTime() < utcToday().getTime() : false) &&
         dto.paymentType !== 'MIN_PAYMENT');
-    const past = markPast ? planPastPayments(schedule) : null;
+    // markPastAsPaid — явное разрешение импорта; сама по себе дата не считается
+    // подтверждением оплаты. Без явного флага поведение остаётся осторожным.
+    const past = markPast
+      ? planPastPayments(schedule, undefined, {
+          assumeAllDuePaid: dto.markPastAsPaid === true,
+        })
+      : null;
 
     return prisma.$transaction(async (tx) => {
       const credit = await tx.credit.create({
@@ -508,7 +514,9 @@ export const creditsService = {
             const rebuilt = generateSchedule(mergeInput);
             const markPast = dto.markPastAsPaid === true;
             if (markPast) {
-              const pastPlan = planPastPayments(rebuilt);
+              const pastPlan = planPastPayments(rebuilt, undefined, {
+                assumeAllDuePaid: dto.markPastAsPaid === true,
+              });
               totalPaidValue = pastPlan.paidTotal;
               outstandingValue = dto.outstanding ?? pastPlan.outstanding;
               pastToMark = pastPlan.paidCount;
@@ -596,8 +604,18 @@ export const creditsService = {
     const today = utcToday();
 
     return prisma.$transaction(async (tx) => {
-      const updated = await tx.credit.update({
-        where: { id: creditId },
+      // Атомарная проверка цикла. Конкурентный или повторный вызов получает
+      // count = 0 и не изменяет Credit, даты, балансы и журнал.
+      const renewal = await tx.credit.updateMany({
+        where: {
+          id: creditId,
+          userId,
+          frozen: true,
+          OR: [
+            { nextFreezeCheckAt: null },
+            { nextFreezeCheckAt: { lte: today } },
+          ],
+        },
         data: {
           freezeStartedAt: today,
           nextFreezeCheckAt: addUTCDays(today, cycleDays),
@@ -609,6 +627,10 @@ export const creditsService = {
             : {}),
         },
       });
+
+      if (renewal.count !== 1) {
+        throw new AppError(409, 'Льготный период уже обновлён в текущем цикле');
+      }
 
       if (amount > 0) {
         await tx.paymentEvent.create({
@@ -622,7 +644,7 @@ export const creditsService = {
         });
       }
 
-      return updated;
+      return tx.credit.findUnique({ where: { id: creditId } });
     });
   },
 

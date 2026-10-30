@@ -33,20 +33,25 @@ export function rebuildSchedule(input: RebuildInput): ScheduleItem[] {
   const principal = round2(input.outstanding);
   if (principal <= 0) return [];
 
-  const remainingTerm = Math.max(1, Math.round(input.remainingTermMonths));
+  let remainingTerm = Math.max(1, Math.round(input.remainingTermMonths));
+  if (!Number.isFinite(remainingTerm) || remainingTerm < 1) {
+    throw new Error('Некорректный оставшийся срок');
+  }
+  if (remainingTerm > 600) {
+    throw new Error('Слишком большой оставшийся срок при пересчёте');
+  }
 
   // ——— Дифференцированный ———
   if (input.paymentType === 'DIFFERENTIAL') {
     const part = input.previousPrincipalPart ?? 0;
-    const months =
+    let months =
       input.mode === 'REDUCE_TERM' && part > 0 ? Math.max(1, Math.ceil(principal / part)) : remainingTerm;
+    if (!Number.isFinite(months) || months < 1) months = remainingTerm;
+    if (months > 600) throw new Error('Некорректный срок пересчёта');
+    const dates = makeDueDates(input.nextDueDate, months);
+    if (dates.length !== months) throw new Error('Ошибка построения дат графика');
 
-    return buildDifferentialSchedule(
-      principal,
-      input.annualRate,
-      months,
-      makeDueDates(input.nextDueDate, months),
-    );
+    return buildDifferentialSchedule(principal, input.annualRate, months, dates);
   }
 
   // ——— Аннуитет / кредитка ———
@@ -54,27 +59,38 @@ export function rebuildSchedule(input: RebuildInput): ScheduleItem[] {
   let months = remainingTerm;
 
   const payment = input.previousPayment ?? 0;
-  const canShorten = i === 0 ? payment > 0 : payment > principal * i;
+  const canShorten = i === 0 ? payment > 0 : payment > principal * i + 1e-9;
 
-  if (input.mode === 'REDUCE_TERM' && canShorten) {
-    months =
-      i === 0
-        ? Math.ceil(principal / payment)
-        : Math.ceil(Math.log(1 / (1 - (i * principal) / payment)) / Math.log(1 + i));
-    months = Math.max(1, months);
+  if (input.mode === 'REDUCE_TERM' && canShorten && payment > 0 && Number.isFinite(payment)) {
+    let monthsCalc: number;
+    if (i === 0) {
+      monthsCalc = Math.ceil(principal / payment);
+    } else {
+      const numerator = i * principal;
+      const denomFactor = numerator / payment;
+      if (denomFactor >= 1 - 1e-12) {
+        throw new Error('Платёж слишком мал для сокращения срока');
+      }
+      monthsCalc = Math.ceil(Math.log(1 / (1 - denomFactor)) / Math.log(1 + i));
+    }
+    if (!Number.isFinite(monthsCalc) || monthsCalc <= 0) {
+      throw new Error('Не удалось рассчитать срок при досрочном погашении');
+    }
+    months = Math.max(1, monthsCalc);
   }
 
-  return buildAnnuitySchedule(
-    principal,
-    input.annualRate,
-    months,
-    makeDueDates(input.nextDueDate, months),
-  );
+  if (months > 600) throw new Error('Слишком большой срок пересчёта');
+  const dates = makeDueDates(input.nextDueDate, months);
+  if (dates.length !== months) throw new Error('Ошибка построения дат графика');
+
+  return buildAnnuitySchedule(principal, input.annualRate, months, dates);
 }
 
 function makeDueDates(firstDueDate: Date, count: number): Date[] {
   const dates: Date[] = [];
-  for (let k = 0; k < count; k++) dates.push(withDayOfMonth(addMonths(firstDueDate, k), null));
+  for (let k = 0; k < count; k++) {
+    dates.push(withDayOfMonth(addMonths(firstDueDate, k), null));
+  }
   return dates;
 }
 

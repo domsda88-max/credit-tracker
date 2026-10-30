@@ -167,6 +167,10 @@ export interface EarlyPreview {
   paymentBefore: number;
   paymentAfter: number;
   monthsAfter?: number;
+  accruedInterest?: number;
+  principalPart?: number;
+  days?: number;
+  coversInterest?: boolean;
 }
 
 export interface SubscribePayload {

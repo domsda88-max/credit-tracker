@@ -88,7 +88,7 @@ export function IncomeSettings() {
         disabled={saving || !dirty || invalid}
         className="btn btn-primary mt-3 w-full disabled:opacity-50"
       >
-        {saving ? 'Сохраняю…' : 'Сохранить доход'}
+        {saving ? '…' : 'Сохранить доход'}
       </button>
 
       {invalid && <p className="mt-2 text-caption text-danger">Введите неотрицательное число</p>}

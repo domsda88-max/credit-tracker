@@ -24,12 +24,11 @@ export function PushSettings() {
   return (
     <div className="rounded-card border border-line bg-surface p-4">
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="font-medium text-t1">Push-уведомления</p>
-          <p className="mt-0.5 text-xs text-t3">
-            Сводка платежей в выбранное время + напоминания о сроках
-          </p>
-        </div>
+        {status === 'subscribed' ? (
+          <p className="text-xs text-success">Уведомления включены ✅</p>
+        ) : (
+          <p className="text-xs text-t3">Уведомления выключены</p>
+        )}
 
         {status === 'subscribed' ? (
           <button
@@ -66,7 +65,7 @@ export function PushSettings() {
       {status === 'error' && error && <p className="mt-2 text-xs text-danger">{error}</p>}
       {status === 'subscribed' && (
         <div className="mt-3 flex items-center justify-between gap-3">
-          <p className="text-xs text-success">Уведомления включены ✅</p>
+          <p className="text-xs text-t3">Сводка платежей в выбранное время + напоминания о сроках</p>
           <button
             type="button"
             onClick={() => void sendTest()}

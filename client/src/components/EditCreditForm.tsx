@@ -206,9 +206,9 @@ export function EditCreditForm({
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="inline-flex w-full items-center justify-center gap-2 min-w-[150px] whitespace-nowrap rounded-control bg-primary px-5 py-2.5 font-medium text-white disabled:opacity-70 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 whitespace-normal rounded-control bg-primary px-5 py-2.5 font-medium text-white disabled:opacity-70 sm:w-auto"
           >
-            {mutation.isPending ? (<><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />Сохраняю…</>) : 'Сохранить изменения'}
+            {mutation.isPending ? (<><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />…</>) : 'Сохранить изменения'}
           </button>
           <button
             type="button"

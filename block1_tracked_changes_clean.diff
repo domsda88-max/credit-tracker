@@ -1,0 +1,125 @@
+diff --git a/server/.gitignore b/server/.gitignore
+index aa0926a..2f3238f 100644
+--- a/server/.gitignore
++++ b/server/.gitignore
+@@ -2,3 +2,4 @@ node_modules/
+ dist/
+ .env
+ *.log
++.env.test
+diff --git a/server/src/modules/credits/credits.service.ts b/server/src/modules/credits/credits.service.ts
+index faa5034..240cbf3 100644
+--- a/server/src/modules/credits/credits.service.ts
++++ b/server/src/modules/credits/credits.service.ts
+@@ -149,7 +149,13 @@ export const creditsService = {
+       dto.markPastAsPaid ??
+       ((dto.startDate ? dto.startDate.getTime() < utcToday().getTime() : false) &&
+         dto.paymentType !== 'MIN_PAYMENT');
+-    const past = markPast ? planPastPayments(schedule) : null;
++    // markPastAsPaid тАФ ╤П╨▓╨╜╨╛╨╡ ╤А╨░╨╖╤А╨╡╤И╨╡╨╜╨╕╨╡ ╨╕╨╝╨┐╨╛╤А╤В╨░; ╤Б╨░╨╝╨░ ╨┐╨╛ ╤Б╨╡╨▒╨╡ ╨┤╨░╤В╨░ ╨╜╨╡ ╤Б╤З╨╕╤В╨░╨╡╤В╤Б╤П
++    // ╨┐╨╛╨┤╤В╨▓╨╡╤А╨╢╨┤╨╡╨╜╨╕╨╡╨╝ ╨╛╨┐╨╗╨░╤В╤Л. ╨С╨╡╨╖ ╤П╨▓╨╜╨╛╨│╨╛ ╤Д╨╗╨░╨│╨░ ╨┐╨╛╨▓╨╡╨┤╨╡╨╜╨╕╨╡ ╨╛╤Б╤В╨░╤С╤В╤Б╤П ╨╛╤Б╤В╨╛╤А╨╛╨╢╨╜╤Л╨╝.
++    const past = markPast
++      ? planPastPayments(schedule, undefined, {
++          assumeAllDuePaid: dto.markPastAsPaid === true,
++        })
++      : null;
+ 
+     return prisma.$transaction(async (tx) => {
+       const credit = await tx.credit.create({
+@@ -508,7 +514,9 @@ export const creditsService = {
+             const rebuilt = generateSchedule(mergeInput);
+             const markPast = dto.markPastAsPaid === true;
+             if (markPast) {
+-              const pastPlan = planPastPayments(rebuilt);
++              const pastPlan = planPastPayments(rebuilt, undefined, {
++                assumeAllDuePaid: dto.markPastAsPaid === true,
++              });
+               totalPaidValue = pastPlan.paidTotal;
+               outstandingValue = dto.outstanding ?? pastPlan.outstanding;
+               pastToMark = pastPlan.paidCount;
+@@ -596,8 +604,18 @@ export const creditsService = {
+     const today = utcToday();
+ 
+     return prisma.$transaction(async (tx) => {
+-      const updated = await tx.credit.update({
+-        where: { id: creditId },
++      // ╨Р╤В╨╛╨╝╨░╤А╨╜╨░╤П ╨┐╤А╨╛╨▓╨╡╤А╨║╨░ ╤Ж╨╕╨║╨╗╨░. ╨Ъ╨╛╨╜╨║╤Г╤А╨╡╨╜╤В╨╜╤Л╨╣ ╨╕╨╗╨╕ ╨┐╨╛╨▓╤В╨╛╤А╨╜╤Л╨╣ ╨▓╤Л╨╖╨╛╨▓ ╨┐╨╛╨╗╤Г╤З╨░╨╡╤В
++      // count = 0 ╨╕ ╨╜╨╡ ╨╕╨╖╨╝╨╡╨╜╤П╨╡╤В Credit, ╨┤╨░╤В╤Л, ╨▒╨░╨╗╨░╨╜╤Б╤Л ╨╕ ╨╢╤Г╤А╨╜╨░╨╗.
++      const renewal = await tx.credit.updateMany({
++        where: {
++          id: creditId,
++          userId,
++          frozen: true,
++          OR: [
++            { nextFreezeCheckAt: null },
++            { nextFreezeCheckAt: { lte: today } },
++          ],
++        },
+         data: {
+           freezeStartedAt: today,
+           nextFreezeCheckAt: addUTCDays(today, cycleDays),
+@@ -610,6 +628,10 @@ export const creditsService = {
+         },
+       });
+ 
++      if (renewal.count !== 1) {
++        throw new AppError(409, '╨Ы╤М╨│╨╛╤В╨╜╤Л╨╣ ╨┐╨╡╤А╨╕╨╛╨┤ ╤Г╨╢╨╡ ╨╛╨▒╨╜╨╛╨▓╨╗╤С╨╜ ╨▓ ╤В╨╡╨║╤Г╤Й╨╡╨╝ ╤Ж╨╕╨║╨╗╨╡');
++      }
++
+       if (amount > 0) {
+         await tx.paymentEvent.create({
+           data: {
+@@ -622,7 +644,7 @@ export const creditsService = {
+         });
+       }
+ 
+-      return updated;
++      return tx.credit.findUnique({ where: { id: creditId } });
+     });
+   },
+ 
+diff --git a/server/src/utils/finance/pastPayments.ts b/server/src/utils/finance/pastPayments.ts
+index 49dd1e0..51b2fcb 100644
+--- a/server/src/utils/finance/pastPayments.ts
++++ b/server/src/utils/finance/pastPayments.ts
+@@ -29,7 +29,21 @@ export interface PastPaymentsPlan {
+  * ╨║╤А╨╛╨╝╨╡ ╨┐╨╛╤Б╨╗╨╡╨┤╨╜╨╡╨╣) ╤Б╤З╨╕╤В╨░╤О╤В╤Б╤П ╨▓╨╜╨╡╤Б╤С╨╜╨╜╤Л╨╝╨╕. ╨Ш╨╖ ╤Б╤Г╨╝╨╝╤Л ╨╛╤Б╨╜╨╛╨▓╨╜╨╛╨│╨╛ ╨┤╨╛╨╗╨│╨░ ╨▓╤Л╤З╨╕╤В╨░╨╡╤В╤Б╤П
+  * ┬л╤В╨╡╨╗╨╡╤Б╨╜╨░╤П┬╗ ╤З╨░╤Б╤В╤М ╤Н╤В╨╕╤Е ╨┐╨╗╨░╤В╨╡╨╢╨╡╨╣, ╨┐╨╛╤Н╤В╨╛╨╝╤Г ╨╛╤Б╤В╨░╤В╨╛╨║ ╤Б╨╛╨╛╤В╨▓╨╡╤В╤Б╤В╨▓╤Г╨╡╤В ╤А╨╡╨░╨╗╤М╨╜╨╛╤Б╤В╨╕.
+  */
+-export function planPastPayments(schedule: ScheduleItem[], now: Date = new Date()): PastPaymentsPlan {
++export interface PlanPastPaymentsOptions {
++  /**
++   * ╨п╨▓╨╜╤Л╨╣ ╤А╨╡╨╢╨╕╨╝ `markPastAsPaid: true` (╨╕╨╝╨┐╨╛╤А╤В/╤Б╨╛╨╖╨┤╨░╨╜╨╕╨╡).
++   * ╨Ю╨╖╨╜╨░╤З╨░╨╡╤В, ╤З╤В╨╛ caller ╨╛╤Б╨╛╨╖╨╜╨░╨╜╨╜╨╛ ╤Б╤З╨╕╤В╨░╨╡╤В ╨┐╤А╨╛╤И╨╡╨┤╤И╨╕╨╡ ╨┐╨╛ ╨┤╨░╤В╨╡ ╨┐╨╗╨░╤В╨╡╨╢╨╕ ╨╛╨┐╨╗╨░╤З╨╡╨╜╨╜╤Л╨╝╨╕.
++   * ╨Э╨╡ ╤П╨▓╨╗╤П╨╡╤В╤Б╤П ╨┐╨╛╨┤╤В╨▓╨╡╤А╨╢╨┤╨╡╨╜╨╕╨╡╨╝ ╤Д╨░╨║╤В╨╕╤З╨╡╤Б╨║╨╛╨╣ ╨╛╨┐╨╗╨░╤В╤Л ╤Б╨░╨╝ ╨┐╨╛ ╤Б╨╡╨▒╨╡ тАФ ╤Н╤В╨╛ ╤А╨░╨╖╤А╨╡╤И╨╡╨╜╨╕╨╡
++   * ╤Н╨▓╤А╨╕╤Б╤В╨╕╨║╨╕ ╨┤╨╗╤П ╤Б╤Ж╨╡╨╜╨░╤А╨╕╤П ╤Б╨╛╨╖╨┤╨░╨╜╨╕╤П/╨╕╨╝╨┐╨╛╤А╤В╨░.
++   */
++  assumeAllDuePaid?: boolean;
++}
++
++export function planPastPayments(
++  schedule: ScheduleItem[],
++  now: Date = new Date(),
++  options?: PlanPastPaymentsOptions,
++): PastPaymentsPlan {
+   const today = utcToday(now);
+   const totalCount = schedule.length;
+ 
+@@ -38,8 +52,16 @@ export function planPastPayments(schedule: ScheduleItem[], now: Date = new Date(
+ 
+   // ╨Э╨╡╨╖╨░╨║╤А╤Л╤В╤Л╨╣ ╨║╤А╨╡╨┤╨╕╤В: ╨┐╨╛╤Б╨╗╨╡╨┤╨╜╨╕╨╣ ╨┐╨╗╨░╤В╤С╨╢ ╨╡╤Й╤С ╨╜╨╡ ╨╜╨░╤Б╤В╤Г╨┐╨╕╨╗ тАФ ╨╕╤Б╨║╨╗╤О╤З╨░╨╡╨╝ ╨╡╨│╨╛,
+   // ╨╕╨╜╨░╤З╨╡ ╨╛╤Б╤В╨░╤В╨╛╨║ ╨╛╨▒╨╜╤Г╨╗╨╕╨╗╤Б╤П ╨▒╤Л ╨╕ ╨║╤А╨╡╨┤╨╕╤В ╤Б╤З╨╕╤В╨░╨╗╤Б╤П ╨▒╤Л ╨┐╨╛╨│╨░╤И╨╡╨╜╨╜╤Л╨╝.
++  const assumeAllDuePaid = options?.assumeAllDuePaid === true;
++
+   let paidCount = cutoffIndex;
+-  if (paidCount >= totalCount && totalCount > 1) paidCount = totalCount - 1;
++  // ╨Я╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О ╨┐╨╛╤Б╨╗╨╡╨┤╨╜╨╕╨╣ ╨┐╨╗╨░╤В╤С╨╢ ╨╜╨╡ ╨╖╨░╨║╤А╤Л╨▓╨░╨╡╤В╤Б╤П ╨╛╨┤╨╜╨╛╨╣ ╨┤╨░╤В╨╛╨╣: ╤Н╤В╨╛ ╨╖╨░╤Й╨╕╤В╨░ ╨╛╤В
++  // ╨░╨▓╤В╨╛╨╖╨░╨║╤А╤Л╤В╨╕╤П ╨║╤А╨╡╨┤╨╕╤В╨░ ╨┐╤А╨╕ ╨╕╨╝╨┐╨╛╤А╤В╨╡/╨┐╨╡╤А╨╡╤Б╤З╤С╤В╨╡ ╨▒╨╡╨╖ ╤П╨▓╨╜╨╛╨│╨╛ ╨┐╨╛╨┤╤В╨▓╨╡╤А╨╢╨┤╨╡╨╜╨╕╤П ╨╛╨┐╨╗╨░╤В╤Л.
++  // ╨п╨▓╨╜╤Л╨╣ ╤А╨╡╨╢╨╕╨╝ assumeAllDuePaid ╤А╨░╨╖╤А╨╡╤И╨░╨╡╤В ╤Б╤З╨╕╤В╨░╤В╤М ╨┐╤А╨╛╤И╨╡╨┤╤И╨╕╨╡ ╨┐╨╛ ╨┤╨░╤В╨╡ ╨┐╨╗╨░╤В╨╡╨╢╨╕
++  // ╨╛╨┐╨╗╨░╤З╨╡╨╜╨╜╤Л╨╝╨╕ (╤Б╨╝. markPastAsPaid: true), ╨╜╨╛ ╨╜╨╡ ╨┐╨╛╨┤╨╝╨╡╨╜╤П╨╡╤В ╤Б╤В╨░╤В╤Г╤Б PAID ╨▓ ╨С╨Ф.
++  if (!assumeAllDuePaid && paidCount >= totalCount) {
++    paidCount = Math.max(0, totalCount - 1);
++  }
+ 
+   const paid = schedule.slice(0, paidCount);
+   const paidTotal = round2(paid.reduce((sum, item) => sum + item.amount, 0));

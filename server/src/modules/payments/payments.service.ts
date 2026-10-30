@@ -1,6 +1,7 @@
 import type { PaymentType, PrepaymentMode } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middlewares/errorHandler';
+import { annuityPayment } from '../../utils/finance/annuity';
 import { addMonths, daysInMonth, monthsBetween, utcToday, withDayOfMonth } from '../../utils/finance/date';
 import { rebuildSchedule } from '../../utils/finance/earlyRepayment';
 import { crossedMilestone, milestoneMessage, paidPercent } from '../../utils/finance/milestones';
@@ -158,7 +159,7 @@ export const paymentsService = {
     const credit = await prisma.credit.findFirst({
       where: { id: creditId, userId },
       include: {
-        schedule: { where: { status: 'PENDING' }, orderBy: { dueDate: 'asc' } },
+        schedule: { orderBy: { dueDate: 'asc' } },
         events: { orderBy: { paidAt: 'asc' } },
       },
     });
@@ -266,6 +267,7 @@ export const paymentsService = {
       });
 
       // �'�?��?���'��?�?��? ��?��?��?������� ��?��?�? ?�?�?�?�?�? (�? ���?�? ?�?��?��?�?�?��? ?�?�?���)
+      // '�?��?���'��?�?��? ��?��?��?������� ��?��?�? ?�?�?�?�?�? (�? ���?�? ?�?��?��?�?�?��? ?�?�?���)
       await tx.paymentSchedule.upsert({
         where: { creditId_dueDate: { creditId, dueDate: prepaymentDateUTC } },
         update: {
@@ -296,17 +298,46 @@ export const paymentsService = {
       );
       const nextDueDate = nextDueDateAfter(prepaymentDateUTC, credit.paymentDay);
 
-      const items = rebuildSchedule({
-        outstanding: newOutstanding,
-        annualRate,
-        paymentType: credit.paymentType as PaymentType,
-        mode,
-        remainingTermMonths: remainingTerm,
-        nextDueDate,
-        paymentDay: credit.paymentDay,
-        previousPayment: credit.schedule[0] ? toNumber(credit.schedule[0].amount) : null,
-        previousPrincipalPart: credit.schedule[0] ? toNumber(credit.schedule[0].principalPart) : null,
-      });
+      const pending = credit.schedule.filter((s) => s.status === 'PENDING');
+      const lastPaid = [...credit.schedule]
+        .filter((s) => s.status === 'PAID')
+        .sort((a, b) => b.dueDate.getTime() - a.dueDate.getTime())[0];
+      const referencePayment = lastPaid ?? pending[0] ?? null;
+      const referenceAnnuity = credit.paymentType === 'DIFFERENTIAL'
+        ? null
+        : (() => {
+            try {
+              return round2(annuityPayment(newOutstanding, annualRate, remainingTerm));
+            } catch {
+              return null;
+            }
+          })();
+
+      let items;
+      try {
+        items = rebuildSchedule({
+          outstanding: newOutstanding,
+          annualRate,
+          paymentType: credit.paymentType as PaymentType,
+          mode,
+          remainingTermMonths: remainingTerm,
+          nextDueDate,
+          paymentDay: credit.paymentDay,
+          previousPayment: credit.paymentType === 'DIFFERENTIAL'
+            ? (referencePayment ? toNumber(referencePayment.principalPart) : null)
+            : (referenceAnnuity ?? (referencePayment ? toNumber(referencePayment.amount) : null)),
+          previousPrincipalPart: credit.paymentType === 'DIFFERENTIAL'
+            ? (referencePayment ? toNumber(referencePayment.principalPart) : null)
+            : (referencePayment ? toNumber(referencePayment.principalPart) : null),
+        });
+      } catch (err) {
+        console.error('rebuildSchedule failed', err);
+        throw new AppError(400, 'Не удалось пересчитать график досрочного погашения. Проверьте параметры кредита.');
+      }
+
+      if (!Array.isArray(items) || items.length === 0) {
+        throw new AppError(400, 'Не удалось пересчитать график досрочного погашения. Пустой график после пересчёта.');
+      }
 
       if (items.length > 0) {
         await tx.paymentSchedule.createMany({

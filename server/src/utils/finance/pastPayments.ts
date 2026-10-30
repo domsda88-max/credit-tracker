@@ -29,7 +29,21 @@ export interface PastPaymentsPlan {
  * кроме последней) считаются внесёнными. Из суммы основного долга вычитается
  * «телесная» часть этих платежей, поэтому остаток соответствует реальности.
  */
-export function planPastPayments(schedule: ScheduleItem[], now: Date = new Date()): PastPaymentsPlan {
+export interface PlanPastPaymentsOptions {
+  /**
+   * Явный режим `markPastAsPaid: true` (импорт/создание).
+   * Означает, что caller осознанно считает прошедшие по дате платежи оплаченными.
+   * Не является подтверждением фактической оплаты сам по себе — это разрешение
+   * эвристики для сценария создания/импорта.
+   */
+  assumeAllDuePaid?: boolean;
+}
+
+export function planPastPayments(
+  schedule: ScheduleItem[],
+  now: Date = new Date(),
+  options?: PlanPastPaymentsOptions,
+): PastPaymentsPlan {
   const today = utcToday(now);
   const totalCount = schedule.length;
 
@@ -38,8 +52,16 @@ export function planPastPayments(schedule: ScheduleItem[], now: Date = new Date(
 
   // Незакрытый кредит: последний платёж ещё не наступил — исключаем его,
   // иначе остаток обнулился бы и кредит считался бы погашенным.
+  const assumeAllDuePaid = options?.assumeAllDuePaid === true;
+
   let paidCount = cutoffIndex;
-  if (paidCount >= totalCount && totalCount > 1) paidCount = totalCount - 1;
+  // По умолчанию последний платёж не закрывается одной датой: это защита от
+  // автозакрытия кредита при импорте/пересчёте без явного подтверждения оплаты.
+  // Явный режим assumeAllDuePaid разрешает считать прошедшие по дате платежи
+  // оплаченными (см. markPastAsPaid: true), но не подменяет статус PAID в БД.
+  if (!assumeAllDuePaid && paidCount >= totalCount) {
+    paidCount = Math.max(0, totalCount - 1);
+  }
 
   const paid = schedule.slice(0, paidCount);
   const paidTotal = round2(paid.reduce((sum, item) => sum + item.amount, 0));

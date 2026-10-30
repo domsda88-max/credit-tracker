@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 interface Props {
@@ -9,6 +9,10 @@ interface Props {
 }
 
 export function BottomSheet({ open, onClose, title, children }: Props) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [dragY, setDragY] = useState(0);
+  const dragStart = useRef<{ y: number; active: boolean } | null>(null);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -22,13 +26,43 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
     };
   }, [open, onClose]);
 
+  useEffect(() => {
+    if (!open) setDragY(0);
+  }, [open]);
+
   if (!open) return null;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    const panel = panelRef.current;
+    if (!panel || panel.scrollTop !== 0) return;
+    dragStart.current = { y: e.touches[0].clientY, active: true };
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!dragStart.current?.active) return;
+    const dy = e.touches[0].clientY - dragStart.current.y;
+    if (dy > 0) setDragY(dy);
+  };
+  const onTouchEnd = () => {
+    if (dragY > 90) {
+      onClose();
+    }
+    dragStart.current = null;
+    setDragY(0);
+  };
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <div className="absolute inset-0 bg-bg/60 backdrop-blur-sm transition-opacity duration-[300ms] ease-app" onClick={onClose} />
       <div
-        className="relative w-full max-w-3xl rounded-t-card border border-line bg-surface pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 shadow-sheet animate-sheet-up"
+        className="absolute inset-0 animate-fade-in bg-black/60 backdrop-blur-[2px]"
+        onClick={onClose}
+      />
+      <div
+        ref={panelRef}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        style={{ transform: dragY > 0 ? `translateY(${dragY}px)` : undefined }}
+        className="relative w-full max-w-3xl max-h-[85vh] overflow-y-auto rounded-t-[20px] border-t border-line bg-surface p-4 pb-8 safe-area-bottom touch-manipulation animate-sheet-up"
         role="dialog"
         aria-modal="true"
       >

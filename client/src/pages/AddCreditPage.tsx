@@ -280,7 +280,7 @@ export function AddCreditPage() {
       >
         {/* === ОБЩИЕ ПОЛЯ (всегда видны) === */}
         <label className="block">
-          <span className="text-sm text-t2">Название</span>
+          <span className="text-sm text-t2">Название <span className="text-danger">*</span></span>
           <input placeholder="Например, Альфа-Банк" {...register('name')} className={inputClass} />
           {errors.name && <p className="mt-1 text-xs text-danger">{errors.name.message}</p>}
         </label>
@@ -299,8 +299,8 @@ export function AddCreditPage() {
           </label>
 
           <label className="block">
-            <span className="text-sm text-t2">Сумма долга, ₽</span>
-            <input type="number" step="0.01" {...register('principal')} className={inputClass} />
+            <span className="text-sm text-t2">Сумма долга, ₽ <span className="text-danger">*</span></span>
+            <input type="number" step="0.01" inputMode="decimal" placeholder="150 000.00" {...register('principal')} className={inputClass} />
             {errors.principal && (
               <p className="mt-1 text-xs text-danger">{errors.principal.message}</p>
             )}
@@ -309,13 +309,11 @@ export function AddCreditPage() {
 
         {/* === СПЕЦИФИЧНЫЕ ПОЛЯ ПО ТИПУ === */}
         {type === 'CREDIT_CARD' && (
-          <section className={`space-y-4 rounded-card border border-primary/30 bg-primary/5 p-4 ${sectionClass}`}>
-            <h3 className="text-sm font-medium text-primary">Параметры кредитной карты</h3>
-
+          <>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
-                <span className="text-sm text-t2">Ставка, % годовых</span>
-                <input type="number" step="0.01" {...register('annualRate')} className={inputClass} />
+                <span className="text-sm text-t2">Ставка, % годовых <span className="text-danger">*</span></span>
+                <input type="number" step="0.01" inputMode="decimal" placeholder="19.9" {...register('annualRate')} className={inputClass} />
                 {errors.annualRate && (
                   <p className="mt-1 text-xs text-danger">{errors.annualRate.message}</p>
                 )}
@@ -400,7 +398,7 @@ export function AddCreditPage() {
             <p className="mt-2 text-xs text-t3">
               Тип платежа автоматически: <b>Минимальный платёж</b>. Срок и дата выдачи не нужны — карта revolving.
             </p>
-          </section>
+          </>
         )}
 
         {(type === 'CONSUMER' || type === 'MORTGAGE') && (
@@ -427,11 +425,12 @@ export function AddCreditPage() {
               </label>
 
               <label className="block">
-                <span className="text-sm text-t2">Дата выдачи</span>
+                <span className="text-sm text-t2">Дата выдачи <span className="text-t3">(необязательно)</span></span>
                 <input type="date" {...register('startDate')} className={inputClass} />
                 {errors.startDate && (
                   <p className="mt-1 text-xs text-danger">{errors.startDate.message}</p>
                 )}
+                <p className="mt-1 text-xs text-t3">Если не указана — берётся дата создания записи.</p>
               </label>
             </div>
 
@@ -477,10 +476,10 @@ export function AddCreditPage() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
-                <span className="text-sm text-t2">Срок, месяцев</span>
-                <input type="number" {...register('termMonths')} className={inputClass} />
-                {errors.termMonths && (
-                  <p className="mt-1 text-xs text-danger">{errors.termMonths.message}</p>
+                <span className="text-sm text-t2">Срок, дней <span className="text-danger">*</span></span>
+                <input type="number" inputMode="numeric" min="1" placeholder="напр. 30" {...register('termDays')} className={inputClass} />
+                {errors.termDays && (
+                  <p className="mt-1 text-xs text-danger">{errors.termDays.message}</p>
                 )}
               </label>
 
@@ -671,12 +670,12 @@ export function AddCreditPage() {
           <button
             type="submit"
             disabled={isSubmitting || mutation.isPending}
-            className="inline-flex items-center justify-center gap-2 min-w-[150px] whitespace-nowrap rounded-control bg-primary px-4 py-2.5 font-medium text-white disabled:opacity-70"
+            className="inline-flex w-full items-center justify-center gap-2 whitespace-normal rounded-control bg-primary px-4 py-2.5 font-medium text-white disabled:opacity-70"
           >
             {mutation.isPending ? (
               <>
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                Сохраняю…
+                …
               </>
             ) : (
               'Сохранить'

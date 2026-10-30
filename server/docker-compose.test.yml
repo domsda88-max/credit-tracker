@@ -1,0 +1,23 @@
+# Isolated PostgreSQL for tests only. Not for production.
+# Container name is prefixed to avoid accidental mix with app data.
+services:
+  postgres_test:
+    image: postgres:16-alpine
+    container_name: credit-tracker-test-postgres
+    restart: "no"
+    environment:
+      POSTGRES_USER: credit_test
+      POSTGRES_PASSWORD: credit_test_password
+      POSTGRES_DB: credit_tracker_test
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U credit_test -d credit_tracker_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+    volumes:
+      - credit_tracker_test_data:/var/lib/postgresql/data
+
+volumes:
+  credit_tracker_test_data:

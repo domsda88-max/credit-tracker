@@ -4,6 +4,7 @@ import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/auth';
 import { useToast } from './Toast';
 import { usePushNotifications } from '../hooks/usePushNotifications';
+import { SegmentedControl } from './SegmentedControl';
 
 export function MotivationSettings() {
   const user = useAuthStore((s) => s.user);
@@ -48,7 +49,7 @@ export function MotivationSettings() {
         motivationPerDay: perDay,
       });
       setUser(updated);
-      toast.show('Настройки мотивации сохранены');
+      toast.show('Сохранено');
     } catch (err) {
       toast.show(extractErrorMessage(err), 'error');
     } finally {
@@ -98,22 +99,34 @@ export function MotivationSettings() {
                 className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2 text-t1"
               />
             </label>
-            <label className="block">
+            <div className="block">
               <span className="text-sm text-t2">Раз в день</span>
-              <select
-                value={perDay}
-                onChange={(e) => setPerDay(Number(e.target.value))}
-                className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2 text-t1"
-              >
-                <option value={1}>1 раз</option>
-                <option value={2}>2 раза</option>
-                <option value={3}>3 раза</option>
-                <option value={4}>4 раза</option>
-              </select>
-            </label>
+              <div className="mt-1">
+                <SegmentedControl
+                  ariaLabel="Частота мотивации"
+                  value={String(perDay) as '1' | '2' | '3' | '4'}
+                  options={[
+                    { value: '1', label: '1' }, { value: '2', label: '2' },
+                    { value: '3', label: '3' }, { value: '4', label: '4' },
+                  ]}
+                  onChange={(v) => setPerDay(Number(v))}
+                />
+              </div>
+            </div>
           </div>
           <p className="text-xs text-t3">
-            Уведомления в {time} и каждые {interval} ч.
+            Уведомления в {time}, {(() => {
+              const start = time.split(':').map(Number);
+              const startMin = start[0]*60 + start[1];
+              const times = [];
+              for (let i=1; i<perDay; i++) {
+                const m = (startMin + (24/perDay)*i*60) % (24*60);
+                const h = Math.floor(m/60) % 24;
+                const mm = Math.round(m%60);
+                times.push(`${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')}`);
+              }
+              return times.join(', ');
+            })()}
           </p>
           <button
             type="button"
@@ -121,10 +134,10 @@ export function MotivationSettings() {
             disabled={saving}
             className="w-full rounded-control bg-primary px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
-            {saving ? 'Сохраняю…' : 'Сохранить'}
+            Сохранить
           </button>
           <div className="flex items-center justify-between text-caption">
-            <span className="text-t3">Прогресс цикла</span>
+            <span className="text-t3">Мотивационный цикл</span>
             <span className="tabular text-t2">день {user.motivationDay ?? 1} из 30</span>
           </div>
           <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface2">
