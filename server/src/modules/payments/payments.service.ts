@@ -1,19 +1,13 @@
 import type { PaymentType, PrepaymentMode } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middlewares/errorHandler';
+import { accruedInterestForPeriod } from '../../utils/finance/accrued';
 import { addMonths, daysInMonth, monthsBetween, utcToday, withDayOfMonth } from '../../utils/finance/date';
 import { rebuildSchedule } from '../../utils/finance/earlyRepayment';
 import { crossedMilestone, milestoneMessage, paidPercent } from '../../utils/finance/milestones';
 import { round2, toNumber } from '../../utils/finance/round';
 import { sendUniquePush } from '../push/push.service';
 import type { EarlyRepaymentDto, PayInstallmentDto } from './payments.schemas';
-
-function diffInDaysUTC(a: Date, b: Date): number {
-  const da = Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate());
-  const db = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate());
-  const diff = Math.floor((db - da) / 86400000);
-  return diff < 0 ? 0 : diff;
-}
 
 function nextDueDateAfter(date: Date, paymentDay?: number | null): Date {
   const base = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
@@ -186,17 +180,29 @@ export const paymentsService = {
     const outstanding = toNumber(credit.outstanding);
     const annualRate = toNumber(credit.annualRate);
 
-    // anchor = дата последнего начисления процентов: последний PAID-платёж графика или startDate
-    const paidEvents = credit.schedule.filter((s) => s.status === 'PAID').sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
-    const lastPaidDue = paidEvents[paidEvents.length - 1]?.dueDate;
+    // anchor = дата последнего PAID-платежа (полный график, без фильтра по статусу),
+    // иначе startDate. Проценты начисляются только за период anchor → дата внесения.
+    const paidRows = await prisma.paymentSchedule.findMany({
+      where: { creditId, status: 'PAID' },
+      orderBy: { dueDate: 'asc' },
+      select: { dueDate: true },
+    });
+    const lastPaidDue = paidRows[paidRows.length - 1]?.dueDate ?? null;
     const anchorDate = lastPaidDue ? utcToday(lastPaidDue) : startDateUTC;
-    const days = diffInDaysUTC(anchorDate, prepaymentDateUTC);
-    const accruedInterest = annualRate > 0 ? round2((outstanding * annualRate * days) / 100 / 365) : 0;
+    if (prepaymentDateUTC < anchorDate) {
+      throw new AppError(400, 'Дата внесения раньше последнего учтённого платежа');
+    }
+    const { days, accruedInterest } = accruedInterestForPeriod({
+      outstanding, annualRate, anchorDate, prepaymentDate: prepaymentDateUTC,
+    });
     console.log('accruedInterest calculated', { accruedInterest, days, anchor: anchorDate.toISOString(), outstanding });
     const principalPart = round2(amount - accruedInterest);
 
     if (principalPart <= 0) {
-      throw new AppError(400, `Сумма не покрывает начисленные проценты (${accruedInterest.toFixed(2)} ₽)`);
+      throw new AppError(
+        400,
+        `Сумма не покрывает начисленные проценты за период (${accruedInterest.toFixed(2)} ₽). Увеличьте сумму или оплатите просроченные платежи.`,
+      );
     }
 
     const newOutstanding = round2(outstanding - principalPart);
@@ -349,7 +355,19 @@ export const paymentsService = {
     if (!credit) throw new AppError(404, 'Кредит не найден');
 
     const outstanding = toNumber(credit.outstanding);
-    const newOutstanding = round2(outstanding - dto.amount);
+    const annualRate = toNumber(credit.annualRate);
+    const prepaymentDateUTC = dto.date ? utcToday(new Date(dto.date)) : utcToday();
+    const paidRows = credit.schedule
+      .filter((s) => s.status === 'PAID')
+      .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+    const anchorDate = paidRows.length
+      ? utcToday(paidRows[paidRows.length - 1].dueDate)
+      : utcToday(new Date(credit.startDate));
+    const { days, accruedInterest } = accruedInterestForPeriod({
+      outstanding, annualRate, anchorDate, prepaymentDate: prepaymentDateUTC,
+    });
+    const principalPart = round2(Math.max(0, toNumber(dto.amount) - accruedInterest));
+    const newOutstanding = round2(Math.max(0, outstanding - principalPart));
     const isFull = newOutstanding <= CLOSE_THRESHOLD;
     const mode = (dto.mode ?? credit.prepaymentMode) as PrepaymentMode;
 
@@ -366,6 +384,10 @@ export const paymentsService = {
         isFull: true,
         amount: dto.amount,
         newOutstanding: 0,
+        accruedInterest,
+        principalPart,
+        days,
+        coversInterest: principalPart > 0,
         monthSaved: pending.length,
         interestSaved: round2(Math.max(0, currentInterest)),
         interestAfter: 0,
@@ -400,6 +422,10 @@ export const paymentsService = {
       isFull: false,
       amount: dto.amount,
       newOutstanding,
+      accruedInterest,
+      principalPart,
+      days,
+      coversInterest: principalPart > 0,
       monthSaved: Math.max(0, pending.length - items.length),
       interestSaved: round2(Math.max(0, currentInterest - newInterest)),
       interestAfter: newInterest,

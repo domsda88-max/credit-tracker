@@ -159,6 +159,10 @@ export interface EarlyPreview {
   isFull: boolean;
   amount: number;
   newOutstanding: number;
+  accruedInterest: number;
+  principalPart: number;
+  days: number;
+  coversInterest: boolean;
   monthSaved: number;
   interestSaved: number;
   interestAfter: number;

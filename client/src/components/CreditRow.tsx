@@ -12,9 +12,9 @@ import {
   TrendingDown,
   Zap,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CreditListItem, CreditType } from '../types';
 import {
   CREDIT_TYPE_LABELS,
@@ -27,6 +27,7 @@ import {
   urgencyTone,
 } from '../utils/format';
 import { BottomSheet } from './BottomSheet';
+import { SegmentedControl } from './SegmentedControl';
 import { useToast } from './Toast';
 import { creditsApi } from '../api/credits';
 import { paymentsApi } from '../api/payments';
@@ -64,10 +65,22 @@ export function CreditRow({ credit, index = 0 }: Props) {
   const [earlyAmount, setEarlyAmount] = useState('');
   const [earlyMode, setEarlyMode] = useState('REDUCE_PAYMENT');
   const [earlyDate, setEarlyDate] = useState(new Date().toISOString().slice(0,10));
-  const [earlyPending, setEarlyPending] = useState(false);
+  const earlySubmitting = useRef(false);
+  const earlyAmountNum = Number(earlyAmount);
   const [earlyError, setEarlyError] = useState<string | null>(null);
   const percent = debtPaidPercent(credit.principal, credit.outstanding);
   const isClosed = credit.status === 'CLOSED';
+
+  // Живое превью досрочки: та же математика, что и на сервере при применении.
+  const { data: earlyPreview } = useQuery({
+    queryKey: ['early-preview', credit.id, earlyAmountNum, earlyMode, earlyDate],
+    queryFn: () => paymentsApi.previewEarlyRepayment(credit.id, {
+      amount: earlyAmountNum, mode: earlyMode as any, date: earlyDate,
+    }),
+    enabled: earlyOpen && earlyAmountNum > 0 && !isClosed,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
   const next = credit.nextPayment;
   const Icon = TYPE_ICON[credit.type] ?? Banknote;
 
@@ -246,15 +259,14 @@ export function CreditRow({ credit, index = 0 }: Props) {
               {showPayButton && (
                 <button
                   type="button"
-                  disabled={payMutation.isPending}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     payMutation.mutate();
                   }}
-                  className={`w-full rounded-control px-3 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${payButtonColor}`}
+                  className={`w-full rounded-control px-3 py-2 text-sm font-medium text-white transition ${payButtonColor}`}
                 >
-                  {payMutation.isPending ? 'Отмечаю…' : 'Оплатить'}
+                  Оплатить
                 </button>
               )}
             </div>
@@ -327,7 +339,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
               <span>Я обновил период (внёс сумму)</span>
             </button>
           )}
-          {credit.type !== 'LOAN' && !isClosed && (
+          {credit.type !== 'LOAN' && credit.type !== 'CREDIT_CARD' && !isClosed && (
             <button
               type="button"
               onClick={() => {
@@ -356,12 +368,14 @@ export function CreditRow({ credit, index = 0 }: Props) {
         <form
           onSubmit={async (e) => {
             e.preventDefault();
+            if (earlySubmitting.current) return;
             const amount = Number(earlyAmount);
             if (!amount || amount <= 0) { setEarlyError('Сумма должна быть больше 0'); return; }
-            setEarlyPending(true);
+            earlySubmitting.current = true;
             setEarlyError(null);
             try {
               await paymentsApi.earlyRepayment(credit.id, { amount, mode: earlyMode as any, date: earlyDate });
+              navigator.vibrate?.([30, 40, 30]);
               await queryClient.invalidateQueries({ queryKey: ['credits'] });
               await queryClient.invalidateQueries({ queryKey: ['credit', credit.id] });
               await queryClient.invalidateQueries({ queryKey: ['summary'] });
@@ -371,7 +385,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
             } catch (err) {
               setEarlyError(extractErrorMessage(err));
             } finally {
-              setEarlyPending(false);
+              earlySubmitting.current = false;
             }
           }}
           className="space-y-3"
@@ -396,24 +410,46 @@ export function CreditRow({ credit, index = 0 }: Props) {
               className="mt-1 w-full max-w-full box-border rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none focus:border-primary"
             />
           </label>
-          <label className="block">
+          <div>
             <span className="text-sm text-t2">Режим</span>
-            <select
-              value={earlyMode}
-              onChange={(e) => setEarlyMode(e.target.value)}
-              className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none focus:border-primary"
-            >
-              <option value="REDUCE_PAYMENT">Уменьшить платёж</option>
-              <option value="REDUCE_TERM">Сократить срок</option>
-            </select>
-          </label>
+            <div className="mt-1">
+              <SegmentedControl
+                ariaLabel="Режим досрочного погашения"
+                value={earlyMode}
+                options={[
+                  { value: 'REDUCE_PAYMENT', label: 'Уменьшить платёж' },
+                  { value: 'REDUCE_TERM', label: 'Сократить срок' },
+                ]}
+                onChange={(v) => setEarlyMode(v)}
+              />
+            </div>
+          </div>
+          {earlyPreview && (
+            <div className="rounded-control border border-success/30 bg-success/10 px-3 py-2 text-xs text-success">
+              <p>
+                Из {formatMoney(earlyAmountNum)}: проценты {formatMoney(earlyPreview.accruedInterest)} · тело{' '}
+                {formatMoney(earlyPreview.principalPart)}
+              </p>
+              {earlyPreview.isFull ? (
+                <p className="mt-1">🎉 Полное закрытие кредита</p>
+              ) : (
+                <p className="mt-1 text-success/80">
+                  Экономия ≈ {formatMoney(earlyPreview.interestSaved)}
+                  {earlyPreview.monthSaved > 0 && ` и ${earlyPreview.monthSaved} мес.`}
+                  {earlyMode === 'REDUCE_TERM'
+                    ? ` · останется платежей: ${earlyPreview.monthsAfter}`
+                    : ` · платёж станет ${formatMoney(earlyPreview.paymentAfter)}`}
+                </p>
+              )}
+            </div>
+          )}
           {earlyError && <p className="text-sm text-danger">{earlyError}</p>}
           <button
             type="submit"
-            disabled={earlyPending}
+            disabled={earlyAmountNum <= 0}
             className="w-full rounded-control bg-success px-4 py-2.5 font-medium text-white disabled:opacity-50"
           >
-            {earlyPending ? 'Пересчитываю…' : 'Внести'}
+            Внести
           </button>
         </form>
       </BottomSheet>
