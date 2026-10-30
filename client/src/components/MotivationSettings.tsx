@@ -9,7 +9,6 @@ export function MotivationSettings() {
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const toast = useToast();
-  const [saving, setSaving] = useState(false);
   const { status } = usePushNotifications();
 
   const [time, setTime] = useState(user?.motivationTime ?? '09:30');
@@ -20,7 +19,8 @@ export function MotivationSettings() {
   const enabled = user.motivationEnabled ?? true;
 
   const toggle = async () => {
-    setSaving(true);
+    const prev = user;
+    setUser({ ...user, motivationEnabled: !enabled });
     try {
       const updated = await authApi.updateSettings({
         timezone: user.timezone,
@@ -29,16 +29,16 @@ export function MotivationSettings() {
         motivationEnabled: !enabled,
       });
       setUser(updated);
-      toast.show(!enabled ? 'Ежедневная мотивация включена' : 'Ежедневная мотивация выключена');
+      toast.show(!enabled ? 'Мотивация включена' : 'Мотивация выключена');
     } catch (err) {
+      setUser(prev);
       toast.show(extractErrorMessage(err), 'error');
-    } finally {
-      setSaving(false);
     }
   };
 
   const save = async () => {
-    setSaving(true);
+    const prev = user;
+    setUser({ ...user, motivationTime: time, motivationPerDay: perDay });
     try {
       const updated = await authApi.updateSettings({
         timezone: user.timezone,
@@ -50,9 +50,8 @@ export function MotivationSettings() {
       setUser(updated);
       toast.show('Сохранено');
     } catch (err) {
+      setUser(prev);
       toast.show(extractErrorMessage(err), 'error');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -76,7 +75,7 @@ export function MotivationSettings() {
           role="switch"
           aria-checked={enabled}
           onClick={() => void toggle()}
-          disabled={saving || status !== 'subscribed'}
+          disabled={status !== 'subscribed'}
           className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:opacity-50 ${
             enabled ? 'bg-primary' : 'bg-surface2'
           }`}
@@ -126,7 +125,6 @@ export function MotivationSettings() {
           <button
             type="button"
             onClick={() => void save()}
-            disabled={saving}
             className="w-full rounded-control bg-primary px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
             Сохранить
