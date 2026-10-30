@@ -1,6 +1,6 @@
 export type CreditType = 'CREDIT_CARD' | 'CONSUMER' | 'MORTGAGE' | 'INSTALLMENT' | 'MICROLOAN' | 'LOAN';
 export type PaymentType = 'ANNUITY' | 'DIFFERENTIAL' | 'MIN_PAYMENT';
-export type PrepaymentMode = 'REDUCE_TERM' | 'REDUCE_PAYMENT';
+export type PrepaymentMode = 'REDUCE_TERM';
 export type CreditStatus = 'ACTIVE' | 'CLOSED';
 export type InstallmentStatus = 'PENDING' | 'PAID' | 'OVERDUE';
 export type PaymentEventKind = 'SCHEDULED' | 'EARLY_PARTIAL' | 'EARLY_FULL' | 'MIN_PAYMENT';
@@ -145,6 +145,7 @@ export interface CreateCreditPayload {
   markPastAsPaid?: boolean;
   /** ����������� ������� ����� ������ (���� �������� ������ �������). */
   outstanding?: number | null;
+  earlyRepayments?: Array<{ amount: number; date: string }>;
 }
 
 export interface EarlyRepaymentPayload {

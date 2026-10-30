@@ -24,7 +24,7 @@ import {
 
 const earlySchema = z.object({
   amount: z.coerce.number().positive('Сумма должна быть больше 0'),
-  mode: z.enum(['REDUCE_TERM', 'REDUCE_PAYMENT']),
+  mode: z.enum(['REDUCE_TERM']).optional().default('REDUCE_TERM'),
   date: z.string().min(1, 'Укажите дату внесения'),
 });
 
@@ -59,7 +59,7 @@ export function CreditDetailPage() {
   const todayStr = new Date().toISOString().slice(0, 10);
   const { register, handleSubmit, reset, formState, watch, setValue } = useForm<EarlyFormValues>({
     resolver: zodResolver(earlySchema),
-    defaultValues: { mode: 'REDUCE_PAYMENT', date: todayStr },
+    defaultValues: { mode: 'REDUCE_TERM', date: todayStr },
   });
 
   const [preview, setPreview] = useState<EarlyPreview | null>(null);
@@ -79,7 +79,7 @@ export function CreditDetailPage() {
     let cancelled = false;
     const timer = window.setTimeout(() => {
       paymentsApi
-        .previewEarlyRepayment(id, { amount, mode: watchMode })
+        .previewEarlyRepayment(id, { amount, mode: 'REDUCE_TERM' })
         .then((data) => {
           if (!cancelled) setPreview(data);
         })
@@ -115,7 +115,7 @@ export function CreditDetailPage() {
       return paymentsApi.earlyRepayment(id, { amount: parsed.amount, mode: parsed.mode, date: parsed.date } as any);
     },
     onSuccess: async () => {
-      reset({ amount: undefined as unknown as number, mode: 'REDUCE_PAYMENT', date: todayStr });
+      reset({ amount: undefined as unknown as number, mode: 'REDUCE_TERM', date: todayStr });
       setPreview(null);
       await invalidate();
       toast.show('Досрочное погашение внесено');
@@ -160,7 +160,7 @@ export function CreditDetailPage() {
   const visible = showAllPaid ? credit.schedule : pending;
   const collapsedCount = showAllPaid ? 0 : paid.length;
   return (
-    <div className="h-full overflow-y-auto overflow-x-hidden pb-4 [-webkit-overflow-scrolling:touch]">
+    <div className="min-h-0 w-full overflow-x-hidden pb-24 [-webkit-overflow-scrolling:touch]">
       <div className="space-y-4">
       <Link to="/" className="inline-block text-sm text-t3 hover:text-t2">
         ← Дашборд
@@ -297,7 +297,7 @@ export function CreditDetailPage() {
             onSubmit={handleSubmit((values) => {
               if (submitting.current) return;
               submitting.current = true;
-              earlyMutation.mutate(values, {
+              earlyMutation.mutate(values as any, {
                 onSettled: () => {
                   submitting.current = false;
                 },
@@ -331,15 +331,7 @@ export function CreditDetailPage() {
               <div className="block sm:w-48">
                 <span className="text-sm text-t2">Режим</span>
                 <div className="mt-1">
-                  <SegmentedControl
-                    ariaLabel="Режим досрочного погашения"
-                    value={(watch('mode') ?? 'REDUCE_PAYMENT') as 'REDUCE_PAYMENT' | 'REDUCE_TERM'}
-                    options={[
-                      { value: 'REDUCE_PAYMENT', label: 'Уменьшить платёж' },
-                      { value: 'REDUCE_TERM', label: 'Сократить срок' },
-                    ]}
-                    onChange={(v) => setValue('mode', v)}
-                  />
+                  <span className="rounded-full bg-primary/15 px-2 py-1 text-xs font-medium text-primary">Сокращение срока</span>
                 </div>
               </div>
 

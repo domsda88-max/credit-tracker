@@ -10,7 +10,7 @@ export const creditTypeEnum = z.enum([
 ]);
 
 export const paymentTypeEnum = z.enum(['ANNUITY', 'DIFFERENTIAL', 'MIN_PAYMENT']);
-export const prepaymentModeEnum = z.enum(['REDUCE_TERM', 'REDUCE_PAYMENT']);
+export const prepaymentModeEnum = z.enum(['REDUCE_TERM']);
 
 const optionalDays = () =>
   z
@@ -36,6 +36,10 @@ const baseFields = {
   gracePeriodEnds: z.coerce.date().optional().nullable(),
   graceReplenishSum: z.number().min(0).optional().nullable(),
   graceReplenishDay: z.number().int().min(1).max(31).optional().nullable(),
+  earlyRepayments: z.array(z.object({
+    amount: z.number().positive('Сумма должна быть больше 0'),
+    date: z.coerce.date(),
+  })).optional().default([]),
   frozen: z.boolean().optional(),
   freezeCycleDays: z.number().int().min(1).max(365).optional().nullable(),
   /** true — прошедшие по графику платежи сразу пометить оплаченными (кредит оформлен раньше). */

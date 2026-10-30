@@ -4,7 +4,6 @@ import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/auth';
 import { useToast } from './Toast';
 import { usePushNotifications } from '../hooks/usePushNotifications';
-import { SegmentedControl } from './SegmentedControl';
 
 export function MotivationSettings() {
   const user = useAuthStore((s) => s.user);
@@ -57,7 +56,11 @@ export function MotivationSettings() {
     }
   };
 
-  const interval = perDay > 0 ? Math.round(24 / perDay) : 24;
+  const interval = perDay > 0 ? Math.floor(24 / perDay) : 24;
+  const times = Array.from({ length: perDay }, (_, i) => {
+    const hh = (parseInt(time.split(':')[0], 10) + i * interval) % 24;
+    return `${hh.toString().padStart(2, '0')}:00`;
+  });
 
   return (
     <div className="rounded-card border border-line bg-surface p-4">
@@ -99,34 +102,26 @@ export function MotivationSettings() {
                 className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2 text-t1"
               />
             </label>
-            <div className="block">
-              <span className="text-sm text-t2">Раз в день</span>
-              <div className="mt-1">
-                <SegmentedControl
-                  ariaLabel="Частота мотивации"
-                  value={String(perDay) as '1' | '2' | '3' | '4'}
-                  options={[
-                    { value: '1', label: '1' }, { value: '2', label: '2' },
-                    { value: '3', label: '3' }, { value: '4', label: '4' },
-                  ]}
-                  onChange={(v) => setPerDay(Number(v))}
-                />
-              </div>
-            </div>
+            <label className="block">
+              <span className="text-sm text-t2">Частота</span>
+              <select
+                value={perDay}
+                onChange={(e) => setPerDay(Number(e.target.value))}
+                className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2 text-t1"
+              >
+                <option value={1}>1 раз в день</option>
+                <option value={2}>2 раза в день (каждые 12 ч)</option>
+                <option value={3}>3 раза в день (каждые 8 ч)</option>
+                <option value={4}>4 раза в день (каждые 6 ч)</option>
+                <option value={6}>6 раз в день (каждые 4 ч)</option>
+                <option value={8}>8 раз в день (каждые 3 ч)</option>
+                <option value={12}>12 раз в день (каждые 2 ч)</option>
+                <option value={24}>Каждый час</option>
+              </select>
+            </label>
           </div>
           <p className="text-xs text-t3">
-            Уведомления в {time}, {(() => {
-              const start = time.split(':').map(Number);
-              const startMin = start[0]*60 + start[1];
-              const times = [];
-              for (let i=1; i<perDay; i++) {
-                const m = (startMin + (24/perDay)*i*60) % (24*60);
-                const h = Math.floor(m/60) % 24;
-                const mm = Math.round(m%60);
-                times.push(`${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')}`);
-              }
-              return times.join(', ');
-            })()}
+            Уведомления в: {times.join(', ')}
           </p>
           <button
             type="button"

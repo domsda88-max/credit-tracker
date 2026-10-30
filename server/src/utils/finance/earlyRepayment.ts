@@ -1,15 +1,14 @@
 import { buildAnnuitySchedule } from './annuity';
 import { buildDifferentialSchedule } from './differential';
-import { addMonths, withDayOfMonth } from './date';
+import { addMonths, monthsBetween, withDayOfMonth } from './date';
 import { round2 } from './round';
-import type { PaymentType, PrepaymentMode, ScheduleItem } from './types';
+import type { PaymentType, ScheduleItem } from './types';
 
 export interface RebuildInput {
   /** Остаток долга ПОСЛЕ досрочного платежа. */
   outstanding: number;
   annualRate: number;
   paymentType: PaymentType;
-  mode: PrepaymentMode;
   /** Сколько месяцев оставалось по исходному графику. */
   remainingTermMonths: number;
   /** Дата следующего платежа (первая строка нового графика). */
@@ -23,11 +22,7 @@ export interface RebuildInput {
 
 /**
  * Пересборка графика после досрочного погашения.
- *
- * REDUCE_TERM    — платёж остаётся прежним, сокращается срок;
- * REDUCE_PAYMENT — срок остаётся прежним, уменьшается платёж.
- *
- * Кредитка (MIN_PAYMENT) всегда пересчитывается как аннуитет по остатку.
+ * Всегда REDUCE_TERM: сохраняем платёж близким к прежнему, сокращаем срок.
  */
 export function rebuildSchedule(input: RebuildInput): ScheduleItem[] {
   const principal = round2(input.outstanding);
@@ -45,7 +40,7 @@ export function rebuildSchedule(input: RebuildInput): ScheduleItem[] {
   if (input.paymentType === 'DIFFERENTIAL') {
     const part = input.previousPrincipalPart ?? 0;
     let months =
-      input.mode === 'REDUCE_TERM' && part > 0 ? Math.max(1, Math.ceil(principal / part)) : remainingTerm;
+      part > 0 ? Math.max(1, Math.ceil(principal / part)) : remainingTerm;
     if (!Number.isFinite(months) || months < 1) months = remainingTerm;
     if (months > 600) throw new Error('Некорректный срок пересчёта');
     const dates = makeDueDates(input.nextDueDate, months);
@@ -56,28 +51,17 @@ export function rebuildSchedule(input: RebuildInput): ScheduleItem[] {
 
   // ——— Аннуитет / кредитка ———
   const i = input.annualRate / 100 / 12;
-  let months = remainingTerm;
+  const targetPayment = input.previousPayment ?? 0;
 
-  const payment = input.previousPayment ?? 0;
-  const canShorten = i === 0 ? payment > 0 : payment > principal * i + 1e-9;
-
-  if (input.mode === 'REDUCE_TERM' && canShorten && payment > 0 && Number.isFinite(payment)) {
-    let monthsCalc: number;
-    if (i === 0) {
-      monthsCalc = Math.ceil(principal / payment);
-    } else {
-      const numerator = i * principal;
-      const denomFactor = numerator / payment;
-      if (denomFactor >= 1 - 1e-12) {
-        throw new Error('Платёж слишком мал для сокращения срока');
-      }
-      monthsCalc = Math.ceil(Math.log(1 / (1 - denomFactor)) / Math.log(1 + i));
-    }
-    if (!Number.isFinite(monthsCalc) || monthsCalc <= 0) {
-      throw new Error('Не удалось рассчитать срок при досрочном погашении');
-    }
-    months = Math.max(1, monthsCalc);
+  let months: number;
+  if (targetPayment > 0 && i > 0 && targetPayment > principal * i) {
+    months = Math.ceil(Math.log(1 / (1 - (i * principal) / targetPayment)) / Math.log(1 + i));
+  } else if (i === 0 && targetPayment > 0) {
+    months = Math.ceil(principal / targetPayment);
+  } else {
+    months = Math.max(1, remainingTerm);
   }
+  months = Math.max(1, months);
 
   if (months > 600) throw new Error('Слишком большой срок пересчёта');
   const dates = makeDueDates(input.nextDueDate, months);
@@ -97,4 +81,66 @@ function makeDueDates(firstDueDate: Date, count: number): Date[] {
 /** Следующий платёж после сегодняшнего дня (для старта нового графика). */
 export function nextScheduleStart(today: Date, paymentDay?: number | null): Date {
   return withDayOfMonth(addMonths(today, 1), paymentDay);
+}
+
+function nextDueDateAfter(date: Date, paymentDay?: number | null): Date {
+  const base = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
+  return withDayOfMonth(base, paymentDay ?? date.getUTCDate());
+}
+
+function accruedInterestBetween(outstanding: number, annualRate: number, from: Date, to: Date): number {
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const diffDays = Math.max(0, Math.round((to.getTime() - from.getTime()) / msPerDay));
+  return annualRate > 0 ? round2((outstanding * annualRate * diffDays) / 100 / 365) : 0;
+}
+
+export function applyHistoricalPrepayments(
+  principal: number,
+  annualRate: number,
+  paymentType: PaymentType,
+  startDate: Date,
+  termMonths: number,
+  paymentDay: number | null,
+  earlyRepayments: Array<{ amount: number; date: Date }>,
+): { outstanding: number; schedule: ScheduleItem[] } {
+  if (earlyRepayments.length === 0) {
+    const dueDates = Array.from({ length: termMonths }, (_, k) => withDayOfMonth(addMonths(startDate, k), null));
+    const schedule = paymentType === 'DIFFERENTIAL'
+      ? buildDifferentialSchedule(principal, annualRate, termMonths, dueDates)
+      : buildAnnuitySchedule(principal, annualRate, termMonths, dueDates);
+    return { outstanding: principal, schedule };
+  }
+
+  let outstanding = principal;
+  let anchorDate = new Date(startDate);
+  const dueDates0 = Array.from({ length: termMonths }, (_, k) => withDayOfMonth(addMonths(startDate, k), null));
+  let schedule = paymentType === 'DIFFERENTIAL'
+    ? buildDifferentialSchedule(principal, annualRate, termMonths, dueDates0)
+    : buildAnnuitySchedule(principal, annualRate, termMonths, dueDates0);
+
+  const sorted = [...earlyRepayments].sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  for (const er of sorted) {
+    const accruedInterest = accruedInterestBetween(outstanding, annualRate, anchorDate, er.date);
+    const principalPart = Math.max(0, er.amount - accruedInterest);
+    outstanding = Math.max(0, outstanding - principalPart);
+
+    const remainingMonths = Math.max(1, monthsBetween(er.date, addMonths(startDate, termMonths)));
+    const nextDue = nextDueDateAfter(er.date, paymentDay);
+
+    schedule = rebuildSchedule({
+      outstanding,
+      annualRate,
+      paymentType,
+      remainingTermMonths: remainingMonths,
+      nextDueDate: nextDue,
+      paymentDay,
+      previousPayment: schedule[0]?.amount ?? null,
+      previousPrincipalPart: schedule[0]?.principalPart ?? null,
+    });
+
+    anchorDate = new Date(er.date);
+  }
+
+  return { outstanding: round2(outstanding), schedule };
 }

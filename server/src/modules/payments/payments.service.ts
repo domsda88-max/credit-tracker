@@ -203,7 +203,7 @@ export const paymentsService = {
     const newOutstanding = round2(outstanding - principalPart);
     console.log('principalPart calculated', { principalPart, accruedInterest, newOutstanding });
     const isFull = newOutstanding <= CLOSE_THRESHOLD;
-    const mode = (dto.mode ?? credit.prepaymentMode) as PrepaymentMode;
+    const mode: PrepaymentMode = 'REDUCE_TERM';
     const prevPercent = paidPercent(toNumber(credit.principal), toNumber(credit.outstanding));
 
     const result = await prisma.$transaction(async (tx) => {
@@ -319,7 +319,6 @@ export const paymentsService = {
           outstanding: newOutstanding,
           annualRate,
           paymentType: credit.paymentType as PaymentType,
-          mode,
           remainingTermMonths: remainingTerm,
           nextDueDate,
           paymentDay: credit.paymentDay,
@@ -382,7 +381,7 @@ export const paymentsService = {
     const outstanding = toNumber(credit.outstanding);
     const newOutstanding = round2(outstanding - dto.amount);
     const isFull = newOutstanding <= CLOSE_THRESHOLD;
-    const mode = (dto.mode ?? credit.prepaymentMode) as PrepaymentMode;
+    const mode: PrepaymentMode = 'REDUCE_TERM';
 
     const pending = credit.schedule.filter((item) => item.status === 'PENDING');
 
@@ -416,7 +415,6 @@ export const paymentsService = {
       outstanding: newOutstanding,
       annualRate: toNumber(credit.annualRate),
       paymentType: credit.paymentType as PaymentType,
-      mode,
       remainingTermMonths: remainingTerm,
       nextDueDate,
       paymentDay: credit.paymentDay,

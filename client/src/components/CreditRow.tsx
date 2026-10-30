@@ -62,7 +62,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [earlyOpen, setEarlyOpen] = useState(false);
   const [earlyAmount, setEarlyAmount] = useState('');
-  const [earlyMode, setEarlyMode] = useState('REDUCE_PAYMENT');
+  const [earlyMode, setEarlyMode] = useState('REDUCE_TERM');
   const [earlyDate, setEarlyDate] = useState(new Date().toISOString().slice(0,10));
   const [earlyPending, setEarlyPending] = useState(false);
   const [earlyError, setEarlyError] = useState<string | null>(null);
@@ -361,7 +361,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
             setEarlyPending(true);
             setEarlyError(null);
             try {
-              await paymentsApi.earlyRepayment(credit.id, { amount, mode: earlyMode as any, date: earlyDate });
+              await paymentsApi.earlyRepayment(credit.id, { amount, mode: 'REDUCE_TERM', date: earlyDate });
               await queryClient.invalidateQueries({ queryKey: ['credits'] });
               await queryClient.invalidateQueries({ queryKey: ['credit', credit.id] });
               await queryClient.invalidateQueries({ queryKey: ['summary'] });
@@ -396,17 +396,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
               className="mt-1 w-full max-w-full box-border rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none focus:border-primary"
             />
           </label>
-          <label className="block">
-            <span className="text-sm text-t2">Р РµР¶РёРј</span>
-            <select
-              value={earlyMode}
-              onChange={(e) => setEarlyMode(e.target.value)}
-              className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none focus:border-primary"
-            >
-              <option value="REDUCE_PAYMENT">РЈРјРµРЅСЊС€РёС‚СЊ РїР»Р°С‚С‘Р¶</option>
-              <option value="REDUCE_TERM">РЎРѕРєСЂР°С‚РёС‚СЊ СЃСЂРѕРє</option>
-            </select>
-          </label>
+           <p className="text-xs text-t3">Режим: сокращение срока</p>
           {earlyError && <p className="text-sm text-danger">{earlyError}</p>}
           <button
             type="submit"

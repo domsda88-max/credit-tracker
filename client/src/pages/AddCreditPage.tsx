@@ -30,7 +30,7 @@ const schema = z
     name: z.string().min(1, 'Укажите название банка или продукта'),
     type: z.enum(['CREDIT_CARD', 'CONSUMER', 'MORTGAGE', 'INSTALLMENT', 'MICROLOAN', 'LOAN']),
     paymentType: z.enum(['ANNUITY', 'DIFFERENTIAL', 'MIN_PAYMENT']).optional(),
-    prepaymentMode: z.enum(['REDUCE_TERM', 'REDUCE_PAYMENT']).optional(),
+    prepaymentMode: z.enum(['REDUCE_TERM']).optional(),
     principal: z.coerce.number().positive('Сумма должна быть больше 0'),
     annualRate: optionalNumber(0, 100),
     startDate: z.string().optional(),
@@ -127,6 +127,7 @@ export function AddCreditPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [earlyRepayments, setEarlyRepayments] = useState<Array<{ amount: string; date: string }>>([]);
   const prevTypeRef = useRef<FormValues['type'] | null>(null);
 
   const {
@@ -140,7 +141,7 @@ export function AddCreditPage() {
     defaultValues: {
       type: 'CONSUMER',
       paymentType: 'ANNUITY',
-      prepaymentMode: 'REDUCE_PAYMENT',
+      prepaymentMode: 'REDUCE_TERM',
       frozen: false,
       markPastAsPaid: true,
     },
@@ -173,7 +174,7 @@ export function AddCreditPage() {
       case 'CONSUMER':
       case 'MORTGAGE':
         setValue('paymentType', 'ANNUITY');
-        setValue('prepaymentMode', 'REDUCE_PAYMENT');
+        setValue('prepaymentMode', 'REDUCE_TERM');
         setValue('minPayment', undefined);
         setValue('gracePeriodEnds', undefined);
         setValue('graceReplenishSum', undefined);
@@ -248,7 +249,7 @@ export function AddCreditPage() {
         markPastAsPaid: parsed.markPastAsPaid,
         outstanding: parsed.outstanding ?? null,
         paymentType: parsed.paymentType ?? 'ANNUITY',
-        // Кредитная карта — revolving-продукт, срок не нужен
+        earlyRepayments: (values as any).earlyRepayments,        // Кредитная карта — revolving-продукт, срок не нужен
         termMonths:
           parsed.type === 'CREDIT_CARD' || parsed.type === 'MICROLOAN' ? undefined : parsed.termMonths,
       });
@@ -275,7 +276,14 @@ export function AddCreditPage() {
       )}
 
       <form
-        onSubmit={handleSubmit((values) => mutation.mutate(values))}
+        onSubmit={handleSubmit((values) =>
+          mutation.mutate({
+            ...values,
+            earlyRepayments: earlyRepayments
+              .filter((er) => er.amount && er.date)
+              .map((er) => ({ amount: Number(er.amount), date: er.date })),
+          } as any),
+        )}
         className="mt-5 space-y-4 touch-manipulation"
       >
         {/* === ОБЩИЕ ПОЛЯ (всегда видны) === */}
@@ -459,13 +467,7 @@ export function AddCreditPage() {
                 )}
               </label>
 
-              <label className="block">
-                <span className="text-sm text-t2">Режим досрочного погашения</span>
-                <select {...register('prepaymentMode')} className={inputClass}>
-                  <option value="REDUCE_PAYMENT">Уменьшать платёж</option>
-                  <option value="REDUCE_TERM">Сокращать срок</option>
-                </select>
-              </label>
+
             </div>
           </section>
         )}
@@ -663,6 +665,53 @@ export function AddCreditPage() {
             )}
           </div>
         )}
+
+        <details className="rounded-card border border-line bg-surface p-4">
+          <summary className="cursor-pointer text-sm font-medium text-t1">
+            История досрочных погашений (опционально)
+          </summary>
+          <div className="mt-3 space-y-3">
+            {earlyRepayments.map((er, idx) => (
+              <div key={idx} className="flex gap-2">
+                <input
+                  type="number"
+                  placeholder="Сумма, ₽"
+                  value={er.amount}
+                  onChange={(e) => {
+                    const updated = [...earlyRepayments];
+                    updated[idx] = { ...updated[idx], amount: e.target.value };
+                    setEarlyRepayments(updated);
+                  }}
+                  className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-t1"
+                />
+                <input
+                  type="date"
+                  value={er.date}
+                  onChange={(e) => {
+                    const updated = [...earlyRepayments];
+                    updated[idx] = { ...updated[idx], date: e.target.value };
+                    setEarlyRepayments(updated);
+                  }}
+                  className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-t1"
+                />
+                <button
+                  type="button"
+                  onClick={() => setEarlyRepayments(earlyRepayments.filter((_, i) => i !== idx))}
+                  className="rounded-control border border-danger/40 px-3 text-danger"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setEarlyRepayments([...earlyRepayments, { amount: '', date: '' }])}
+              className="w-full rounded-control border border-line px-3 py-2 text-sm text-t2"
+            >
+              + Добавить досрочку
+            </button>
+          </div>
+        </details>
 
         {error && <p className="text-sm text-danger">{error}</p>}
 

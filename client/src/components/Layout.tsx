@@ -46,7 +46,7 @@ export function Layout() {
         <Outlet />
       </main>
 
-      <nav className="flex shrink-0 items-stretch justify-around border-t border-line bg-surface/80 backdrop-blur-xl pb-[calc(env(safe-area-inset-bottom)+20px)] pt-1.5">
+      <nav className="flex shrink-0 items-stretch justify-around border-t border-line bg-surface/80 backdrop-blur-xl pb-[calc(env(safe-area-inset-bottom)+8px)] pt-1 h-14">
         {NAV.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
@@ -54,7 +54,7 @@ export function Layout() {
             end={end}
             className={({ isActive }) =>
               [
-                'flex flex-1 flex-col items-center gap-1 rounded-control px-2 py-1 text-micro font-medium transition-colors duration-200',
+                'flex flex-1 flex-col items-center gap-0.5 rounded-control px-1.5 py-0.5 text-[10px] font-medium transition-colors duration-200',
                 isActive ? 'text-primary' : 'text-t3',
               ].join(' ')
             }
@@ -62,7 +62,7 @@ export function Layout() {
             {({ isActive }) => (
               <>
                 <Icon
-                  size={24}
+                  size={18}
                   strokeWidth={isActive ? 2.4 : 2}
                   className="transition-all duration-[350ms] ease-app"
                   style={{

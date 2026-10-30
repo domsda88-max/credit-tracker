@@ -24,7 +24,6 @@ const schema = z.object({
   startDate: z.string().min(1, 'Укажите дату выдачи'),
   termMonths: z.coerce.number().int().min(1, 'Минимум 1 месяц').max(600),
   paymentDay: optionalNumber(1, 31),
-  prepaymentMode: z.enum(['REDUCE_TERM', 'REDUCE_PAYMENT']),
   outstanding: optionalNumber(0, Number.MAX_SAFE_INTEGER),
   markPastAsPaid: z.boolean().default(false),
 });
@@ -60,7 +59,6 @@ export function EditCreditForm({
       startDate: toDateInput(credit.startDate),
       termMonths: credit.termMonths,
       paymentDay: credit.paymentDay ?? undefined,
-      prepaymentMode: credit.prepaymentMode,
       // Пусто = «посчитай сам». Заполняем только если пользователь вводит вручную.
       outstanding: undefined,
     },
@@ -76,7 +74,6 @@ export function EditCreditForm({
         startDate: new Date(parsed.startDate).toISOString(),
         termMonths: parsed.termMonths,
         paymentDay: parsed.paymentDay ?? null,
-        prepaymentMode: parsed.prepaymentMode,
         outstanding: parsed.outstanding ?? null,
         markPastAsPaid: parsed.markPastAsPaid,
       });
@@ -159,13 +156,6 @@ export function EditCreditForm({
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="text-sm text-t2">Режим досрочного погашения</span>
-            <select {...register('prepaymentMode')} className={inputClass}>
-              <option value="REDUCE_PAYMENT">Уменьшать платёж</option>
-              <option value="REDUCE_TERM">Сокращать срок</option>
-            </select>
-          </label>
 
           <label className="block">
             <span className="text-sm text-t2">

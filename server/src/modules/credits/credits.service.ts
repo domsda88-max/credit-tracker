@@ -4,7 +4,7 @@ import { AppError } from '../../middlewares/errorHandler';
 import { addMonths, addUTCDays, monthsBetween, utcToday } from '../../utils/finance/date';
 import { buildMicroloanSchedule } from '../../utils/finance/microloan';
 import { planPastPayments } from '../../utils/finance/pastPayments';
-import { rebuildSchedule } from '../../utils/finance/earlyRepayment';
+import { rebuildSchedule, applyHistoricalPrepayments } from '../../utils/finance/earlyRepayment';
 import { generateSchedule } from '../../utils/finance/schedule';
 import { effectiveAnnualRate } from '../../utils/finance/effectiveRate';
 import { simulateAccelerator } from '../../utils/finance/accelerator';
@@ -46,7 +46,7 @@ export const creditsService = {
           name: dto.name,
           type: 'LOAN' as any,
           paymentType: 'ANNUITY' as any,
-          prepaymentMode: (dto.prepaymentMode ?? 'REDUCE_PAYMENT') as PrepaymentMode,
+          prepaymentMode: (dto.prepaymentMode ?? 'REDUCE_TERM') as PrepaymentMode,
           principal: dto.principal,
           outstanding: dto.outstanding ?? dto.principal,
           annualRate: 0,
@@ -87,7 +87,7 @@ export const creditsService = {
             name: dto.name,
             type: 'MICROLOAN' as any,
             paymentType: 'ANNUITY' as any,
-            prepaymentMode: (dto.prepaymentMode ?? 'REDUCE_PAYMENT') as PrepaymentMode,
+            prepaymentMode: (dto.prepaymentMode ?? 'REDUCE_TERM') as PrepaymentMode,
             principal: dto.principal,
             outstanding: dto.principal,
             annualRate: dto.annualRate ?? 0,
@@ -164,7 +164,7 @@ export const creditsService = {
           name: dto.name,
           type: dto.type,
           paymentType: dto.paymentType!,
-          prepaymentMode: (dto.prepaymentMode ?? 'REDUCE_PAYMENT') as PrepaymentMode,
+          prepaymentMode: (dto.prepaymentMode ?? 'REDUCE_TERM') as PrepaymentMode,
           principal: dto.principal,
           outstanding: dto.outstanding ?? past?.outstanding ?? dto.principal,
           annualRate: dto.annualRate ?? 0,
@@ -209,6 +209,35 @@ export const creditsService = {
             amount: item.amount,
             paidAt: item.dueDate,
             note: 'Учтён как оплаченный при добавлении',
+          })),
+        });
+      }
+
+      if (dto.earlyRepayments && dto.earlyRepayments.length > 0) {
+        const { outstanding: newOutstanding, schedule: newSchedule } = applyHistoricalPrepayments(
+          dto.principal,
+          dto.annualRate ?? 0,
+          dto.paymentType!,
+          dto.startDate ?? new Date(),
+          dto.termMonths ?? 0,
+          dto.paymentDay ?? null,
+          dto.earlyRepayments.map((er) => ({ amount: er.amount, date: new Date(er.date) })),
+        );
+
+        await tx.credit.update({
+          where: { id: credit.id },
+          data: { outstanding: newOutstanding },
+        });
+
+        await tx.paymentSchedule.deleteMany({ where: { creditId: credit.id } });
+        await tx.paymentSchedule.createMany({
+          data: newSchedule.map((item) => ({
+            creditId: credit.id,
+            dueDate: item.dueDate,
+            amount: item.amount,
+            principalPart: item.principalPart,
+            interestPart: item.interestPart,
+            status: 'PENDING',
           })),
         });
       }
@@ -536,7 +565,7 @@ export const creditsService = {
               outstanding: toNumber(updated.outstanding),
               annualRate: effectiveRate,
               paymentType: merged.type as PaymentType,
-              mode: updated.prepaymentMode as PrepaymentMode,
+
               remainingTermMonths: Math.max(1, remaining),
               nextDueDate: nextPending ? nextPending.dueDate : addMonths(utcToday(), 1),
               paymentDay: merged.paymentDay,
