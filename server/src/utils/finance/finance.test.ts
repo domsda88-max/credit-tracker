@@ -82,7 +82,7 @@ describe('Кредитка с льготным периодом', () => {
 });
 
 describe('Досрочное погашение', () => {
-  it('REDUCE_PAYMENT уменьшает платёж', () => {
+  it('сокращение срока после досрочки', () => {
     const annuity = annuityPayment(500_000, 19.5, 36);
     const rebuilt = rebuildSchedule({
       outstanding: 500_000 - 100_000,
