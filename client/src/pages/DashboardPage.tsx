@@ -2,7 +2,6 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { creditsApi } from '../api/credits';
 import { CreditRow } from '../components/CreditRow';
-import { DataExport } from '../components/DataExport';
 import { DebtOverview } from '../components/DebtOverview';
 import { MoneyFlow } from '../components/MoneyFlow';
 import { GraceReplenishBlock } from '../components/GraceReplenishBlock';
@@ -144,7 +143,6 @@ export function DashboardPage() {
             </section>
           )}
 
-          <DataExport />
         </>
       )}
     </div>
