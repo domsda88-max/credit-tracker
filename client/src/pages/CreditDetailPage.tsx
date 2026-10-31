@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useParams } from 'react-router-dom';
@@ -186,13 +187,31 @@ export function CreditDetailPage() {
             </p>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
               onClick={() => setEditing((v) => !v)}
-              className="rounded-lg border border-line px-3 py-2 text-sm text-t2 transition hover:border-primary/50"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-t3 transition hover:border-primary/50 hover:text-primary"
+              aria-label={editing ? 'Закрыть редактирование' : 'Изменить кредит'}
             >
-              {editing ? 'Закрыть' : 'Изменить'}
+              <Pencil size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!window.confirm('Удалить кредит и весь график платежей?')) return;
+                try {
+                  await creditsApi.remove(id);
+                  await queryClient.invalidateQueries({ queryKey: ['credits'] });
+                  window.location.href = '/';
+                } catch (err) {
+                  setError(extractErrorMessage(err));
+                }
+              }}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-danger/40 text-danger transition hover:bg-danger/10"
+              aria-label="Удалить кредит"
+            >
+              <Trash2 size={18} />
             </button>
           </div>
         </div>
@@ -226,24 +245,7 @@ export function CreditDetailPage() {
           )}
         </div>
 
-        <div className="mt-4 flex justify-end">
-          <button
-            type="button"
-            onClick={async () => {
-              if (!window.confirm('Удалить кредит и весь график платежей?')) return;
-              try {
-                await creditsApi.remove(id);
-                await queryClient.invalidateQueries({ queryKey: ['credits'] });
-                window.location.href = '/';
-              } catch (err) {
-                setError(extractErrorMessage(err));
-              }
-            }}
-            className="rounded-lg border border-danger/40 px-3 py-2 text-sm text-danger transition hover:bg-danger/10"
-          >
-            Удалить кредит
-          </button>
-        </div>
+        {/* Кнопка удаления перенесена в хедер */}
 
         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-surface2">
           <div
