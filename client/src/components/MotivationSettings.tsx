@@ -131,7 +131,7 @@ export function MotivationSettings() {
           </button>
           <div className="flex items-center justify-between text-caption">
             <span className="text-t3">Мотивационный цикл</span>
-            <span className="tabular text-t2">день {user.motivationDay ?? 1} из 30</span>
+            <span className="tabular text-t2">сообщение {user.motivationDay ?? 1} из 70</span>
           </div>
           <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface2">
             <div

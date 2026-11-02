@@ -1,8 +1,7 @@
 import { prisma } from '../../config/prisma';
 import { sendUniquePush } from '../../modules/push/push.service';
 import { isoDate, utcToday } from '../../utils/finance/date';
-import { buildMotivationContext } from '../motivation.context';
-import { MOTIVATION_CYCLE, motivationForDay } from '../motivation.texts';
+import { MOTIVATION_70 } from '../motivation70.texts';
 
 /** Час и минута отправки мотивационной рассылки (локальное время пользователя). */
 export const MOTIVATION_HOUR = 9;
@@ -43,8 +42,11 @@ export async function sendMotivationForUser(
 ): Promise<boolean> {
   const today = utcToday();
 
-  const context = await buildMotivationContext(userId);
-  const text = motivationForDay(context, day);
+  // Используем заранее подготовленный список из 70 мотивационных сообщений:
+  // каждое успешное отправление сдвигает курсор, поэтому сообщения
+  // не повторяются подряд и учитываются частота (1–24 раза в день).
+  const index = (((day ?? 1) - 1) % MOTIVATION_70.length + MOTIVATION_70.length) % MOTIVATION_70.length;
+  const text = MOTIVATION_70[index];
 
   const sent = await sendUniquePush(
     userId,
@@ -52,8 +54,8 @@ export async function sendMotivationForUser(
     'MOTIVATION',
     `${userId}:MOTIVATION:${isoDate(today)}:slot${slot}`,
     {
-      title: text.title,
-      body: text.body,
+      title: '💡 Мотивация',
+      body: text,
       url: '/',
       tag: `motivation-${slot}`,
     },
@@ -61,14 +63,13 @@ export async function sendMotivationForUser(
 
   if (!sent) return false;
 
-  // Продвигаем день цикла только после первого слота дня.
-  if (slot === 0) {
-    const nextDay = (day % MOTIVATION_CYCLE) + 1;
-    await prisma.user.update({
-      where: { id: userId },
-      data: { motivationDay: nextDay },
-    });
-  }
+  // Курсор продвигается после каждого успешно доставленного пуши,
+  // чтобы при разных частотах и паузах сообщения не повторялись.
+  const nextDay = ((day ?? 1) % MOTIVATION_70.length) + 1;
+  await prisma.user.update({
+    where: { id: userId },
+    data: { motivationDay: nextDay },
+  });
 
   return true;
 }
