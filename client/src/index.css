@@ -98,12 +98,20 @@ input[type='date'] {
 /* Поля ввода не должны вызывать зум на iOS (минимум 16px) */
 input,
 select,
-textarea,
-button {
+textarea {
   font-family: inherit;
   font-size: 16px;
   min-height: 44px;
   width: 100%;
+  box-sizing: border-box;
+  touch-action: manipulation;
+}
+
+button {
+  font-family: inherit;
+  font-size: 16px;
+  min-height: 44px;
+  width: auto;
   box-sizing: border-box;
   touch-action: manipulation;
 }
