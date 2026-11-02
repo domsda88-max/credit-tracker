@@ -44,8 +44,8 @@ export function Layout() {
           <Outlet />
         </main>
 
-        <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-surface/98 backdrop-blur-md">
-          <div className="mx-auto flex min-h-[72px] w-full max-w-full items-center justify-around px-2 pb-[calc(8px+env(safe-area-inset-bottom))] pt-2">
+        <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-surface">
+          <div className="mx-auto flex h-16 w-full max-w-full items-center justify-around px-2 pt-1" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
             {NAV.map(({ to, label, icon: Icon, end }) => (
               <NavLink
                 key={to}
