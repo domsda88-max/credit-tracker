@@ -172,6 +172,7 @@ export interface EarlyPreview {
   principalPart: number;
   days: number;
   coversInterest: boolean;
+  minAmount: number;
   effectiveDate: string;
 }
 
