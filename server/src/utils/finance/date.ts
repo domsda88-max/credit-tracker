@@ -60,6 +60,14 @@ export function addUTCDays(date: Date, days: number): Date {
   return d;
 }
 
+/** Целое число дней между датами (UTC, без времени); отрицательное — 0. */
+export function diffInDaysUTC(a: Date, b: Date): number {
+  const da = Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate());
+  const db = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate());
+  const diff = Math.floor((db - da) / 86400000);
+  return diff < 0 ? 0 : diff;
+}
+
 /** Совпадают ли даты (без времени). */
 export function isSameDay(a: Date, b: Date): boolean {
   return (

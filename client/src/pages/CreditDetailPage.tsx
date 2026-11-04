@@ -64,6 +64,7 @@ export function CreditDetailPage() {
   });
 
   const [preview, setPreview] = useState<EarlyPreview | null>(null);
+  const [previewForDate, setPreviewForDate] = useState<string | null>(null);
   const [cancelingId, setCancelingId] = useState<string | null>(null);
   const submitting = useRef(false);
   const watchAmount = watch('amount');
@@ -75,24 +76,31 @@ export function CreditDetailPage() {
     const amount = Number(watchAmount);
     if (!id || !Number.isFinite(amount) || amount <= 0) {
       setPreview(null);
+      setPreviewForDate(null);
       return;
     }
     let cancelled = false;
     const timer = window.setTimeout(() => {
       paymentsApi
-        .previewEarlyRepayment(id, { amount, mode: 'REDUCE_TERM' })
+        .previewEarlyRepayment(id, { amount, mode: 'REDUCE_TERM', date: watchDate })
         .then((data) => {
-          if (!cancelled) setPreview(data);
+          if (!cancelled) {
+            setPreview(data);
+            setPreviewForDate(watchDate ?? null);
+          }
         })
         .catch(() => {
-          if (!cancelled) setPreview(null);
+          if (!cancelled) {
+            setPreview(null);
+            setPreviewForDate(null);
+          }
         });
     }, 350);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [id, watchAmount, watchMode]);
+  }, [id, watchAmount, watchMode, watchDate]);
 
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: ['credit', id] });
@@ -113,11 +121,13 @@ export function CreditDetailPage() {
   const earlyMutation = useMutation({
     mutationFn: (values: EarlyFormValues) => {
       const parsed = earlySchema.parse(values);
-      return paymentsApi.earlyRepayment(id, { amount: parsed.amount, mode: parsed.mode, date: parsed.date } as any);
+      const date = preview && previewForDate === parsed.date ? preview.effectiveDate : parsed.date;
+      return paymentsApi.earlyRepayment(id, { amount: parsed.amount, mode: parsed.mode, date } as any);
     },
     onSuccess: async () => {
       reset({ amount: undefined as unknown as number, mode: 'REDUCE_TERM', date: todayStr });
       setPreview(null);
+      setPreviewForDate(null);
       await invalidate();
       toast.show('Досрочное погашение внесено');
       navigator.vibrate?.([30, 40, 30]);
