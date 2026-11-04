@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { monthsBetween, addUTCDays, withDayOfMonth, addMonths } from './date';
+import { monthsBetween, addUTCDays, withDayOfMonth, addMonths, maxPrepaymentDate } from './date';
 
 describe('monthsBetween boundary behavior', () => {
   it('одна и та же дата = 0', () => {
@@ -52,5 +52,27 @@ describe('date helpers boundary behavior', () => {
     const r = addUTCDays(d, 2);
     expect(r.getUTCDate()).toBe(1);
     expect(r.getUTCMonth()).toBe(1);
+  });
+});
+
+describe('maxPrepaymentDate boundary behavior', () => {
+  it('Feb 29 + 1 year rolls over to Mar 1 (JS behavior)', () => {
+    const now = new Date(Date.UTC(2024, 1, 29));
+    const max = maxPrepaymentDate(now);
+    expect(max.toISOString().slice(0, 10)).toBe('2025-03-01');
+  });
+
+  it('normal date keeps the same day next year', () => {
+    const now = new Date(Date.UTC(2025, 0, 15));
+    const max = maxPrepaymentDate(now);
+    expect(max.toISOString().slice(0, 10)).toBe('2026-01-15');
+  });
+
+  it('normalizes the result to UTC midnight', () => {
+    const now = new Date(Date.UTC(2025, 5, 10, 23, 59, 59));
+    const max = maxPrepaymentDate(now);
+    expect(max.getUTCHours()).toBe(0);
+    expect(max.getUTCMinutes()).toBe(0);
+    expect(max.toISOString().slice(0, 10)).toBe('2026-06-10');
   });
 });

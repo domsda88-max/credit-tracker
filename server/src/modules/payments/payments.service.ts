@@ -202,6 +202,10 @@ export const paymentsService = {
 
     const newOutstanding = round2(outstanding - principalPart);
     console.log('principalPart calculated', { principalPart, accruedInterest, newOutstanding });
+    const maxAmount = round2(outstanding + accruedInterest);
+    if (round2(amount - maxAmount) > CLOSE_THRESHOLD) {
+      throw new AppError(400, `Сумма превышает остаток долга с начисленными процентами (${maxAmount.toFixed(2)} ₽)`);
+    }
     const isFull = newOutstanding <= CLOSE_THRESHOLD;
     const mode: PrepaymentMode = 'REDUCE_TERM';
     const prevPercent = paidPercent(toNumber(credit.principal), toNumber(credit.outstanding));
@@ -227,7 +231,7 @@ export const paymentsService = {
             data: {
               amount: { increment: amount },
               principalPart: { increment: round2(outstanding) },
-              interestPart: { increment: round2(amount - outstanding) },
+              interestPart: { increment: round2(accruedInterest) },
               paidAmount: { increment: amount },
               paidAt: prepaymentDateUTC,
               status: 'PAID',
@@ -240,7 +244,7 @@ export const paymentsService = {
               dueDate: prepaymentDateUTC,
               amount,
               principalPart: round2(outstanding),
-              interestPart: round2(amount - outstanding),
+              interestPart: round2(accruedInterest),
               status: 'PAID',
               paidAt: prepaymentDateUTC,
               paidAmount: amount,

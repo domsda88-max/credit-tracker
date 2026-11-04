@@ -44,6 +44,16 @@ export function utcToday(now: Date = new Date()): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 }
 
+/**
+ * Верхняя граница даты досрочного погашения: +1 календарный год.
+ * JS-rollover: 29.02.2024 → 01.03.2025 (29.02.2025 не существует).
+ */
+export function maxPrepaymentDate(now: Date = new Date()): Date {
+  const d = new Date(now);
+  d.setUTCFullYear(d.getUTCFullYear() + 1);
+  return utcToday(d);
+}
+
 export function addUTCDays(date: Date, days: number): Date {
   const d = new Date(date.getTime());
   d.setUTCDate(d.getUTCDate() + days);
