@@ -99,6 +99,13 @@ const GOLDEN: Array<{
     acceleratedMonths: 30,
     targetName: 'Реально гасимый',
   },
+  // P4 attribution (verified against server@70081a7):
+  // equal rates were ordered by the input array only. With [B, A] the old
+  // server targeted B and returned 8; with [A, B] it targeted A and returned 9.
+  // The 8 was not 8 full months: the run took 9 loop months and returned
+  // 9 - finalAvailable / pool = 8 because the target payment is not subtracted
+  // from `available`. The only semantic change in this PR is the comparator:
+  // rate desc, then id asc.
   {
     name: 'equal rates: lower id wins regardless of input order',
     input: {
