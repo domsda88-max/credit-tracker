@@ -122,3 +122,77 @@ export function simulateAccelerator(input: AcceleratorInput): AcceleratorResult 
     extraPerMonth: round2(input.extraPerMonth),
   };
 }
+/**
+ * Test-only mirror of simulateAccelerator exposing the cycle counter and the
+ * last month's leftover `available`. Used by the parity tests to assert the
+ * invariant that `available` is decremented when paying the target debt
+ * (finalAvailable < pool), which guards against re-introducing the fractional
+ * bug (available not decremented on target pay).
+ */
+export function auditAccelerator(input: AcceleratorInput): {
+  cycles: number;
+  finalAvailable: number;
+  pool: number;
+  result: AcceleratorResult | null;
+} {
+  const debts = input.debts.filter((d) => d.balance > 0);
+  if (debts.length === 0 || input.extraPerMonth <= 0) {
+    return { cycles: 0, finalAvailable: 0, pool: 0, result: null };
+  }
+  if (!Number.isFinite(input.baselineMonths) || input.baselineMonths <= 0) {
+    return { cycles: 0, finalAvailable: 0, pool: 0, result: null };
+  }
+
+  const payable = debts.filter((d) => d.minPayment > 0);
+  const target = [...(payable.length > 0 ? payable : debts)].sort(byRateThenId)[0];
+
+  const order = [...debts].sort(byRateThenId);
+  const balances = order.map((d) => d.balance);
+  const rates = order.map((d) => d.annualRate);
+  const mins = order.map((d) => d.minPayment);
+
+  const pool = round2(debts.reduce((acc, d) => acc + d.minPayment, 0) + input.extraPerMonth);
+
+  let months = 0;
+  let finalAvailable = 0;
+  while (balances.some((b) => b > 0.01) && months < MAX_MONTHS) {
+    months += 1;
+    let available = pool;
+    for (let k = 0; k < balances.length; k++) {
+      if (balances[k] > 0.01) balances[k] = round2(balances[k] * (1 + rates[k] / 100 / 12));
+    }
+    const targetIndex = balances.findIndex((b) => b > 0.01);
+    for (let k = 0; k < balances.length; k++) {
+      if (k === targetIndex || balances[k] <= 0.01) continue;
+      const pay = Math.min(mins[k], balances[k], available);
+      if (pay <= 0) continue;
+      balances[k] = round2(balances[k] - pay);
+      available = round2(available - pay);
+      if (available <= 0.01) break;
+    }
+    if (targetIndex !== -1 && available > 0.01) {
+      const pay = Math.min(available, balances[targetIndex]);
+      balances[targetIndex] = round2(balances[targetIndex] - pay);
+      available = round2(available - pay);
+    }
+    finalAvailable = available;
+  }
+
+  if (months >= MAX_MONTHS) {
+    return { cycles: months, finalAvailable, pool, result: null };
+  }
+  const exactMonths = pool > 0 ? Math.max(0, months - finalAvailable / pool) : months;
+  return {
+    cycles: months,
+    finalAvailable,
+    pool,
+    result: {
+      baselineMonths: input.baselineMonths,
+      acceleratedMonths: exactMonths,
+      savedMonths: Math.max(0, input.baselineMonths - exactMonths),
+      targetName: target.name,
+      extraPerMonth: round2(input.extraPerMonth),
+    },
+  };
+}
+

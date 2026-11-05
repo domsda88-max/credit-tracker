@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { describe, expect, it } from 'vitest';
-import { simulateAccelerator as serverSim } from '../src/utils/finance/accelerator';
+import { simulateAccelerator as serverSim, auditAccelerator as serverAudit } from '../src/utils/finance/accelerator';
 import { simulateAccelerator as clientSim } from '../../client/src/utils/finance/accelerator';
 import type { AcceleratorDebt, AcceleratorInput } from '../src/utils/finance/accelerator';
 
@@ -69,7 +69,8 @@ const GOLDEN: Array<{
         { id: '2', name: 'Ипотека', annualRate: 19.8, balance: 2_000_000, minPayment: 35_000 },
       ],
     },
-    acceleratedMonths: 72.9235336, // cycles=73, finalAvailable=3823.32<pool=50000 (fixed)
+    acceleratedMonths: 72.9235336, // cycles=73, finalAvailable=3823.32<pool=50000
+    targetName: 'Дорогая карта',
   },
   {
     name: 'three debts: avalanche closes the most expensive first',
@@ -82,7 +83,8 @@ const GOLDEN: Array<{
         { id: 'C', name: 'C 10%', annualRate: 10, balance: 90_000, minPayment: 1_000 },
       ],
     },
-    acceleratedMonths: 15.970046923076923, // cycles=16, finalAvailable=389.39<pool=13000 (fixed)
+    acceleratedMonths: 15.9700469, // cycles=16, finalAvailable=389.39<pool=13000
+    targetName: 'A 50%',
   },
   {
     name: 'frozen card is not the target',
@@ -94,15 +96,16 @@ const GOLDEN: Array<{
         { id: 'pay', name: 'Реально гасимый', annualRate: 30, balance: 100_000, minPayment: 10_000 },
       ],
     },
-    acceleratedMonths: 31, // cycles=31, finalAvailable=0<pool=20000 (fixed)
+    acceleratedMonths: 31, // cycles=31, finalAvailable=0<pool=20000
+    targetName: 'Реально гасимый',
   },
-  // P4 attribution (verified against server@70081a7, then fixed):
-  // Before the fractional fix, available was not decremented in the target
-  // payment. Equal rates were ordered by the input array only, so [B, A]
-  // targeted B and reported 8 (loop ran 9 months, finalAvailable==pool).
-  // After tie-break + the available decrement: cycles=10, finalAvailable=15976.69
-  // (<16000), reported=9.0015. The semantic changes in PR #1+fix are only:
-  // byRateThenId comparator and available = round2(available - pay).
+  // P4 attribution:
+  //   at 70081a7 equal rates were ordered by the input array only; with
+  //   [B, A] the old server targeted B and reported 8 (loop ran 9 months,
+  //   finalAvailable==pool). After tie-break + available decrement the new
+  //   engine targets A and reports 9.0015 (cycles=10, finalAvail=15976.69).
+  //   The semantic changes are only byRateThenId and
+  //   available = round2(available - pay).
   {
     name: 'equal rates: lower id wins regardless of input order',
     input: {
@@ -113,7 +116,8 @@ const GOLDEN: Array<{
         { id: 'A', name: 'A 30%', annualRate: 30, balance: 100_000, minPayment: 5_000 },
       ],
     },
-    acceleratedMonths: 9.001456875, // cycles=10, finalAvailable=15976.69<pool=16000 (fixed)
+    acceleratedMonths: 9.001456875, // cycles=10, finalAvailable=15976.69<pool=16000
+    targetName: 'A 30%',
   },
   {
     name: 'interest outruns payments: MAX_MONTHS -> null',
@@ -142,11 +146,29 @@ describe('accelerator parity: client vs server', () => {
       return;
     }
     expect(server).not.toBeNull();
+    expect(server!.acceleratedMonths).toBeCloseTo(acceleratedMonths as number, 5);
     const expectedTarget = [...input.debts].sort((a, b) =>
       b.annualRate !== a.annualRate ? b.annualRate - a.annualRate : a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
     )[0].name;
-    expect(server!.acceleratedMonths).toBeCloseTo(acceleratedMonths as number, 5);
     expect(server!.targetName).toBe(expectedTarget);
+  });
+
+  it('invariant: available is decremented on the target pay (finalAvailable < pool)', () => {
+    // Guards against re-introducing the fractional bug where `available` is not
+    // decremented after paying the target debt. Without the decrement every
+    // closing month reports finalAvailable == pool and months is underreported
+    // by one.
+    for (const g of GOLDEN) {
+      if (g.acceleratedMonths === null) continue;
+      const audit = serverAudit(g.input);
+      expect(audit.result).not.toBeNull();
+      expect(audit.finalAvailable).toBeLessThan(audit.pool);
+      expect(audit.finalAvailable).toBeGreaterThanOrEqual(0);
+      expect(audit.cycles).toBeGreaterThan(0);
+      // cycles - 1 < reported <= cycles (exact closure allowed for P3).
+      expect(audit.result!.acceleratedMonths).toBeGreaterThan(audit.cycles - 1);
+      expect(audit.result!.acceleratedMonths).toBeLessThanOrEqual(audit.cycles);
+    }
   });
 
   it('tie-break does not depend on the input array order', () => {
