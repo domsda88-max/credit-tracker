@@ -100,6 +100,9 @@ export function simulateAccelerator(input: AcceleratorInput): AcceleratorResult 
     }
 
     // 3) The remainder goes to the most expensive open debt.
+    //    `available` MUST be decremented here: otherwise finalAvailable == pool
+    //    when the goal closes and acceleratedMonths is underreported by ~1
+    //    month. See cycle audit in docs/deploy/2026-11-05-pr2-pr1.md.
     if (targetIndex !== -1 && available > 0.01) {
       const pay = Math.min(available, balances[targetIndex]);
       balances[targetIndex] = round2(balances[targetIndex] - pay);
