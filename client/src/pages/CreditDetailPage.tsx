@@ -350,6 +350,9 @@ export function CreditDetailPage() {
               </div>
 
             </div>
+            {preview && (
+              <p className="mt-2 text-xs text-t3">Расчёт на {formatDate(preview.effectiveDate)}</p>
+            )}
             <div>
               <button
                 type="submit"
