@@ -103,6 +103,7 @@ export function simulateAccelerator(input: AcceleratorInput): AcceleratorResult 
     if (targetIndex !== -1 && available > 0.01) {
       const pay = Math.min(available, balances[targetIndex]);
       balances[targetIndex] = round2(balances[targetIndex] - pay);
+      available = round2(available - pay);
     }
     finalAvailable = available;
   }

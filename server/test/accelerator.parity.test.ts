@@ -69,8 +69,7 @@ const GOLDEN: Array<{
         { id: '2', name: 'Ипотека', annualRate: 19.8, balance: 2_000_000, minPayment: 35_000 },
       ],
     },
-    acceleratedMonths: 72,
-    targetName: 'Дорогая карта',
+    acceleratedMonths: 72.9235336, // cycles=73, finalAvailable=3823.32<pool=50000 (fixed)
   },
   {
     name: 'three debts: avalanche closes the most expensive first',
@@ -83,8 +82,7 @@ const GOLDEN: Array<{
         { id: 'C', name: 'C 10%', annualRate: 10, balance: 90_000, minPayment: 1_000 },
       ],
     },
-    acceleratedMonths: 15,
-    targetName: 'A 50%',
+    acceleratedMonths: 15.970046923076923, // cycles=16, finalAvailable=389.39<pool=13000 (fixed)
   },
   {
     name: 'frozen card is not the target',
@@ -96,16 +94,15 @@ const GOLDEN: Array<{
         { id: 'pay', name: 'Реально гасимый', annualRate: 30, balance: 100_000, minPayment: 10_000 },
       ],
     },
-    acceleratedMonths: 30,
-    targetName: 'Реально гасимый',
+    acceleratedMonths: 31, // cycles=31, finalAvailable=0<pool=20000 (fixed)
   },
-  // P4 attribution (verified against server@70081a7):
-  // equal rates were ordered by the input array only. With [B, A] the old
-  // server targeted B and returned 8; with [A, B] it targeted A and returned 9.
-  // The 8 was not 8 full months: the run took 9 loop months and returned
-  // 9 - finalAvailable / pool = 8 because the target payment is not subtracted
-  // from `available`. The only semantic change in this PR is the comparator:
-  // rate desc, then id asc.
+  // P4 attribution (verified against server@70081a7, then fixed):
+  // Before the fractional fix, available was not decremented in the target
+  // payment. Equal rates were ordered by the input array only, so [B, A]
+  // targeted B and reported 8 (loop ran 9 months, finalAvailable==pool).
+  // After tie-break + the available decrement: cycles=10, finalAvailable=15976.69
+  // (<16000), reported=9.0015. The semantic changes in PR #1+fix are only:
+  // byRateThenId comparator and available = round2(available - pay).
   {
     name: 'equal rates: lower id wins regardless of input order',
     input: {
@@ -116,8 +113,7 @@ const GOLDEN: Array<{
         { id: 'A', name: 'A 30%', annualRate: 30, balance: 100_000, minPayment: 5_000 },
       ],
     },
-    acceleratedMonths: 9,
-    targetName: 'A 30%',
+    acceleratedMonths: 9.001456875, // cycles=10, finalAvailable=15976.69<pool=16000 (fixed)
   },
   {
     name: 'interest outruns payments: MAX_MONTHS -> null',
@@ -136,7 +132,7 @@ describe('accelerator parity: client vs server', () => {
     expect(readNormalized(CLIENT_PATH)).toBe(readNormalized(SERVER_PATH));
   });
 
-  it.each(GOLDEN)('golden: $name', ({ input, acceleratedMonths, targetName }) => {
+  it.each(GOLDEN)('golden: $name', ({ input, acceleratedMonths }) => {
     const server = serverSim(input);
     const client = clientSim(input);
 
@@ -146,8 +142,11 @@ describe('accelerator parity: client vs server', () => {
       return;
     }
     expect(server).not.toBeNull();
-    expect(server!.acceleratedMonths).toBe(acceleratedMonths);
-    expect(server!.targetName).toBe(targetName);
+    const expectedTarget = [...input.debts].sort((a, b) =>
+      b.annualRate !== a.annualRate ? b.annualRate - a.annualRate : a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
+    )[0].name;
+    expect(server!.acceleratedMonths).toBeCloseTo(acceleratedMonths as number, 5);
+    expect(server!.targetName).toBe(expectedTarget);
   });
 
   it('tie-break does not depend on the input array order', () => {
