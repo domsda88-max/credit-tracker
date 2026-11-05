@@ -15,6 +15,7 @@ import { BalanceChart } from '../components/BalanceChart';
 import { EditCreditForm } from '../components/EditCreditForm';
 import { useToast } from '../components/Toast';
 import type { EarlyPreview, PaymentEvent } from '../types';
+import { maxPrepaymentDate } from '../utils/date';
 import {
   CREDIT_TYPE_LABELS,
   PAYMENT_TYPE_LABELS,
@@ -64,6 +65,7 @@ export function CreditDetailPage() {
   });
 
   const [preview, setPreview] = useState<EarlyPreview | null>(null);
+  const [previewForDate, setPreviewForDate] = useState<string | null>(null);
   const [cancelingId, setCancelingId] = useState<string | null>(null);
   const submitting = useRef(false);
   const watchAmount = watch('amount');
@@ -75,24 +77,31 @@ export function CreditDetailPage() {
     const amount = Number(watchAmount);
     if (!id || !Number.isFinite(amount) || amount <= 0) {
       setPreview(null);
+      setPreviewForDate(null);
       return;
     }
     let cancelled = false;
     const timer = window.setTimeout(() => {
       paymentsApi
-        .previewEarlyRepayment(id, { amount, mode: 'REDUCE_TERM' })
+        .previewEarlyRepayment(id, { amount, mode: 'REDUCE_TERM', date: watchDate })
         .then((data) => {
-          if (!cancelled) setPreview(data);
+          if (!cancelled) {
+            setPreview(data);
+            setPreviewForDate(watchDate ?? null);
+          }
         })
         .catch(() => {
-          if (!cancelled) setPreview(null);
+          if (!cancelled) {
+            setPreview(null);
+            setPreviewForDate(null);
+          }
         });
     }, 350);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [id, watchAmount, watchMode]);
+  }, [id, watchAmount, watchMode, watchDate]);
 
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: ['credit', id] });
@@ -113,11 +122,13 @@ export function CreditDetailPage() {
   const earlyMutation = useMutation({
     mutationFn: (values: EarlyFormValues) => {
       const parsed = earlySchema.parse(values);
-      return paymentsApi.earlyRepayment(id, { amount: parsed.amount, mode: parsed.mode, date: parsed.date } as any);
+      const date = preview && previewForDate === parsed.date ? preview.effectiveDate : parsed.date;
+      return paymentsApi.earlyRepayment(id, { amount: parsed.amount, mode: parsed.mode, date } as any);
     },
     onSuccess: async () => {
       reset({ amount: undefined as unknown as number, mode: 'REDUCE_TERM', date: todayStr });
       setPreview(null);
+      setPreviewForDate(null);
       await invalidate();
       toast.show('Досрочное погашение внесено');
       navigator.vibrate?.([30, 40, 30]);
@@ -298,6 +309,7 @@ export function CreditDetailPage() {
           <form
             onSubmit={handleSubmit((values) => {
               if (submitting.current) return;
+              if (preview && !preview.coversInterest) return;
               submitting.current = true;
               earlyMutation.mutate(values as any, {
                 onSettled: () => {
@@ -322,7 +334,7 @@ export function CreditDetailPage() {
                   type="date"
                   {...register('date')}
                   min={credit.startDate ? new Date(credit.startDate).toISOString().slice(0, 10) : undefined}
-                  max={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+                  max={maxPrepaymentDate()}
                   className={inputClass + " w-full max-w-full box-border"}
                 />
                 {formState.errors.date && (
@@ -341,14 +353,26 @@ export function CreditDetailPage() {
             <div>
               <button
                 type="submit"
-                className="rounded-control bg-success px-4 py-2.5 font-medium text-white transition hover:bg-emerald-400"
+                disabled={preview?.coversInterest === false}
+                className="rounded-control bg-success px-4 py-2.5 font-medium text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Внести
               </button>
             </div>
           </form>
 
-          {preview && (
+          {preview && !preview.coversInterest && (
+            <div className="mt-3 rounded-control border border-danger/30 bg-danger/10 px-4 py-3 text-sm">
+              <p className="font-medium text-danger">
+                Минимум к погашению: <span className="tabular">{formatMoney(preview.minAmount)}</span>
+              </p>
+              <p className="mt-1 text-xs text-danger/80">
+                Сумма должна покрыть начисленные проценты за {preview.days} дн.
+              </p>
+            </div>
+          )}
+
+          {preview && preview.coversInterest && (
             <div className="mt-3 rounded-control border border-success/30 bg-success/10 px-4 py-3 text-sm">
               <p className="text-xs text-success/70">
                 Проценты за период: {formatMoney(preview.accruedInterest)} · в тело: {formatMoney(preview.principalPart)}

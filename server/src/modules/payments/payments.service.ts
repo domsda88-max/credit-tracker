@@ -2,26 +2,24 @@ import type { PaymentType, PrepaymentMode } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middlewares/errorHandler';
 import { annuityPayment } from '../../utils/finance/annuity';
-import { addMonths, daysInMonth, monthsBetween, utcToday, withDayOfMonth } from '../../utils/finance/date';
-import { rebuildSchedule } from '../../utils/finance/earlyRepayment';
+import { addMonths, daysInMonth, isoDate, monthsBetween, utcToday, withDayOfMonth } from '../../utils/finance/date';
+import {
+  accruedInterestFor,
+  assertAmountWithinOutstanding,
+  assertPrepaymentDate,
+  CLOSE_THRESHOLD,
+  prepaymentAnchorDate,
+  rebuildSchedule,
+} from '../../utils/finance/earlyRepayment';
 import { crossedMilestone, milestoneMessage, paidPercent } from '../../utils/finance/milestones';
 import { round2, toNumber } from '../../utils/finance/round';
 import { sendUniquePush } from '../push/push.service';
 import type { EarlyRepaymentDto, PayInstallmentDto } from './payments.schemas';
 
-function diffInDaysUTC(a: Date, b: Date): number {
-  const da = Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate());
-  const db = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate());
-  const diff = Math.floor((db - da) / 86400000);
-  return diff < 0 ? 0 : diff;
-}
-
 function nextDueDateAfter(date: Date, paymentDay?: number | null): Date {
   const base = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
   return withDayOfMonth(base, paymentDay ?? date.getUTCDate());
 }
-
-const CLOSE_THRESHOLD = 0.01; // меньше копейки — считаем долг закрытым
 
 /** Отправка мотивационного уведомления о достижении отметки (не роняет основной поток). */
 async function notifyMilestone(
@@ -179,20 +177,15 @@ export const paymentsService = {
 
     const startDate = new Date(credit.startDate);
     const startDateUTC = utcToday(startDate);
-    if (prepaymentDateUTC < startDateUTC) throw new AppError(400, 'Дата внесения не может быть раньше даты выдачи');
-    const maxDate = new Date();
-    maxDate.setFullYear(maxDate.getFullYear() + 1);
-    if (prepaymentDateUTC > utcToday(maxDate)) throw new AppError(400, 'Дата внесения не может быть позже чем на 1 год');
+    assertPrepaymentDate(prepaymentDateUTC, startDateUTC);
 
     const outstanding = toNumber(credit.outstanding);
     const annualRate = toNumber(credit.annualRate);
 
-    // anchor = дата последнего начисления процентов: последний PAID-платёж графика или startDate
-    const paidEvents = credit.schedule.filter((s) => s.status === 'PAID').sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
-    const lastPaidDue = paidEvents[paidEvents.length - 1]?.dueDate;
-    const anchorDate = lastPaidDue ? utcToday(lastPaidDue) : startDateUTC;
-    const days = diffInDaysUTC(anchorDate, prepaymentDateUTC);
-    const accruedInterest = annualRate > 0 ? round2((outstanding * annualRate * days) / 100 / 365) : 0;
+    // anchor = дата последнего начисления процентов: последний PAID-платёж
+    // графика со сроком <= даты погашения, иначе дата выдачи.
+    const anchorDate = prepaymentAnchorDate(credit.schedule, prepaymentDateUTC, startDateUTC);
+    const { accruedInterest, days } = accruedInterestFor(outstanding, annualRate, anchorDate, prepaymentDateUTC);
     console.log('accruedInterest calculated', { accruedInterest, days, anchor: anchorDate.toISOString(), outstanding });
     const principalPart = round2(amount - accruedInterest);
 
@@ -202,6 +195,7 @@ export const paymentsService = {
 
     const newOutstanding = round2(outstanding - principalPart);
     console.log('principalPart calculated', { principalPart, accruedInterest, newOutstanding });
+    assertAmountWithinOutstanding(amount, outstanding, accruedInterest);
     const isFull = newOutstanding <= CLOSE_THRESHOLD;
     const mode: PrepaymentMode = 'REDUCE_TERM';
     const prevPercent = paidPercent(toNumber(credit.principal), toNumber(credit.outstanding));
@@ -227,7 +221,7 @@ export const paymentsService = {
             data: {
               amount: { increment: amount },
               principalPart: { increment: round2(outstanding) },
-              interestPart: { increment: round2(amount - outstanding) },
+              interestPart: { increment: round2(accruedInterest) },
               paidAmount: { increment: amount },
               paidAt: prepaymentDateUTC,
               status: 'PAID',
@@ -240,7 +234,7 @@ export const paymentsService = {
               dueDate: prepaymentDateUTC,
               amount,
               principalPart: round2(outstanding),
-              interestPart: round2(amount - outstanding),
+              interestPart: round2(accruedInterest),
               status: 'PAID',
               paidAt: prepaymentDateUTC,
               paidAmount: amount,
@@ -266,8 +260,7 @@ export const paymentsService = {
         data: { outstanding: newOutstanding, totalPaid: { increment: amount } },
       });
 
-      // �'�?��?���'��?�?��? ��?��?��?������� ��?��?�? ?�?�?�?�?�? (�? ���?�? ?�?��?��?�?�?��? ?�?�?���)
-      // '�?��?���'��?�?��? ��?��?��?������� ��?��?�? ?�?�?�?�?�? (�? ���?�? ?�?��?��?�?�?��? ?�?�?���)
+      // Early repayment on the prepayment date (includes accrued interest).
       await tx.paymentSchedule.upsert({
         where: { creditId_dueDate: { creditId, dueDate: prepaymentDateUTC } },
         update: {
@@ -373,15 +366,33 @@ export const paymentsService = {
       where: { id: creditId, userId },
       include: {
         schedule: { orderBy: { dueDate: 'asc' } },
+        events: { orderBy: { paidAt: 'asc' } },
       },
     });
 
     if (!credit) throw new AppError(404, 'Кредит не найден');
+    if (credit.status === 'CLOSED') throw new AppError(409, 'Кредит уже закрыт');
+    if (credit.type === 'LOAN') throw new AppError(400, 'Для частного займа досрочное погашение не поддерживается');
+    if (credit.type === 'CREDIT_CARD') throw new AppError(400, 'Для кредитной карты досрочное погашение недоступно');
+    if (!credit.termMonths || Number(credit.termMonths) <= 0) throw new AppError(400, 'Невозможно пересчитать график: не указан срок кредита');
+
+    const amount = round2(toNumber(dto.amount));
+    if (!amount || amount <= 0) throw new AppError(400, 'Сумма должна быть больше 0');
+
+    const prepaymentDate = dto.date ? new Date(dto.date) : utcToday();
+    const prepaymentDateUTC = utcToday(prepaymentDate);
+
+    const startDate = new Date(credit.startDate);
+    const startDateUTC = utcToday(startDate);
+    assertPrepaymentDate(prepaymentDateUTC, startDateUTC);
 
     const outstanding = toNumber(credit.outstanding);
-    const newOutstanding = round2(outstanding - dto.amount);
-    const isFull = newOutstanding <= CLOSE_THRESHOLD;
-    const mode: PrepaymentMode = 'REDUCE_TERM';
+    const annualRate = toNumber(credit.annualRate);
+
+    const anchorDate = prepaymentAnchorDate(credit.schedule, prepaymentDateUTC, startDateUTC);
+    const { accruedInterest, days } = accruedInterestFor(outstanding, annualRate, anchorDate, prepaymentDateUTC);
+    const principalPart = round2(amount - accruedInterest);
+    assertAmountWithinOutstanding(amount, outstanding, accruedInterest);
 
     const pending = credit.schedule.filter((item) => item.status === 'PENDING');
 
@@ -391,29 +402,66 @@ export const paymentsService = {
     );
     const currentTotal = round2(pending.reduce((acc, item) => acc + toNumber(item.amount), 0));
 
+    const effectiveDate = isoDate(prepaymentDateUTC);
+    const minAmount = round2(accruedInterest + 0.01);
+    const coversInterest = principalPart > 0;
+    const paymentBefore = pending[0] ? round2(toNumber(pending[0].amount)) : 0;
+
+    if (!coversInterest) {
+      return {
+        isFull: false,
+        amount,
+        newOutstanding: outstanding,
+        monthSaved: 0,
+        interestSaved: 0,
+        interestAfter: currentInterest,
+        totalAfter: currentTotal,
+        currentTotal,
+        paymentBefore,
+        paymentAfter: paymentBefore,
+        monthsAfter: pending.length,
+        accruedInterest,
+        principalPart,
+        days,
+        coversInterest,
+        minAmount,
+        effectiveDate,
+      };
+    }
+
+    const newOutstanding = round2(outstanding - principalPart);
+    const isFull = newOutstanding <= CLOSE_THRESHOLD;
+
     if (isFull) {
       return {
         isFull: true,
-        amount: dto.amount,
+        amount,
         newOutstanding: 0,
         monthSaved: pending.length,
         interestSaved: round2(Math.max(0, currentInterest)),
         interestAfter: 0,
         totalAfter: 0,
-        paymentBefore: pending[0] ? round2(toNumber(pending[0].amount)) : 0,
+        currentTotal,
+        paymentBefore,
         paymentAfter: 0,
+        accruedInterest,
+        principalPart: round2(outstanding),
+        days,
+        coversInterest,
+        minAmount,
+        effectiveDate,
       };
     }
 
-    const nextDueDate = pending[0]?.dueDate ?? addMonths(utcToday(), 1);
+    const nextDueDate = pending[0]?.dueDate ?? addMonths(prepaymentDateUTC, 1);
     const remainingTerm = Math.max(
       1,
-      monthsBetween(utcToday(), addMonths(credit.startDate, credit.termMonths)),
+      monthsBetween(prepaymentDateUTC, addMonths(credit.startDate, credit.termMonths)),
     );
 
     const items = rebuildSchedule({
       outstanding: newOutstanding,
-      annualRate: toNumber(credit.annualRate),
+      annualRate,
       paymentType: credit.paymentType as PaymentType,
       remainingTermMonths: remainingTerm,
       nextDueDate,
@@ -427,16 +475,22 @@ export const paymentsService = {
 
     return {
       isFull: false,
-      amount: dto.amount,
+      amount,
       newOutstanding,
       monthSaved: Math.max(0, pending.length - items.length),
       interestSaved: round2(Math.max(0, currentInterest - newInterest)),
       interestAfter: newInterest,
       totalAfter: newTotal,
       currentTotal,
-      paymentBefore: pending[0] ? round2(toNumber(pending[0].amount)) : 0,
+      paymentBefore,
       paymentAfter: items[0] ? round2(items[0].amount) : 0,
       monthsAfter: items.length,
+      accruedInterest,
+      principalPart,
+      days,
+      coversInterest,
+      minAmount,
+      effectiveDate,
     };
   },
 };

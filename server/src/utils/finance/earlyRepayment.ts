@@ -1,8 +1,12 @@
+import { AppError } from '../../middlewares/errorHandler';
 import { buildAnnuitySchedule } from './annuity';
 import { buildDifferentialSchedule } from './differential';
-import { addMonths, monthsBetween, withDayOfMonth } from './date';
+import { addMonths, diffInDaysUTC, maxPrepaymentDate, monthsBetween, utcToday, withDayOfMonth } from './date';
 import { round2 } from './round';
 import type { PaymentType, ScheduleItem } from './types';
+
+/** Меньше копейки — считаем долг закрытым. */
+export const CLOSE_THRESHOLD = 0.01;
 
 export interface RebuildInput {
   /** Остаток долга ПОСЛЕ досрочного платежа. */
@@ -86,6 +90,49 @@ export function nextScheduleStart(today: Date, paymentDay?: number | null): Date
 function nextDueDateAfter(date: Date, paymentDay?: number | null): Date {
   const base = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
   return withDayOfMonth(base, paymentDay ?? date.getUTCDate());
+}
+
+/** Нижняя и верхняя границы даты досрочного погашения. */
+export function assertPrepaymentDate(date: Date, startDate: Date, now: Date = new Date()): void {
+  if (date < startDate) throw new AppError(400, 'Дата внесения не может быть раньше даты выдачи');
+  if (date > maxPrepaymentDate(now)) throw new AppError(400, 'Дата внесения не может быть позже чем на 1 год');
+}
+
+/** Максимальная сумма досрочного погашения: остаток долга + начисленные проценты. */
+export function assertAmountWithinOutstanding(
+  amount: number,
+  outstanding: number,
+  accruedInterest: number,
+): void {
+  const maxAmount = round2(outstanding + accruedInterest);
+  if (round2(amount - maxAmount) > CLOSE_THRESHOLD) {
+    throw new AppError(400, `Сумма превышает остаток долга с начисленными процентами (${maxAmount.toFixed(2)} ₽)`);
+  }
+}
+
+/** Проценты, накопленные с anchor по дату погашения (UTC-дни). */
+export function accruedInterestFor(
+  outstanding: number,
+  annualRate: number,
+  from: Date,
+  to: Date,
+): { accruedInterest: number; days: number } {
+  const days = diffInDaysUTC(from, to);
+  const accruedInterest = annualRate > 0 ? round2((outstanding * annualRate * days) / 100 / 365) : 0;
+  return { accruedInterest, days };
+}
+
+/** Anchor: последний PAID со сроком <= даты погашения, иначе дата выдачи. */
+export function prepaymentAnchorDate(
+  schedule: Array<{ status: string; dueDate: Date }>,
+  prepaymentDate: Date,
+  startDate: Date,
+): Date {
+  const paid = schedule
+    .filter((s) => s.status === 'PAID' && s.dueDate.getTime() <= prepaymentDate.getTime())
+    .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+  const lastPaidDue = paid[paid.length - 1]?.dueDate;
+  return lastPaidDue ? utcToday(lastPaidDue) : utcToday(startDate);
 }
 
 function accruedInterestBetween(outstanding: number, annualRate: number, from: Date, to: Date): number {

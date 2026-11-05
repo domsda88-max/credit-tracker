@@ -16,7 +16,7 @@ export interface User {
   motivationDay: number;
   motivationTime?: string;
   motivationPerDay?: number;
-  /** ����� � �����, ?. null � �� �����. */
+  /** Monthly income; null when not set. */
   monthlyIncome: number | null;
 }
 
@@ -25,7 +25,7 @@ export interface AuthResponse {
   token: string;
 }
 
-/** �������� ���� �������� � ���� ��� ������ (Prisma Decimal). */
+/** Money amount stored as string or number (Prisma Decimal). */
 export type Money = string | number;
 
 export interface PaymentScheduleItem {
@@ -79,7 +79,7 @@ export interface CreditListItem extends Credit {
   nextPayment: PaymentScheduleItem | null;
 }
 
-/** ������� ����������� ��������� (�+N ? � ����� ������� ����). */
+/** Payoff accelerator summary (+N months earlier debt-free). */
 export interface PayoffAccelerator {
   baselineMonths: number;
   acceleratedMonths: number;
@@ -88,7 +88,7 @@ export interface PayoffAccelerator {
   extraPerMonth: number;
 }
 
-/** ������ �� ���� �������� (GET /credits/summary). */
+/** Summary across all credits (GET /credits/summary). */
 export interface CreditSummary {
   activeCount: number;
   closedCount: number;
@@ -101,11 +101,11 @@ export interface CreditSummary {
   debtFreeDate: string | null;
   paidLast12Months: number;
   paymentsLast12Months: number;
-  /** ����� ����������� ������������ �������� �� ���� �������� ������. */
+  /** Average monthly payment across all active credits. */
   monthlyPayments: number;
-  /** ����� � ����� (null � �� ����� � ����������). */
+  /** Income per month (null when not set in profile). */
   monthlyIncome: number | null;
-  /** ��������� ������ = ����� ? ����������� �������. */
+  /** Free money = income minus mandatory payments. */
   freeMoney: number | null;
   graceReplenishTotal: number;
   graceItems: { name: string; amount: number; dueDate: string | null }[];
@@ -117,7 +117,7 @@ export interface CreditDetail extends Credit {
   events: PaymentEvent[];
 }
 
-/** ������� ���� ������ ������������ (GET /credits/export). */
+/** Full data export payload (GET /credits/export). */
 export interface ExportData {
   exportedAt: string;
   version: number;
@@ -141,9 +141,9 @@ export interface CreateCreditPayload {
   graceReplenishDay?: number | null;
   frozen?: boolean;
   freezeCycleDays?: number | null;
-  /** true � ��������� �� ������� ������� ����� �������� ����������� (������ �������� ������). */
+  /** true — mark past payments as paid when importing (backfill the schedule). */
   markPastAsPaid?: boolean;
-  /** ����������� ������� ����� ������ (���� �������� ������ �������). */
+  /** Current outstanding balance (if the schedule was imported). */
   outstanding?: number | null;
   earlyRepayments?: Array<{ amount: number; date: string }>;
 }
@@ -155,7 +155,7 @@ export interface EarlyRepaymentPayload {
   date?: string;
 }
 
-/** ��������� ������������� ���������� ��������� (POST /payments/credits/:id/early-preview). */
+/** Early repayment preview response (POST /payments/credits/:id/early-preview). */
 export interface EarlyPreview {
   isFull: boolean;
   amount: number;
@@ -168,10 +168,12 @@ export interface EarlyPreview {
   paymentBefore: number;
   paymentAfter: number;
   monthsAfter?: number;
-  accruedInterest?: number;
-  principalPart?: number;
-  days?: number;
-  coversInterest?: boolean;
+  accruedInterest: number;
+  principalPart: number;
+  days: number;
+  coversInterest: boolean;
+  minAmount: number;
+  effectiveDate: string;
 }
 
 export interface SubscribePayload {

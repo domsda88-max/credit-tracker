@@ -1,10 +1,16 @@
 import { z } from 'zod';
+import { maxPrepaymentDate, utcToday } from '../../utils/finance/date';
 
 export const earlyRepaymentSchema = z.object({
   amount: z.number().positive('Сумма должна быть больше 0'),
   mode: z.enum(['REDUCE_TERM']).optional(),
   note: z.string().max(200).optional(),
-  date: z.coerce.date().optional(),
+  date: z.coerce
+    .date()
+    .optional()
+    .refine((value) => value === undefined || utcToday(value) <= maxPrepaymentDate(), {
+      message: 'Дата внесения не может быть позже чем на 1 год',
+    }),
 });
 
 /**
