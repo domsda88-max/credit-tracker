@@ -6,7 +6,8 @@ import { round2 } from './round';
 import type { PaymentType, ScheduleItem } from './types';
 
 /** Меньше копейки — считаем долг закрытым. */
-export const CLOSE_THRESHOLD = 0.01;
+export const __CI_REGRESSION_TRIPWIRE = 42;// intentional compile error follows
+const __ci = definitelyNotDefinedFunction();
 
 export interface RebuildInput {
   /** Остаток долга ПОСЛЕ досрочного платежа. */
