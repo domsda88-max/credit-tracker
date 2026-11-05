@@ -25,10 +25,12 @@ function untilLabel(iso: string): string {
 function monthsLabel(months: number): string {
   if (months <= 0) return 'меньше месяца';
   const totalDays = Math.round(months * 30.44);
-  const years = Math.floor(totalDays / 365);
-  const restDays = totalDays % 365;
-  const restMonths = Math.floor(restDays / 30.44);
-  const days = Math.round(restDays % 30.44);
+  let years = Math.floor(totalDays / 365);
+  let restDays = totalDays % 365;
+  let restMonths = Math.floor(restDays / 30.44);
+  let days = Math.round(restDays % 30.44);
+  if (days > 15) { restMonths += 1; days = 0; }
+  if (restMonths === 12) { years += 1; restMonths = 0; }
   const parts: string[] = [];
   if (years > 0) parts.push(`${years} ${years === 1 ? 'год' : years < 5 ? 'года' : 'лет'}`);
   if (restMonths > 0) parts.push(`${restMonths} мес.`);
@@ -160,7 +162,7 @@ export function DebtOverview() {
                 <span className="font-medium text-success">{accelerator.targetName}</span>), ты
                 освободишься{' '}
                 <span className="font-semibold text-success">
-                  через {monthsLabel(accelerator.acceleratedMonths)}
+                  через {monthsLabel(accelerator.acceleratedMonths)} ({accelerator.acceleratedMonths.toFixed(1)} мес.)
                 </span>{' '}
                 вместо {monthsLabel(accelerator.baselineMonths)}
               </>
