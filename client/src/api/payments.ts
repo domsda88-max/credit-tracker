@@ -1,4 +1,9 @@
-import type { EarlyRepaymentPayload, EarlyPreview } from '../types';
+import type {
+  EarlyRepaymentPayload,
+  EarlyPreview,
+  ImportPaymentRowPayload,
+  ImportPaymentsResult,
+} from '../types';
 import { api } from './client';
 
 export const paymentsApi = {
@@ -29,6 +34,12 @@ export const paymentsApi = {
       `/payments/credits/${creditId}/early-preview`,
       payload,
     );
+    return data;
+  },
+
+  /** Массовый импорт фактических оплат (round-trip CSV). Возвращает частичный успех. */
+  async importPayments(rows: ImportPaymentRowPayload[]): Promise<ImportPaymentsResult> {
+    const { data } = await api.post<ImportPaymentsResult>('/payments/import', { rows });
     return data;
   },
 };

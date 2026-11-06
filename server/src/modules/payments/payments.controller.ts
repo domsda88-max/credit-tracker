@@ -1,5 +1,9 @@
 import type { Request, Response } from 'express';
-import type { EarlyRepaymentDto, PayInstallmentDto } from './payments.schemas';
+import type {
+  EarlyRepaymentDto,
+  ImportPaymentsDto,
+  PayInstallmentDto,
+} from './payments.schemas';
 import { paymentsService } from './payments.service';
 
 export const paymentsController = {
@@ -31,6 +35,15 @@ export const paymentsController = {
       req.user!.sub,
       req.params.creditId,
       req.body as EarlyRepaymentDto,
+    );
+    res.json(result);
+  },
+
+  /** Массовый импорт фактических оплат: частичный успех вместо «всё или ничего». */
+  async importPayments(req: Request, res: Response) {
+    const result = await paymentsService.importPayments(
+      req.user!.sub,
+      req.body as ImportPaymentsDto,
     );
     res.json(result);
   },
