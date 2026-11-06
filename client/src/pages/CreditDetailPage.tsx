@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Pencil, Trash2 } from 'lucide-react';
+import { CheckCircle2, Pencil, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useParams } from 'react-router-dom';
@@ -184,7 +184,7 @@ export function CreditDetailPage() {
             <div className="flex items-center gap-2">
               <h1 className="truncate text-xl font-semibold text-t1">{credit.name}</h1>
               {credit.frozen && <span title="Цикл заморозки">🧊</span>}
-              {credit.status === 'CLOSED' && <span>✅</span>}
+              {credit.status === 'CLOSED' && <CheckCircle2 size={18} className="text-success" aria-label="Закрыт" />}
             </div>
             <p className="mt-1 text-xs text-t3">
               {CREDIT_TYPE_LABELS[credit.type]}

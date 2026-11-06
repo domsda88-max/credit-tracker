@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { ChevronDown, Clock } from 'lucide-react';
 import { extractErrorMessage } from '../api/client';
+import { useState } from 'react';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/auth';
 import { useToast } from './Toast';
@@ -94,23 +95,28 @@ export function MotivationSettings() {
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className="text-sm text-t2">Время</span>
-              <input
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                min="00:00"
-                max="23:59"
-                step={60}
-                className="field mt-1"
-              />
+              <div className="relative mt-1">
+                <input
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  min="00:00"
+                  max="23:59"
+                  step={60}
+                  className="field pr-8"
+                />
+                <Clock size={16} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-t3" />
+              </div>
             </label>
             <label className="block">
               <span className="text-sm text-t2">Частота</span>
-              <select
-                value={perDay}
-                onChange={(e) => setPerDay(Number(e.target.value))}
-                className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2 text-t1"
-              >
+              <div className="relative mt-1">
+                <select
+                  value={perDay}
+                  onChange={(e) => setPerDay(Number(e.target.value))}
+                  className="w-full appearance-none rounded-control border border-line bg-surface px-3 py-2 pr-8 text-t1"
+                >
+
                 <option value={1}>1 раз в день</option>
                 <option value={2}>2 раза в день (каждые 12 ч)</option>
                 <option value={3}>3 раза в день (каждые 8 ч)</option>
@@ -120,6 +126,8 @@ export function MotivationSettings() {
                 <option value={12}>12 раз в день (каждые 2 ч)</option>
                 <option value={24}>Каждый час</option>
               </select>
+                <ChevronDown size={16} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-t3" />
+              </div>
             </label>
           </div>
           <p className="text-xs text-t3">

@@ -73,7 +73,7 @@ export function UpcomingPayments({ credits }: Props) {
     return (
       <section className="space-y-3">
         <p className="section-title">Ближайшие платежи</p>
-        <div className="rounded-card border border-line bg-surface p-4 text-center text-caption text-t3">
+        <div className="py-4 text-center text-caption text-t3">
           Нет платежей в этом месяце
         </div>
       </section>

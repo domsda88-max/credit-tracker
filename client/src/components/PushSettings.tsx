@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { extractErrorMessage } from '../api/client';
+import { CheckCircle2 } from 'lucide-react';import { extractErrorMessage } from '../api/client';
 import { pushApi } from '../api/push';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { useToast } from './Toast';
@@ -25,7 +25,9 @@ export function PushSettings() {
     <div className="p-4">
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         {status === 'subscribed' ? (
-          <p className="text-xs text-success">Уведомления включены ✅</p>
+          <p className="flex items-center gap-1 text-xs text-success">
+            <CheckCircle2 size={14} /> Уведомления включены
+          </p>
         ) : (
           <p className="text-xs text-t3">Уведомления выключены</p>
         )}

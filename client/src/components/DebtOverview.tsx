@@ -158,12 +158,12 @@ export function DebtOverview() {
               <>
                 Если вносить{' '}
                 <span className="tabular font-semibold text-t1">{formatMoney(extra)}</span>
-                {' '}дополнительно каждый месяц в самый дорогой долг (
-                <span className="font-medium text-t1">{accelerator.targetName}</span>), ты
+                {' '}дополнительно в самый дорогой долг (
+                <span className="font-medium text-t1">{accelerator.targetName}</span>):
+                <br />
                 освободишься{' '}
                 <span className="font-semibold text-success">
                   через {monthsLabel(accelerator.acceleratedMonths)} ({accelerator.acceleratedMonths.toFixed(1)} мес.)
-
                 </span>{' '}
                 вместо {monthsLabel(accelerator.baselineMonths)}
               </>

@@ -190,7 +190,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="truncate text-body font-semibold text-t1">{credit.name}</h3>
+                  <h3 className="text-sm font-semibold text-t1 leading-tight line-clamp-2 break-words">{credit.name}</h3>
                   {credit.frozen && (
                     <Snowflake size={15} className="shrink-0 text-primary" aria-label="Р’ Р·Р°РјРѕСЂРѕР·РєРµ" />
                   )}
@@ -232,15 +232,13 @@ export function CreditRow({ credit, index = 0 }: Props) {
               className={`card-inner mt-3 flex flex-col gap-2 border-l-[3px] py-2 pl-2.5 pr-3 text-base ${tone.border}`}
             >
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-t2">
-                  <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
+                <span className="text-t2">
                   Р‘Р»РёР¶Р°Р№С€РёР№ РїР»Р°С‚С‘Р¶
                 </span>
                 <span className="text-right">
                   <span className="tabular font-semibold text-t1">{formatMoneyShort(next.amount)}</span>
-                  <span className={`ml-2 text-caption ${tone.text}`}>
-                    {formatDateShort(next.dueDate)} В· {describeDueDate(next.dueDate)}
-                  </span>
+                  <span className="ml-2 text-caption text-t2">{formatDateShort(next.dueDate)}</span>
+                  <span className="ml-2 text-caption text-t3">{describeDueDate(next.dueDate)}</span>
                 </span>
               </div>
               {showPayButton && (
@@ -396,7 +394,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
               className="mt-1 w-full max-w-full box-border rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none focus:border-primary"
             />
           </label>
-           <p className="text-xs text-t3">Режим: сокращение срока</p>
+           <p className="text-xs text-t3">пїЅпїЅпїЅпїЅпїЅ: пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ</p>
           {earlyError && <p className="text-sm text-danger">{earlyError}</p>}
           <button
             type="submit"

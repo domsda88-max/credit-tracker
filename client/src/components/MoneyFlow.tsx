@@ -70,7 +70,7 @@ export function MoneyFlow() {
             free === null ? 'text-t2' : free < 0 ? 'text-danger' : 'text-success'
           }`}
         >
-          {free === null ? '—' : formatMoney(free)}
+          {free === null ? 'Укажите доход' : formatMoney(free)}
         </span>
       </div>
 

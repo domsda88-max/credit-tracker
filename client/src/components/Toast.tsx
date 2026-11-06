@@ -1,3 +1,4 @@
+import { CheckCircle2 } from 'lucide-react';
 import { createContext, useCallback, useContext, useState } from 'react';
 
 type ToastKind = 'success' | 'error' | 'info';
@@ -41,7 +42,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   : 'border-primary/30 bg-primary/15 text-sky-200'
             }`}
           >
-            {t.kind === 'success' ? '✅ ' : t.kind === 'error' ? '⚠️ ' : 'ℹ️ '}
+            {t.kind === 'success' && <CheckCircle2 size={14} className="mr-1 inline-block" />}
             {t.message}
           </div>
         ))}
