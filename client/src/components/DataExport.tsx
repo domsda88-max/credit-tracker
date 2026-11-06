@@ -89,7 +89,7 @@ export function DataExport() {
   };
 
   return (
-    <section className="rounded-card border border-line bg-surface/80 p-4">
+    <section className="p-4">
       <h2 className="font-medium text-t1">Экспорт данных</h2>
       <p className="mt-0.5 text-xs text-t3">
         CSV — график и фактические оплаты, JSON — полный бэкап.

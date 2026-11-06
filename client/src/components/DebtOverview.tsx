@@ -2,7 +2,7 @@ import { Target, Zap } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { creditsApi } from '../api/credits';
-import { debtPaidPercent, formatDate, formatMoney, formatMoneyShort } from '../utils/format';
+import { debtPaidPercent, formatDate, formatMoney } from '../utils/format';
 import { simulateAccelerator } from '../utils/finance/accelerator';
 import type { CreditListItem } from '../types';
 
@@ -109,14 +109,14 @@ export function DebtOverview() {
         <div className="text-right">
           <p className="section-title">Остаток долга</p>
           <p className="tabular mt-1 text-heading font-semibold text-t1">
-            {formatMoneyShort(summary.outstandingSum)}
+            {formatMoney(summary.outstandingSum)}
           </p>
         </div>
       </div>
 
-      <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-surface2">
+      <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-surface2/80">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-primary to-success transition-[width] duration-700 ease-app"
+          className="h-full rounded-full bg-gradient-to-r from-primary via-primary to-success transition-[width] duration-700 ease-app"
           style={{ width: `${percent}%` }}
         />
       </div>
@@ -148,21 +148,22 @@ export function DebtOverview() {
       )}
 
       {activeDebtsExist && (
-        <div className="mt-3 rounded-control border border-success/20 bg-success/[0.07] px-4 py-3" style={{ minHeight: 150, overflowAnchor: 'none' }}>
-          <p className="flex items-center gap-1.5 text-micro uppercase tracking-[0.04em] text-success">
-            <Zap size={14} />
+        <div className="mt-3 rounded-control border border-success/15 bg-success/[0.05] px-4 py-3" style={{ minHeight: 150, overflowAnchor: 'none' }}>
+          <p className="flex items-center gap-1.5 text-micro uppercase tracking-[0.04em] text-t2">
+            <Zap size={14} className="text-success" />
             Ускорь свободу
           </p>
           <p className="mt-1.5 text-caption leading-relaxed text-t1" style={{ minHeight: 44 }}>
             {extra >= 1000 && accelerator && accelerator.savedMonths > 0 ? (
               <>
                 Если вносить{' '}
-                <span className="tabular font-semibold text-success">{formatMoney(extra)}</span>
+                <span className="tabular font-semibold text-t1">{formatMoney(extra)}</span>
                 {' '}дополнительно каждый месяц в самый дорогой долг (
-                <span className="font-medium text-success">{accelerator.targetName}</span>), ты
+                <span className="font-medium text-t1">{accelerator.targetName}</span>), ты
                 освободишься{' '}
                 <span className="font-semibold text-success">
                   через {monthsLabel(accelerator.acceleratedMonths)} ({accelerator.acceleratedMonths.toFixed(1)} мес.)
+
                 </span>{' '}
                 вместо {monthsLabel(accelerator.baselineMonths)}
               </>
@@ -170,7 +171,7 @@ export function DebtOverview() {
               <>Без досрочных платежей ты освободишься через <span className="font-semibold text-t1">{monthsLabel(baselineMonths)}</span>.</>
             )}
           </p>
-          <p className="mt-1 text-micro text-success/80" style={{ minHeight: 14 }}>
+          <p className="mt-1 text-micro text-t3" style={{ minHeight: 14 }}>
             {accelerator && accelerator.savedMonths > 0
               ? `Экономия: ${monthsLabel(accelerator.savedMonths)}`
               : '\u00A0'}

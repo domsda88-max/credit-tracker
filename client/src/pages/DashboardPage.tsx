@@ -50,7 +50,7 @@ export function DashboardPage() {
   const percentPaid = summary && summary.principalSum > 0 ? Math.min(100, Math.round((summary.paidByPrincipal / summary.principalSum) * 100)) : 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-fade-in">
       <OverdueAlert credits={list} />
 
       {list.length > 0 && summary && summary.activeCount > 0 && (
@@ -69,9 +69,9 @@ export function DashboardPage() {
               </div>
             )}
           </div>
-          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface2">
+          <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-surface2/80">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-primary to-success"
+              className="h-full rounded-full bg-gradient-to-r from-primary via-primary to-success"
               style={{ width: `${percentPaid}%` }}
             />
           </div>

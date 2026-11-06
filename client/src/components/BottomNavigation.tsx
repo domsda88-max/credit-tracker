@@ -35,7 +35,7 @@ export function BottomNavigation() {
               <>
                 <Icon
                   size={22}
-                  strokeWidth={isActive ? 2.5 : 2}
+                  strokeWidth={isActive ? 2.2 : 2}
                   aria-hidden="true"
                   className={`transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}
                 />

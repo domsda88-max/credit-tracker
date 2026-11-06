@@ -6,7 +6,7 @@ import { ReminderSettings } from '../components/ReminderSettings';
 import { MotivationSettings } from '../components/MotivationSettings';
 import { IncomeSettings } from '../components/IncomeSettings';
 import { useThemeStore } from '../store/theme';
-import { DataExport } from '../components/DataExport';
+import { SegmentedControl } from '../components/SegmentedControl';import { DataExport } from '../components/DataExport';
 import { ImportPaymentsBottomSheet } from '../components/ImportPaymentsBottomSheet';
 import { useAuthStore } from '../store/auth';
 
@@ -37,7 +37,7 @@ function Accordion({ title, subtitle, defaultOpen = false, children }: {
       <div
         className={`overflow-hidden transition-[max-height] duration-200 ease-out ${open ? 'max-h-[2000px]' : 'max-h-0'}`}
       >
-        <div className="border-t border-line p-4">{children}</div>
+        <div className="border-t border-line">{children}</div>
       </div>
     </div>
   );
@@ -59,14 +59,14 @@ export function SettingsPage() {
         <p className="mt-1 text-caption text-t3">Деньги, уведомления, оформление и данные</p>
       </header>
 
-      <section className="space-y-2">
+      <section className="space-y-3">
         <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Деньги</h2>
         <Accordion title="Доход в месяц" subtitle="Покажем, сколько остаётся после обязательных платежей" defaultOpen>
           <IncomeSettings />
         </Accordion>
       </section>
 
-      <section className="space-y-2">
+      <section className="space-y-3">
         <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Уведомления</h2>
         <Accordion title="Push-уведомления" subtitle="Сводка платежей в выбранное время + напоминания о сроках">
           <PushSettings />
@@ -79,45 +79,32 @@ export function SettingsPage() {
         </Accordion>
       </section>
 
-      <section className="space-y-2">
+      <section className="space-y-3">
         <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Оформление</h2>
         <div className="rounded-card border border-line bg-surface p-4">
           <p className="font-medium text-t1">Тема оформления</p>
           <p className="mt-0.5 text-xs text-t3">Светлая или тёмная</p>
-          <div className="mt-3 grid grid-cols-2 gap-2 w-full">
-            <button
-              type="button"
-              onClick={() => setThemeMode('dark')}
-              className={`rounded-control border px-3 py-2.5 text-sm font-medium transition ${
-                themeMode === 'dark'
-                  ? 'border-primary bg-primary text-white'
-                  : 'border-line text-t2 hover:border-primary/50'
-              }`}
-            >
-              🌙 Тёмная
-            </button>
-            <button
-              type="button"
-              onClick={() => setThemeMode('light')}
-              className={`rounded-control border px-3 py-2.5 text-sm font-medium transition ${
-                themeMode === 'light'
-                  ? 'border-primary bg-primary text-white'
-                  : 'border-line text-t2 hover:border-primary/50'
-              }`}
-            >
-              ☀️ Светлая
-            </button>
+          <div className="mt-3">
+            <SegmentedControl
+              value={themeMode}
+              options={[
+                { value: 'dark', label: 'Тёмная' },
+                { value: 'light', label: 'Светлая' },
+              ]}
+              onChange={(v) => setThemeMode(v as 'dark' | 'light')}
+              ariaLabel="Тема оформления"
+            />
           </div>
         </div>
       </section>
 
-      <section className="space-y-2">
+      <section className="space-y-3">
         <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Данные</h2>
         <Accordion title="Экспорт данных" subtitle="Скачать CSV / JSON">
           <DataExport />
         </Accordion>
         <Accordion title="Импорт оплат" subtitle="Восстановить историю из CSV-экспорта">
-          <div className="space-y-2">
+          <div className="space-y-3">
             <p className="text-xs text-t3">
               Импортируются только строки со статусом «Оплачен». Используйте файл, скачанный
               через «Экспорт CSV».
@@ -133,7 +120,7 @@ export function SettingsPage() {
         </Accordion>
       </section>
 
-      <section className="space-y-2">
+      <section className="space-y-3">
         <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Аккаунт</h2>
         <div className="rounded-card border border-line bg-surface p-4">
           <p className="text-xs text-t3">Вы вошли как</p>

@@ -62,7 +62,7 @@ export function MotivationSettings() {
   });
 
   return (
-    <div className="rounded-card border border-line bg-surface p-4">
+    <div className="p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="font-medium text-t1">Ежедневная мотивация</p>
@@ -76,14 +76,14 @@ export function MotivationSettings() {
           aria-checked={enabled}
           onClick={() => void toggle()}
           disabled={status !== 'subscribed'}
-          className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:opacity-50 ${
+          className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 disabled:opacity-50 ${
             enabled ? 'bg-primary' : 'bg-surface2'
           }`}
           aria-label="Включить ежедневную мотивацию"
         >
           <span
-            className={`absolute top-0.5 h-6 w-6 rounded-full bg-white transition-all ${
-              enabled ? 'left-[1.375rem]' : 'left-0.5'
+            className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+              enabled ? 'translate-x-[1.375rem]' : 'translate-x-0.5'
             }`}
           />
         </button>
@@ -98,7 +98,10 @@ export function MotivationSettings() {
                 type="time"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2 text-t1"
+                min="00:00"
+                max="23:59"
+                step={60}
+                className="field mt-1"
               />
             </label>
             <label className="block">
@@ -125,7 +128,7 @@ export function MotivationSettings() {
           <button
             type="button"
             onClick={() => void save()}
-            className="w-full rounded-control bg-primary px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="btn btn-primary w-full text-sm disabled:opacity-50"
           >
             Сохранить
           </button>

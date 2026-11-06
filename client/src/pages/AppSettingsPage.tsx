@@ -27,20 +27,18 @@ export function AppSettingsPage() {
 
       <section className="space-y-3">
         <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Push-уведомления</h2>
-        <PushSettings />
+        <div className="overflow-hidden rounded-card border border-line bg-surface">
+          <PushSettings />
+        </div>
       </section>
 
       <section className="space-y-3">
         <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Расписание</h2>
-        <div className="rounded-card border border-line bg-surface overflow-hidden">
-          <div className="p-4">
-            <ReminderSettings />
-          </div>
+        <div className="overflow-hidden rounded-card border border-line bg-surface">
+          <ReminderSettings />
         </div>
-        <div className="rounded-card border border-line bg-surface overflow-hidden">
-          <div className="p-4">
-            <MotivationSettings />
-          </div>
+        <div className="overflow-hidden rounded-card border border-line bg-surface">
+          <MotivationSettings />
         </div>
       </section>
     </div>

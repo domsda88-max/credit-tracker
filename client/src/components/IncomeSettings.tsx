@@ -49,7 +49,7 @@ export function IncomeSettings() {
   };
 
   return (
-    <div className="card p-4">
+    <div className="p-4">
       <div className="flex items-start gap-3">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip bg-success/12 text-success">
           <Wallet size={16} />
