@@ -34,7 +34,7 @@ export function Layout() {
           </div>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain pb-[calc(128px+env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch]">
+        <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain pb-[calc(144px+env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch]">
           <Outlet />
 
         </main>

@@ -13,9 +13,9 @@ const TABS = [
 
 export function BottomNavigation() {
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center bg-gradient-to-t from-bg via-bg/80 to-transparent pt-12 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center bg-gradient-to-t from-bg via-bg/95 to-transparent pt-12 pb-[calc(1rem+env(safe-area-inset-bottom))]">
       <nav
-        className="pointer-events-auto flex h-16 w-[calc(100%-2rem)] max-w-sm items-center justify-around rounded-full border border-line/60 bg-surface/90 px-2 shadow-xl backdrop-blur-xl"
+        className="pointer-events-auto flex h-16 w-[calc(100%-2rem)] max-w-sm items-center justify-around rounded-full border border-line/70 bg-surface/95 px-2 shadow-2xl backdrop-blur-2xl"
         aria-label="Основная навигация"
       >
         {TABS.map(({ name, path, icon: Icon, end }) => (
