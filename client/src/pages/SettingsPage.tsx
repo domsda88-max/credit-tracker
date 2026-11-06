@@ -61,7 +61,7 @@ export function SettingsPage() {
 
       <section className="space-y-3">
         <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Деньги</h2>
-        <Accordion title="Доход в месяц" subtitle="Покажем, сколько остаётся после обязательных платежей" defaultOpen>
+        <Accordion title="Доход в месяц" subtitle="Покажем, сколько остаётся после обязательных платежей">
           <IncomeSettings />
         </Accordion>
       </section>

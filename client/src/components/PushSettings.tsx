@@ -1,61 +1,67 @@
 import { useState } from 'react';
-import { CheckCircle2 } from 'lucide-react';import { extractErrorMessage } from '../api/client';
-import { pushApi } from '../api/push';
 import { usePushNotifications } from '../hooks/usePushNotifications';
-import { useToast } from './Toast';
 
+/**
+ * Компактный переключатель Push-уведомлений (iOS-style switch): вместо
+ * отдельных кнопок «Включить/Выключить/Проверить» — один тумблер.
+ */
 export function PushSettings() {
   const { status, error, subscribe, unsubscribe } = usePushNotifications();
-  const toast = useToast();
-  const [testing, setTesting] = useState(false);
+  const [pending, setPending] = useState(false);
 
-  const sendTest = async () => {
-    setTesting(true);
+  const enabled = status === 'subscribed';
+  const loading = status === 'loading';
+
+  const toggle = async () => {
+    if (pending || loading || status === 'unsupported') return;
+    setPending(true);
     try {
-      const sent = await pushApi.sendTest();
-      toast.show(sent > 0 ? `Отправлено на устройств: ${sent}` : 'Нет активных подписок');
-    } catch (err) {
-      toast.show(extractErrorMessage(err), 'error');
+      if (enabled) {
+        await unsubscribe();
+      } else {
+        await subscribe();
+      }
     } finally {
-      setTesting(false);
+      setPending(false);
     }
   };
 
   return (
     <div className="p-4">
-      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {status === 'subscribed' ? (
-          <p className="flex items-center gap-1 text-xs text-success">
-            <CheckCircle2 size={14} /> Уведомления включены
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-medium text-t1">Push-уведомления</p>
+          <p className="mt-0.5 text-xs text-t3">
+            Сводка платежей в выбранное время + напоминания о сроках
           </p>
-        ) : (
-          <p className="text-xs text-t3">Уведомления выключены</p>
-        )}
-
-        {status === 'subscribed' ? (
-          <button
-            type="button"
-            onClick={() => void unsubscribe()}
-            className="shrink-0 rounded-lg border border-line px-3 py-2 text-sm text-t2 transition hover:border-rose-500/50 hover:text-danger"
-          >
-            Выключить
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => void subscribe()}
-            disabled={status === 'loading' || status === 'unsupported'}
-            className="btn btn-primary w-full px-3 py-2 text-sm disabled:opacity-50 sm:w-auto sm:max-w-xs"
-          >
-            {status === 'loading' ? 'Включаю…' : 'Включить'}
-          </button>
-        )}
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          onClick={() => void toggle()}
+          disabled={loading || pending || status === 'unsupported'}
+          className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 disabled:opacity-50 ${
+            enabled ? 'bg-primary' : 'bg-surface2'
+          }`}
+          aria-label="Включить push-уведомления"
+        >
+          <span
+            className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+              enabled ? 'translate-x-[1.375rem]' : 'translate-x-0.5'
+            }`}
+          />
+        </button>
       </div>
 
+      {status === 'subscribed' && (
+        <p className="mt-2 flex items-center gap-1 text-xs text-success">
+          Уведомления включены
+        </p>
+      )}
       {status === 'denied' && (
         <p className="mt-2 text-xs text-amber-400">
           Уведомления запрещены в браузере. Разрешите их в настройках сайта и попробуйте снова.
-          На iPhone: Настройки → Уведомления → это приложение.
         </p>
       )}
       {status === 'unsupported' && (
@@ -65,19 +71,6 @@ export function PushSettings() {
         </p>
       )}
       {status === 'error' && error && <p className="mt-2 text-xs text-danger">{error}</p>}
-      {status === 'subscribed' && (
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <p className="text-xs text-t3">Сводка платежей в выбранное время + напоминания о сроках</p>
-          <button
-            type="button"
-            onClick={() => void sendTest()}
-            disabled={testing}
-            className="shrink-0 rounded-lg border border-line px-3 py-1.5 text-xs text-t2 transition hover:border-primary/50 disabled:opacity-50"
-          >
-            {testing ? 'Отправляю…' : 'Проверить'}
-          </button>
-        </div>
-      )}
     </div>
   );
 }

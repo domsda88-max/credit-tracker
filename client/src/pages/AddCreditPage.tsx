@@ -376,7 +376,7 @@ export function AddCreditPage() {
               </label>
             </div>
 
-            <div className="space-y-3 rounded-card border border-success/30 bg-success/5 p-4">
+            <div className="space-y-3 rounded-card border border-line bg-surface2/40 p-4">
               <label className="flex items-start gap-2 text-sm text-t2">
                 <input
                   type="checkbox"
@@ -410,8 +410,8 @@ export function AddCreditPage() {
         )}
 
         {(type === 'CONSUMER' || type === 'MORTGAGE') && (
-          <section className={`space-y-4 rounded-card border border-primary/30 bg-primary/5 p-4 ${sectionClass}`}>
-            <h3 className="text-sm font-medium text-primary">
+          <section className={`space-y-4 rounded-card border border-line bg-surface2/40 p-4 ${sectionClass}`}>
+            <h3 className="text-sm font-medium text-t2">
               Параметры {type === 'CONSUMER' ? 'потребительского кредита' : 'ипотеки'}
             </h3>
 
@@ -473,8 +473,8 @@ export function AddCreditPage() {
         )}
 
         {type === 'INSTALLMENT' && (
-          <section className={`space-y-4 rounded-card border border-cyan-500 bg-cyan-950/20 p-4 ${sectionClass}`}>
-            <h3 className="text-sm font-medium text-cyan-400">Параметры рассрочки / сплита</h3>
+          <section className={`space-y-4 rounded-card border border-line bg-surface2/40 p-4 ${sectionClass}`}>
+            <h3 className="text-sm font-medium text-t2">Параметры рассрочки / сплита</h3>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
@@ -515,7 +515,7 @@ export function AddCreditPage() {
 
         {/* === ОПЦИОННЫЙ БЛОК: «рассрочка оформлена раньше» (для INSTALLMENT) === */}
         {type === 'INSTALLMENT' && markPast && (
-          <div className={`space-y-3 rounded-card border border-success/30 bg-success/5 p-4 ${sectionClass}`}>
+          <div className={`space-y-3 rounded-card border border-line bg-surface2/40 p-4 ${sectionClass}`}>
             <label className="flex items-start gap-2 text-sm text-t2">
               <input
                 type="checkbox"
@@ -569,8 +569,8 @@ export function AddCreditPage() {
         )}
 
         {type === 'MICROLOAN' && (
-          <section className={`space-y-4 rounded-card border border-warning/30 bg-warning/5 p-4 ${sectionClass}`}>
-            <h3 className="text-sm font-medium text-warning">Параметры займа (МФО)</h3>
+          <section className={`space-y-4 rounded-card border border-line bg-surface2/40 p-4 ${sectionClass}`}>
+            <h3 className="text-sm font-medium text-t2">Параметры займа (МФО)</h3>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
@@ -625,7 +625,7 @@ export function AddCreditPage() {
 
         {/* === ОПЦИОННЫЙ БЛОК: «кредит оформлен раньше» (только для CONSUMER/MORTGAGE) === */}
         {(type === 'CONSUMER' || type === 'MORTGAGE') && (
-          <div className={`space-y-3 rounded-card border border-success/30 bg-success/5 p-4 ${sectionClass}`}>
+          <div className={`space-y-3 rounded-card border border-line bg-surface2/40 p-4 ${sectionClass}`}>
             <label className="flex items-start gap-2 text-sm text-t2">
               <input
                 type="checkbox"

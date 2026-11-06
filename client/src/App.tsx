@@ -3,7 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { SkeletonList } from './components/Skeleton';
+import ScrollToTop from './components/ScrollToTop';import { SkeletonList } from './components/Skeleton';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 
@@ -16,6 +16,7 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ de
 export function App() {
   return (
     <ErrorBoundary>
+      <ScrollToTop />
       <Suspense fallback={<SkeletonList count={3} />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
