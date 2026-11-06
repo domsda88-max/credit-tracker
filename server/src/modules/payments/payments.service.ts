@@ -1,13 +1,21 @@
-import type { PaymentType, PrepaymentMode } from '@prisma/client';
+import type { PaymentType, Prisma, PrepaymentMode } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middlewares/errorHandler';
 import { annuityPayment } from '../../utils/finance/annuity';
-import { addMonths, daysInMonth, monthsBetween, utcToday, withDayOfMonth } from '../../utils/finance/date';
+import {
+  addMonths,
+  daysInMonth,
+  isoDate,
+  monthsBetween,
+  parseISODateOnly,
+  utcToday,
+  withDayOfMonth,
+} from '../../utils/finance/date';
 import { rebuildSchedule } from '../../utils/finance/earlyRepayment';
 import { crossedMilestone, milestoneMessage, paidPercent } from '../../utils/finance/milestones';
 import { round2, toNumber } from '../../utils/finance/round';
 import { sendUniquePush } from '../push/push.service';
-import type { EarlyRepaymentDto, PayInstallmentDto } from './payments.schemas';
+import type { EarlyRepaymentDto, ImportPaymentsDto, PayInstallmentDto } from './payments.schemas';
 
 function diffInDaysUTC(a: Date, b: Date): number {
   const da = Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate());
@@ -42,6 +50,70 @@ async function notifyMilestone(
   }).catch((err) => console.error('[milestone] Не удалось отправить push:', err));
 }
 
+interface ApplyPaymentArgs {
+  installment: { id: string; amount: unknown; principalPart: unknown };
+  credit: { id: string; paymentType: PaymentType };
+  amount: number;
+  paidAt: Date;
+}
+
+/**
+ * Единственная точка записи фактического платежа: и кнопка «Я оплатил»,
+ * и импорт обязаны идти через неё — иначе разъедутся outstanding/totalPaid
+ * и журнал PaymentEvent. guardPending отсекает двойное применение при гонке.
+ */
+async function applyPayment(
+  tx: Prisma.TransactionClient,
+  { installment, credit, amount, paidAt }: ApplyPaymentArgs,
+  guardPending = false,
+) {
+  const scheduledAmount = toNumber(installment.amount);
+  const scheduledPrincipal = toNumber(installment.principalPart);
+  const ratio = scheduledAmount > 0 ? amount / scheduledAmount : 1;
+  const principalPart = round2(scheduledPrincipal * ratio);
+
+  const data = { status: 'PAID' as const, paidAt, paidAmount: amount };
+  let updatedInstallment = null;
+
+  if (guardPending) {
+    const claimed = await tx.paymentSchedule.updateMany({
+      where: { id: installment.id, status: 'PENDING' },
+      data,
+    });
+    if (claimed.count === 0) return null;
+  } else {
+    updatedInstallment = await tx.paymentSchedule.update({ where: { id: installment.id }, data });
+  }
+
+  let updatedCredit = await tx.credit.update({
+    where: { id: credit.id },
+    data: {
+      totalPaid: { increment: amount },
+      outstanding: { decrement: principalPart },
+    },
+  });
+
+  await tx.paymentEvent.create({
+    data: {
+      creditId: credit.id,
+      kind: credit.paymentType === 'MIN_PAYMENT' ? 'MIN_PAYMENT' : 'SCHEDULED',
+      amount,
+      paidAt,
+    },
+  });
+
+  // Полное закрытие
+  if (toNumber(updatedCredit.outstanding) <= CLOSE_THRESHOLD) {
+    updatedCredit = await tx.credit.update({
+      where: { id: credit.id },
+      data: { outstanding: 0, status: 'CLOSED', closedAt: new Date() },
+    });
+    await tx.paymentSchedule.deleteMany({ where: { creditId: credit.id, status: 'PENDING' } });
+  }
+
+  return { updatedInstallment, updatedCredit };
+}
+
 export const paymentsService = {
   /** «Я оплатил» — отметить платёж по графику. Можно указать фактическую сумму и дату. */
   async payInstallment(userId: string, installmentId: string, dto: PayInstallmentDto = {}) {
@@ -57,54 +129,19 @@ export const paymentsService = {
       throw new AppError(409, 'Этот платёж уже отмечен как оплаченный');
     }
 
-    const scheduledAmount = toNumber(installment.amount);
-    // Фактически внесённая сумма (по умолчанию — как в графике).
-    const amount = round2(dto.amount ?? scheduledAmount);
-    const scheduledPrincipal = toNumber(installment.principalPart);
-
-    // Какую долю от графика реально внёс пользователь: от неё зависит,
-    // на сколько уменьшится тело долга. При переплате тело гасится сильнее.
-    const ratio = scheduledAmount > 0 ? amount / scheduledAmount : 1;
-    const principalPart = round2(scheduledPrincipal * ratio);
-
     const credit = installment.credit;
+    // Фактически внесённая сумма (по умолчанию — как в графике).
+    const amount = round2(dto.amount ?? toNumber(installment.amount));
     const prevPercent = paidPercent(toNumber(credit.principal), toNumber(credit.outstanding));
     const paidAt = dto.paidAt ?? new Date();
 
-    const result = await prisma.$transaction(async (tx) => {
-      const updatedInstallment = await tx.paymentSchedule.update({
-        where: { id: installmentId },
-        data: { status: 'PAID', paidAt, paidAmount: amount },
-      });
+    const result = await prisma.$transaction((tx) =>
+      applyPayment(tx, { installment, credit, amount, paidAt }),
+    );
 
-      let updatedCredit = await tx.credit.update({
-        where: { id: credit.id },
-        data: {
-          totalPaid: { increment: amount },
-          outstanding: { decrement: principalPart },
-        },
-      });
-
-      await tx.paymentEvent.create({
-        data: {
-          creditId: credit.id,
-          kind: credit.paymentType === 'MIN_PAYMENT' ? 'MIN_PAYMENT' : 'SCHEDULED',
-          amount,
-          paidAt,
-        },
-      });
-
-      // Полное закрытие
-      if (toNumber(updatedCredit.outstanding) <= CLOSE_THRESHOLD) {
-        updatedCredit = await tx.credit.update({
-          where: { id: credit.id },
-          data: { outstanding: 0, status: 'CLOSED', closedAt: new Date() },
-        });
-        await tx.paymentSchedule.deleteMany({ where: { creditId: credit.id, status: 'PENDING' } });
-      }
-
-      return { updatedInstallment, updatedCredit };
-    });
+    if (!result) {
+      throw new AppError(409, 'Этот платёж уже отмечен как оплаченный');
+    }
 
     const newPercent = paidPercent(
       toNumber(result.updatedCredit.principal),
@@ -113,6 +150,194 @@ export const paymentsService = {
     await notifyMilestone(userId, credit.id, credit.name, prevPercent, newPercent);
 
     return result;
+  },
+
+  /**
+   * Массовый импорт фактических оплат (round-trip CSV).
+   * Строки применяются по возрастанию даты платежа: от порядка зависит
+   * закрытие кредита и удаление оставшихся PENDING-строк.
+   * Milestone-уведомления при импорте не отправляются.
+   */
+  async importPayments(userId: string, dto: ImportPaymentsDto) {
+    const failed: Array<{ row: number; reason: string }> = [];
+    let created = 0;
+    let skipped = 0;
+
+    const credits = await prisma.credit.findMany({
+      where: { userId },
+      select: { id: true, name: true, status: true, paymentType: true },
+    });
+
+    // 1. Сопоставляем строки с кредитами и проверяем даты.
+    const resolved: Array<{
+      row: number;
+      credit: (typeof credits)[number];
+      dueDate: Date;
+      paidAt: Date;
+      amount?: number;
+    }> = [];
+
+    dto.rows.forEach((row, index) => {
+      const rowNumber = index + 1;
+      let credit: (typeof credits)[number] | undefined;
+
+      if (row.creditId) {
+        credit = credits.find((item) => item.id === row.creditId);
+        if (!credit) {
+          failed.push({ row: rowNumber, reason: 'Кредит не найден' });
+          return;
+        }
+      } else {
+        const matches = credits.filter((item) => item.name.trim() === row.creditName.trim());
+        if (matches.length === 0) {
+          failed.push({ row: rowNumber, reason: `Кредит «${row.creditName}» не найден` });
+          return;
+        }
+        if (matches.length > 1) {
+          failed.push({
+            row: rowNumber,
+            reason: `Несколько кредитов с именем «${row.creditName}» — выберите нужный`,
+          });
+          return;
+        }
+        credit = matches[0];
+      }
+
+      if (credit.status === 'CLOSED') {
+        failed.push({ row: rowNumber, reason: `Кредит «${credit.name}» уже закрыт` });
+        return;
+      }
+
+      const dueDate = parseISODateOnly(row.dueDate);
+      if (!dueDate) {
+        failed.push({ row: rowNumber, reason: 'Некорректная дата платежа' });
+        return;
+      }
+      // Старые файлы без колонки «Дата оплаты»: считаем датой оплаты дату по графику.
+      const paidAt = row.paidAt ? parseISODateOnly(row.paidAt) : dueDate;
+      if (!paidAt) {
+        failed.push({ row: rowNumber, reason: 'Некорректная дата оплаты' });
+        return;
+      }
+
+      resolved.push({ row: rowNumber, credit, dueDate, paidAt, amount: row.amount });
+    });
+
+    // 2. Одним запросом поднимаем график всех задействованных кредитов.
+    const creditIds = [...new Set(resolved.map((item) => item.credit.id))];
+    const schedule = creditIds.length
+      ? await prisma.paymentSchedule.findMany({
+          where: { creditId: { in: creditIds } },
+          select: {
+            id: true,
+            creditId: true,
+            dueDate: true,
+            amount: true,
+            principalPart: true,
+            status: true,
+          },
+        })
+      : [];
+    const byKey = new Map(
+      schedule.map((item) => [`${item.creditId}:${isoDate(item.dueDate)}`, item]),
+    );
+
+    // 3. Отбираем PENDING: уже оплаченное — skipped, отсутствующее в графике — failed.
+    const toApply: Array<{
+      row: number;
+      credit: (typeof credits)[number];
+      installment: (typeof schedule)[number];
+      dueDate: Date;
+      paidAt: Date;
+      amount: number;
+    }> = [];
+
+    for (const item of resolved) {
+      const installment = byKey.get(`${item.credit.id}:${isoDate(item.dueDate)}`);
+      if (!installment) {
+        failed.push({
+          row: item.row,
+          reason: `Платёж от ${isoDate(item.dueDate)} не найден в графике`,
+        });
+        continue;
+      }
+      if (installment.status === 'PAID') {
+        skipped += 1;
+        continue;
+      }
+      toApply.push({
+        ...item,
+        installment,
+        amount: round2(item.amount ?? toNumber(installment.amount)),
+      });
+    }
+
+    // 4. Чанками: 2000 отдельных транзакций через pooler — слишком долго.
+    toApply.sort(
+      (a, b) => a.dueDate.getTime() - b.dueDate.getTime() || a.credit.id.localeCompare(b.credit.id),
+    );
+
+    const CHUNK_SIZE = 100;
+    for (let start = 0; start < toApply.length; start += CHUNK_SIZE) {
+      const chunk = toApply.slice(start, start + CHUNK_SIZE);
+      try {
+        const result = await prisma.$transaction(
+          async (tx) => {
+            const applied: Array<{ row: number; ok: boolean }> = [];
+            for (const item of chunk) {
+              const payment = await applyPayment(
+                tx,
+                {
+                  installment: item.installment,
+                  credit: item.credit,
+                  amount: item.amount,
+                  paidAt: item.paidAt,
+                },
+                true,
+              );
+              applied.push({ row: item.row, ok: payment !== null });
+            }
+            return applied;
+          },
+          { timeout: 30_000 },
+        );
+
+        for (const item of result) {
+          if (item.ok) created += 1;
+          else skipped += 1;
+        }
+      } catch (error) {
+        // Чанк откатился целиком — повторяем построчно, чтобы точно указать виновника.
+        console.error('[payments.import] чанк не сохранён, повторяю построчно:', error);
+        for (const item of chunk) {
+          try {
+            const payment = await prisma.$transaction((tx) =>
+              applyPayment(
+                tx,
+                {
+                  installment: item.installment,
+                  credit: item.credit,
+                  amount: item.amount,
+                  paidAt: item.paidAt,
+                },
+                true,
+              ),
+            );
+            if (payment) created += 1;
+            else skipped += 1;
+          } catch (rowError) {
+            failed.push({
+              row: item.row,
+              reason:
+                rowError instanceof AppError ? rowError.message : 'Не удалось сохранить платёж',
+            });
+          }
+        }
+      }
+    }
+
+    failed.sort((a, b) => a.row - b.row);
+    return { created, skipped, failed };
   },
 
   /** Отмена оплаченного платежа: возврат статуса в PENDING. */

@@ -17,5 +17,27 @@ export const payInstallmentSchema = z.object({
   paidAt: z.coerce.date().optional(),
 });
 
+/** Дата без времени: клиент нормализует «ДД.ММ.ГГГГ» → «ГГГГ-ММ-ДД» до отправки. */
+const dateOnlySchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Ожидается дата в формате ГГГГ-ММ-ДД');
+
+export const importPaymentsSchema = z.object({
+  rows: z
+    .array(
+      z.object({
+        /** Если в UI разрешили коллизию имён — передаём точный id. */
+        creditId: z.string().uuid('Некорректный id кредита').optional(),
+        creditName: z.string().trim().min(1).max(200),
+        dueDate: dateOnlySchema,
+        paidAt: dateOnlySchema.optional(),
+        amount: z.number().positive('Сумма должна быть больше 0').optional(),
+      }),
+    )
+    .min(1, 'Нет строк для импорта')
+    .max(2000, 'За один раз можно импортировать не более 2000 строк'),
+});
+
 export type EarlyRepaymentDto = z.infer<typeof earlyRepaymentSchema>;
 export type PayInstallmentDto = z.infer<typeof payInstallmentSchema>;
+export type ImportPaymentsDto = z.infer<typeof importPaymentsSchema>;

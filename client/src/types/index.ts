@@ -178,3 +178,22 @@ export interface SubscribePayload {
   endpoint: string;
   keys: { p256dh: string; auth: string };
 }
+
+/** Строка импорта фактических оплат (POST /payments/import). */
+export interface ImportPaymentRowPayload {
+  creditId?: string;
+  creditName: string;
+  /** YYYY-MM-DD */
+  dueDate: string;
+  /** YYYY-MM-DD */
+  paidAt?: string;
+  amount?: number;
+}
+
+/** Частичный успех: сервер применяет валидные строки, остальные перечисляет. */
+export interface ImportPaymentsResult {
+  created: number;
+  skipped: number;
+  /** row — 1-based позиция в массиве rows, отправленном на сервер. */
+  failed: Array<{ row: number; reason: string }>;
+}
