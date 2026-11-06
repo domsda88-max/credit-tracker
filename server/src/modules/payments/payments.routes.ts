@@ -3,11 +3,22 @@ import { requireAuth } from '../../middlewares/auth';
 import { asyncHandler } from '../../middlewares/errorHandler';
 import { validate } from '../../middlewares/validate';
 import { paymentsController } from './payments.controller';
-import { earlyRepaymentSchema, payInstallmentSchema } from './payments.schemas';
+import {
+  earlyRepaymentSchema,
+  importPaymentsSchema,
+  payInstallmentSchema,
+} from './payments.schemas';
 
 export const paymentsRouter = Router();
 
 paymentsRouter.use(requireAuth);
+
+/** Массовый импорт фактических оплат из CSV (round-trip экспорта). */
+paymentsRouter.post(
+  '/import',
+  validate(importPaymentsSchema),
+  asyncHandler(paymentsController.importPayments),
+);
 
 paymentsRouter.post('/schedule/:installmentId/cancel', asyncHandler(paymentsController.cancelPayment));
 

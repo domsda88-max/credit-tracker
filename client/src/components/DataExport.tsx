@@ -17,8 +17,19 @@ function download(filename: string, content: string, mime: string) {
   URL.revokeObjectURL(url);
 }
 
+/** Экранирование ячейки CSV: кавычки нужны из-за «;», самих кавычек и переводов строк. */
+function csvCell(value: string): string {
+  return /[;"\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+/** Деньги для CSV: запятая как десятичный разделитель, без разделителей разрядов. */
+function csvMoney(value: string | number | null): string {
+  return value == null ? '' : Number(value).toFixed(2).replace('.', ',');
+}
+
 /**
-          <FileSpreadsheet size={16} className="inline-block" /> Экспорт CSV
+ * Экспорт данных: CSV — график и фактические оплаты для Excel,
+ * JSON — полный бэкап (включая досрочные погашения).
  * У конкурентов это платная функция — здесь бесплатно, данные и так на сервере.
  */
 export function DataExport() {
@@ -49,7 +60,10 @@ export function DataExport() {
     const data = await load();
     if (!data) return;
 
-    const rows: string[] = ['Кредит;Тип;Дата платежа;Сумма;Тело;Проценты;Статус'];
+    // Новые колонки добавляются в конец — старые файлы и парсеры остаются совместимыми.
+    const rows: string[] = [
+      'Кредит;Тип;Дата платежа;Сумма;Тело;Проценты;Статус;Дата оплаты;Факт. сумма',
+    ];
     for (const credit of data.credits) {
       for (const item of credit.schedule) {
         rows.push(
@@ -57,11 +71,15 @@ export function DataExport() {
             credit.name,
             CREDIT_TYPE_LABELS[credit.type as keyof typeof CREDIT_TYPE_LABELS] ?? credit.type,
             formatDate(item.dueDate),
-            Number(item.amount).toFixed(2).replace('.', ','),
-            Number(item.principalPart).toFixed(2).replace('.', ','),
-            Number(item.interestPart).toFixed(2).replace('.', ','),
+            csvMoney(item.amount),
+            csvMoney(item.principalPart),
+            csvMoney(item.interestPart),
             item.status,
-          ].join(';'),
+            item.paidAt ? formatDate(item.paidAt) : '',
+            csvMoney(item.paidAmount),
+          ]
+            .map(csvCell)
+            .join(';'),
         );
       }
     }
@@ -74,7 +92,7 @@ export function DataExport() {
     <section className="rounded-card border border-line bg-surface/80 p-4">
       <h2 className="font-medium text-t1">Экспорт данных</h2>
       <p className="mt-0.5 text-xs text-t3">
-          <FileSpreadsheet size={16} className="inline-block" /> Экспорт CSV
+        CSV — график и фактические оплаты, JSON — полный бэкап.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         <button

@@ -96,3 +96,24 @@ export function formatDate(date: Date): string {
 export function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
+
+/**
+ * «YYYY-MM-DD» → полночь UTC. Возвращает null для несуществующих дат
+ * (2025-02-31), чтобы импорт не превращал их в 3 марта молча.
+ */
+export function parseISODateOnly(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  return date;
+}

@@ -1,4 +1,4 @@
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PushSettings } from '../components/PushSettings';
@@ -7,6 +7,7 @@ import { MotivationSettings } from '../components/MotivationSettings';
 import { IncomeSettings } from '../components/IncomeSettings';
 import { useThemeStore } from '../store/theme';
 import { DataExport } from '../components/DataExport';
+import { ImportPaymentsBottomSheet } from '../components/ImportPaymentsBottomSheet';
 import { useAuthStore } from '../store/auth';
 
 function Accordion({ title, subtitle, defaultOpen = false, children }: {
@@ -48,6 +49,7 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const themeMode = useThemeStore((s) => s.mode);
   const setThemeMode = useThemeStore((s) => s.setMode);
+  const [importOpen, setImportOpen] = useState(false);
   const handleLogout = () => { logout(); navigate('/login', { replace: true }); };
 
   return (
@@ -114,6 +116,21 @@ export function SettingsPage() {
         <Accordion title="Экспорт данных" subtitle="Скачать CSV / JSON">
           <DataExport />
         </Accordion>
+        <Accordion title="Импорт оплат" subtitle="Восстановить историю из CSV-экспорта">
+          <div className="space-y-2">
+            <p className="text-xs text-t3">
+              Импортируются только строки со статусом «Оплачен». Используйте файл, скачанный
+              через «Экспорт CSV».
+            </p>
+            <button
+              type="button"
+              onClick={() => setImportOpen(true)}
+              className="flex w-full items-center justify-center gap-1.5 rounded-control border border-line px-3 py-2 text-sm text-t2 transition hover:border-primary/50"
+            >
+              <Upload size={16} aria-hidden="true" /> Импортировать CSV
+            </button>
+          </div>
+        </Accordion>
       </section>
 
       <section className="space-y-2">
@@ -124,6 +141,8 @@ export function SettingsPage() {
           <button type="button" onClick={handleLogout} className="mt-3 w-full rounded-control border border-danger/40 bg-danger/10 px-4 py-2.5 text-sm font-medium text-danger transition hover:bg-danger/20">Выйти из аккаунта</button>
         </div>
       </section>
+
+      <ImportPaymentsBottomSheet isOpen={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }
