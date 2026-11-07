@@ -7,7 +7,6 @@ import { MoneyFlow } from '../components/MoneyFlow';
 import { GraceReplenishBlock } from '../components/GraceReplenishBlock';
 import { OverdueAlert } from '../components/OverdueAlert';
 import { UpcomingPayments } from '../components/UpcomingPayments';
-import type { CreditListItem } from '../types';
 
 /** Экран загрузки: скелетоны карточек вместо спиннера. */
 function LoadingScreen() {

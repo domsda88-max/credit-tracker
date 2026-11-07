@@ -1,0 +1,301 @@
+﻿diff --git a/client/src/components/CreditRow.tsx b/client/src/components/CreditRow.tsx
+--- a/client/src/components/CreditRow.tsx
++++ b/client/src/components/CreditRow.tsx
+@@ -22,7 +22,6 @@
+   debtPaidPercent,
+   describeDueDate,
+   formatDateShort,
+-  formatMoney,
+   formatMoneyShort,
+   urgencyTone,
+ } from '../utils/format';
+@@ -62,7 +61,6 @@
+   const [error, setError] = useState<string | null>(null);
+   const [earlyOpen, setEarlyOpen] = useState(false);
+   const [earlyAmount, setEarlyAmount] = useState('');
+-  const [earlyMode, setEarlyMode] = useState('REDUCE_TERM');
+   const [earlyDate, setEarlyDate] = useState(new Date().toISOString().slice(0,10));
+   const [earlyPending, setEarlyPending] = useState(false);
+   const [earlyError, setEarlyError] = useState<string | null>(null);
+@@ -83,15 +81,13 @@
+       creditsApi.toggleFreeze(id, newFrozenState),
+     onMutate: async ({ id, newFrozenState }) => {
+       await queryClient.cancelQueries({ queryKey: ['credits'] });
+-      const previousCredits = queryClient.getQueryData(['credits']);
+-      queryClient.setQueryData(['credits'], (old: any) =>
+-        Array.isArray(old)
+-          ? old.map((c: any) => (c.id === id ? { ...c, frozen: newFrozenState } : c))
+-          : old,
++      const previousCredits = queryClient.getQueryData<CreditListItem[]>(['credits']);
++      queryClient.setQueryData<CreditListItem[]>(['credits'], (old) =>
++        old?.map((c) => (c.id === id ? { ...c, frozen: newFrozenState } : c)),
+       );
+       return { previousCredits };
+     },
+-    onError: (err, variables, context: any) => {
++    onError: (err, variables, context) => {
+       queryClient.setQueryData(['credits'], context?.previousCredits);
+       setError(extractErrorMessage(err));
+       toast.show('Ошибка заморозки');
+@@ -148,10 +144,10 @@
+     mutationFn: () => paymentsApi.payInstallment(next!.id, {}),
+     onMutate: async () => {
+       await queryClient.cancelQueries({ queryKey: ['credits'] });
+-      const prev = queryClient.getQueryData(['credits']);
++      const prev = queryClient.getQueryData<CreditListItem[]>(['credits']);
+       return { prev };
+     },
+-    onError: (err, _v, ctx: any) => {
++    onError: (err, _v, ctx) => {
+       queryClient.setQueryData(['credits'], ctx?.prev);
+       toast.show(extractErrorMessage(err), 'error');
+     },
+diff --git a/client/src/components/DebtOverview.tsx b/client/src/components/DebtOverview.tsx
+--- a/client/src/components/DebtOverview.tsx
++++ b/client/src/components/DebtOverview.tsx
+@@ -1,5 +1,5 @@
+ import { Target, Zap } from 'lucide-react';
+-import { useEffect, useMemo, useRef, useState } from 'react';
++import { useMemo, useRef, useState } from 'react';
+ import { useQuery, keepPreviousData } from '@tanstack/react-query';
+ import { creditsApi } from '../api/credits';
+ import { debtPaidPercent, formatDate, formatMoney } from '../utils/format';
+@@ -26,7 +26,7 @@
+   if (months <= 0) return 'меньше месяца';
+   const totalDays = Math.round(months * 30.44);
+   let years = Math.floor(totalDays / 365);
+-  let restDays = totalDays % 365;
++  const restDays = totalDays % 365;
+   let restMonths = Math.floor(restDays / 30.44);
+   let days = Math.round(restDays % 30.44);
+   if (days > 15) { restMonths += 1; days = 0; }
+diff --git a/client/src/components/ErrorBoundary.tsx b/client/src/components/ErrorBoundary.tsx
+--- a/client/src/components/ErrorBoundary.tsx
++++ b/client/src/components/ErrorBoundary.tsx
+@@ -15,7 +15,6 @@
+   }
+
+   componentDidCatch(error: Error, info: ErrorInfo) {
+-    // eslint-disable-next-line no-console
+     console.error('ErrorBoundary:', error, info);
+   }
+diff --git a/client/src/components/Layout.tsx b/client/src/components/Layout.tsx
+--- a/client/src/components/Layout.tsx
++++ b/client/src/components/Layout.tsx
+@@ -1,19 +1,8 @@
+-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+-import { useAuthStore } from '../store/auth';
++import { Outlet } from 'react-router-dom';
+ import { FloatingNav } from './FloatingNav';
+ import { OfflineBanner } from './OfflineBanner';
+
+ export function Layout() {
+-  const navigate = useNavigate();
+-  const location = useLocation();
+-  const logout = useAuthStore((state) => state.logout);
+-  const user = useAuthStore((state) => state.user);
+-
+-  const handleLogout = () => {
+-    logout();
+-    navigate('/login', { replace: true });
+-  };
+-
+   return (
+     <>
+       <OfflineBanner />
+diff --git a/client/src/components/MoneyFlow.tsx b/client/src/components/MoneyFlow.tsx
+--- a/client/src/components/MoneyFlow.tsx
++++ b/client/src/components/MoneyFlow.tsx
+@@ -20,7 +20,7 @@
+   const income = data.monthlyIncome;
+   const payments = data.monthlyPayments;
+   const free = data.freeMoney;
+-  const graceTotal = (data as any).graceReplenishTotal ?? 0;
++  const graceTotal = data.graceReplenishTotal;
+   const hasIncome = income !== null;
+
+   return (
+diff --git a/client/src/components/UpcomingPayments.tsx b/client/src/components/UpcomingPayments.tsx
+--- a/client/src/components/UpcomingPayments.tsx
++++ b/client/src/components/UpcomingPayments.tsx
+@@ -42,7 +42,6 @@
+   today.setHours(0, 0, 0, 0);
+   const curYear = today.getUTCFullYear();
+   const curMonth = today.getUTCMonth();
+-  const endOfMonth = new Date(Date.UTC(curYear, curMonth + 1, 0));
+
+   const items: Item[] = credits
+     .filter((c) => c.status === 'ACTIVE' && c.nextPayment)
+diff --git a/client/src/main.tsx b/client/src/main.tsx
+--- a/client/src/main.tsx
++++ b/client/src/main.tsx
+@@ -76,7 +76,7 @@
+   };
+
+   void checkUpdate();
+-  const interval = setInterval(() => void checkUpdate(), 60_000);
++  window.setInterval(() => void checkUpdate(), 60_000);
+   document.addEventListener('visibilitychange', () => {
+     if (document.visibilityState === 'visible') void checkUpdate();
+   });
+diff --git a/client/src/pages/AddCreditPage.tsx b/client/src/pages/AddCreditPage.tsx
+--- a/client/src/pages/AddCreditPage.tsx
++++ b/client/src/pages/AddCreditPage.tsx
+@@ -5,6 +5,7 @@
+ import { useNavigate } from 'react-router-dom';
+ import { z } from 'zod';
+ import { extractErrorMessage } from '../api/client';
++import type { CreateCreditPayload } from '../types';
+ import { creditsApi } from '../api/credits';
+
+ const optionalNumber = (min: number, max: number) =>
+@@ -111,18 +112,15 @@
+
+ type FormValues = z.infer<typeof schema>;
+
++type MutationValues = FormValues & {
++  earlyRepayments: NonNullable<CreateCreditPayload['earlyRepayments']>;
++};
++
+ const inputClass =
+   'mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none transition focus:border-primary';
+
+-const TYPE_LABELS: Record<FormValues['type'], string> = {
+-  CREDIT_CARD: 'Кредитная карта',
+-  CONSUMER: 'Потребительский кредит',
+-  MORTGAGE: 'Ипотека',
+-  INSTALLMENT: 'Рассрочка / Сплит',
+-  MICROLOAN: 'Займ (МФО)',
+-  LOAN: 'Заем (частный)',
+-};
+-
+ export function AddCreditPage() {
+   const navigate = useNavigate();
+   const queryClient = useQueryClient();
+@@ -148,7 +146,6 @@
+   });
+
+   const type = watch('type');
+-  const paymentType = watch('paymentType');
+   const frozen = watch('frozen');
+   const markPast = watch('markPastAsPaid');
+   const startDate = watch('startDate');
+@@ -233,7 +230,7 @@
+   }, [type, setValue]);
+
+   const mutation = useMutation({
+-    mutationFn: (values: FormValues) => {
++    mutationFn: (values: MutationValues) => {
+       const parsed = schema.parse(values);
+       return creditsApi.create({
+         ...parsed,
+@@ -249,7 +246,7 @@
+         markPastAsPaid: parsed.markPastAsPaid,
+         outstanding: parsed.outstanding ?? null,
+         paymentType: parsed.paymentType ?? 'ANNUITY',
+-        earlyRepayments: (values as any).earlyRepayments,        // Кредитная карта — revolving-продукт, срок не нужен
++        earlyRepayments: values.earlyRepayments,        // Кредитная карта — revolving-продукт, срок не нужен
+         termMonths:
+           parsed.type === 'CREDIT_CARD' || parsed.type === 'MICROLOAN' ? undefined : parsed.termMonths,
+       });
+@@ -294,7 +291,7 @@
+             earlyRepayments: earlyRepayments
+               .filter((er) => er.amount && er.date)
+               .map((er) => ({ amount: Number(er.amount), date: er.date })),
+-          } as any),
++          }),
+         )}
+         className="mt-5 space-y-4 touch-manipulation"
+       >
+diff --git a/client/src/pages/CreditDetailPage.tsx b/client/src/pages/CreditDetailPage.tsx
+--- a/client/src/pages/CreditDetailPage.tsx
++++ b/client/src/pages/CreditDetailPage.tsx
+@@ -10,11 +10,10 @@
+ import { paymentsApi } from '../api/payments';
+ import { StatusBadge } from '../components/StatusBadge';
+ import { SkeletonCard } from '../components/Skeleton';
+-import { SegmentedControl } from '../components/SegmentedControl';
+ import { BalanceChart } from '../components/BalanceChart';
+ import { EditCreditForm } from '../components/EditCreditForm';
+ import { useToast } from '../components/useToast';
+-import type { EarlyPreview, PaymentEvent } from '../types';
++import type { EarlyPreview, EarlyRepaymentPayload, PaymentEvent } from '../types';
+ import { maxPrepaymentDate } from '../utils/date';
+ import {
+   CREDIT_TYPE_LABELS,
+@@ -61,7 +60,7 @@
+   });
+
+   const todayStr = new Date().toISOString().slice(0, 10);
+-  const { register, handleSubmit, reset, formState, watch, setValue } = useForm<EarlyFormValues>({
++  const { register, handleSubmit, reset, formState, watch } = useForm<EarlyFormValues>({
+     resolver: zodResolver(earlySchema),
+     defaultValues: { mode: 'REDUCE_TERM', date: todayStr },
+   });
+@@ -125,7 +124,8 @@
+     mutationFn: (values: EarlyFormValues) => {
+       const parsed = earlySchema.parse(values);
+       const date = preview && previewForDate === parsed.date ? preview.effectiveDate : parsed.date;
+-      return paymentsApi.earlyRepayment(id, { amount: parsed.amount, mode: parsed.mode, date } as any);
++      const payload: EarlyRepaymentPayload = { amount: parsed.amount, mode: parsed.mode, date };
++      return paymentsApi.earlyRepayment(id, payload);
+     },
+     onSuccess: async () => {
+       reset({ amount: undefined as unknown as number, mode: 'REDUCE_TERM', date: todayStr });
+@@ -138,15 +137,6 @@
+     onError: (err) => setError(extractErrorMessage(err)),
+   });
+
+-  const freezeMutation = useMutation({
+-    mutationFn: (frozen: boolean) => creditsApi.toggleFreeze(id, frozen),
+-    onSuccess: async (_data, frozen) => {
+-      await invalidate();
+-      toast.show(frozen ? 'Кредит заморожен' : 'Кредит разморожен');
+-    },
+-    onError: (err) => setError(extractErrorMessage(err)),
+-  });
+-
+   if (isPending && !credit) return <div className="space-y-4"><SkeletonCard /><SkeletonCard /></div>;
+   if (loadError || !credit) {
+     return (
+@@ -315,7 +305,7 @@
+               if (submitting.current) return;
+               if (preview && !preview.coversInterest) return;
+               submitting.current = true;
+-              earlyMutation.mutate(values as any, {
++              earlyMutation.mutate(values, {
+                 onSettled: () => {
+                   submitting.current = false;
+                 },
+@@ -483,7 +473,7 @@
+                             if (!window.confirm(`Отменить платёж ${formatMoney(item.amount)} от ${formatDate(item.dueDate)}? Статус изменится на «Не оплачен», график пересчитается.`)) return;
+                             setCancelingId(item.id);
+                             try {
+-                              await (paymentsApi as any).cancelSchedule(item.id);
++                              await paymentsApi.cancelSchedule(item.id);
+                               await queryClient.invalidateQueries({ queryKey: ['credit', id] });
+                               await queryClient.invalidateQueries({ queryKey: ['credits'] });
+                               await queryClient.invalidateQueries({ queryKey: ['summary'] });
+diff --git a/client/src/pages/DashboardPage.tsx b/client/src/pages/DashboardPage.tsx
+--- a/client/src/pages/DashboardPage.tsx
++++ b/client/src/pages/DashboardPage.tsx
+@@ -7,7 +7,6 @@
+ import { GraceReplenishBlock } from '../components/GraceReplenishBlock';
+ import { OverdueAlert } from '../components/OverdueAlert';
+ import { UpcomingPayments } from '../components/UpcomingPayments';
+-import type { CreditListItem } from '../types';
+
+ /** Экран загрузки: скелетоны карточек вместо спиннера. */
+ function LoadingScreen() {
+diff --git a/client/src/sw.ts b/client/src/sw.ts
+--- a/client/src/sw.ts
++++ b/client/src/sw.ts
+@@ -7,7 +7,7 @@
+
+ // Precache статики (Vite подставит список файлов на этапе сборки)
+ precacheAndRoute(
+-  self.__WB_MANIFEST.filter((entry: any) => {
++  self.__WB_MANIFEST.filter((entry) => {
+     const url = typeof entry === 'string' ? entry : entry.url;
+     return !url.endsWith('index.html') && url !== '/' && url !== 'index.html';
+   }),

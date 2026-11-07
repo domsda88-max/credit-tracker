@@ -1,5 +1,5 @@
 import { Target, Zap } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { creditsApi } from '../api/credits';
 import { debtPaidPercent, formatDate, formatMoney } from '../utils/format';
@@ -26,7 +26,7 @@ function monthsLabel(months: number): string {
   if (months <= 0) return 'меньше месяца';
   const totalDays = Math.round(months * 30.44);
   let years = Math.floor(totalDays / 365);
-  let restDays = totalDays % 365;
+  const restDays = totalDays % 365;
   let restMonths = Math.floor(restDays / 30.44);
   let days = Math.round(restDays % 30.44);
   if (days > 15) { restMonths += 1; days = 0; }

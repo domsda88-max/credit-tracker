@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { extractErrorMessage } from '../api/client';
+import type { CreateCreditPayload } from '../types';
 import { creditsApi } from '../api/credits';
 
 const optionalNumber = (min: number, max: number) =>
@@ -111,17 +112,12 @@ const schema = z
 
 type FormValues = z.infer<typeof schema>;
 
+type MutationValues = FormValues & {
+  earlyRepayments: NonNullable<CreateCreditPayload['earlyRepayments']>;
+};
+
 const inputClass =
   'mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none transition focus:border-primary';
-
-const TYPE_LABELS: Record<FormValues['type'], string> = {
-  CREDIT_CARD: 'Кредитная карта',
-  CONSUMER: 'Потребительский кредит',
-  MORTGAGE: 'Ипотека',
-  INSTALLMENT: 'Рассрочка / Сплит',
-  MICROLOAN: 'Займ (МФО)',
-  LOAN: 'Заем (частный)',
-};
 
 export function AddCreditPage() {
   const navigate = useNavigate();
@@ -148,7 +144,6 @@ export function AddCreditPage() {
   });
 
   const type = watch('type');
-  const paymentType = watch('paymentType');
   const frozen = watch('frozen');
   const markPast = watch('markPastAsPaid');
   const startDate = watch('startDate');
@@ -232,8 +227,8 @@ export function AddCreditPage() {
     }
   }, [type, setValue]);
 
-  const mutation = useMutation({
-    mutationFn: (values: FormValues) => {
+   const mutation = useMutation({
+    mutationFn: (values: MutationValues) => {
       const parsed = schema.parse(values);
       return creditsApi.create({
         ...parsed,
@@ -249,7 +244,7 @@ export function AddCreditPage() {
         markPastAsPaid: parsed.markPastAsPaid,
         outstanding: parsed.outstanding ?? null,
         paymentType: parsed.paymentType ?? 'ANNUITY',
-        earlyRepayments: (values as any).earlyRepayments,        // Кредитная карта — revolving-продукт, срок не нужен
+        earlyRepayments: values.earlyRepayments,        // Кредитная карта — revolving-продукт, срок не нужен
         termMonths:
           parsed.type === 'CREDIT_CARD' || parsed.type === 'MICROLOAN' ? undefined : parsed.termMonths,
       });
@@ -293,8 +288,8 @@ export function AddCreditPage() {
             ...values,
             earlyRepayments: earlyRepayments
               .filter((er) => er.amount && er.date)
-              .map((er) => ({ amount: Number(er.amount), date: er.date })),
-          } as any),
+               .map((er) => ({ amount: Number(er.amount), date: er.date })),
+          }),
         )}
         className="mt-5 space-y-4 touch-manipulation"
       >

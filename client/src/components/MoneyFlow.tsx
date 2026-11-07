@@ -20,7 +20,7 @@ export function MoneyFlow() {
   const income = data.monthlyIncome;
   const payments = data.monthlyPayments;
   const free = data.freeMoney;
-  const graceTotal = (data as any).graceReplenishTotal ?? 0;
+  const graceTotal = data.graceReplenishTotal;
   const hasIncome = income !== null;
 
   return (

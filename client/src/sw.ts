@@ -7,7 +7,7 @@ declare let self: ServiceWorkerGlobalScope;
 
 // Precache статики (Vite подставит список файлов на этапе сборки)
 precacheAndRoute(
-  self.__WB_MANIFEST.filter((entry: any) => {
+  self.__WB_MANIFEST.filter((entry) => {
     const url = typeof entry === 'string' ? entry : entry.url;
     return !url.endsWith('index.html') && url !== '/' && url !== 'index.html';
   }),

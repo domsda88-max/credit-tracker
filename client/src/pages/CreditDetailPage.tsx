@@ -10,11 +10,10 @@ import { creditsApi } from '../api/credits';
 import { paymentsApi } from '../api/payments';
 import { StatusBadge } from '../components/StatusBadge';
 import { SkeletonCard } from '../components/Skeleton';
-import { SegmentedControl } from '../components/SegmentedControl';
 import { BalanceChart } from '../components/BalanceChart';
 import { EditCreditForm } from '../components/EditCreditForm';
 import { useToast } from '../components/useToast';
-import type { EarlyPreview, PaymentEvent } from '../types';
+import type { EarlyPreview, EarlyRepaymentPayload, PaymentEvent } from '../types';
 import { maxPrepaymentDate } from '../utils/date';
 import {
   CREDIT_TYPE_LABELS,
@@ -61,7 +60,7 @@ export function CreditDetailPage() {
   });
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const { register, handleSubmit, reset, formState, watch, setValue } = useForm<EarlyFormValues>({
+  const { register, handleSubmit, reset, formState, watch } = useForm<EarlyFormValues>({
     resolver: zodResolver(earlySchema),
     defaultValues: { mode: 'REDUCE_TERM', date: todayStr },
   });
@@ -125,7 +124,8 @@ export function CreditDetailPage() {
     mutationFn: (values: EarlyFormValues) => {
       const parsed = earlySchema.parse(values);
       const date = preview && previewForDate === parsed.date ? preview.effectiveDate : parsed.date;
-      return paymentsApi.earlyRepayment(id, { amount: parsed.amount, mode: parsed.mode, date } as any);
+      const payload: EarlyRepaymentPayload = { amount: parsed.amount, mode: parsed.mode, date };
+      return paymentsApi.earlyRepayment(id, payload);
     },
     onSuccess: async () => {
       reset({ amount: undefined as unknown as number, mode: 'REDUCE_TERM', date: todayStr });
@@ -134,15 +134,6 @@ export function CreditDetailPage() {
       await invalidate();
       toast.show('Досрочное погашение внесено');
       navigator.vibrate?.([30, 40, 30]);
-    },
-    onError: (err) => setError(extractErrorMessage(err)),
-  });
-
-  const freezeMutation = useMutation({
-    mutationFn: (frozen: boolean) => creditsApi.toggleFreeze(id, frozen),
-    onSuccess: async (_data, frozen) => {
-      await invalidate();
-      toast.show(frozen ? 'Кредит заморожен' : 'Кредит разморожен');
     },
     onError: (err) => setError(extractErrorMessage(err)),
   });
@@ -315,7 +306,7 @@ export function CreditDetailPage() {
               if (submitting.current) return;
               if (preview && !preview.coversInterest) return;
               submitting.current = true;
-              earlyMutation.mutate(values as any, {
+              earlyMutation.mutate(values, {
                 onSettled: () => {
                   submitting.current = false;
                 },
@@ -483,7 +474,7 @@ export function CreditDetailPage() {
                             if (!window.confirm(`Отменить платёж ${formatMoney(item.amount)} от ${formatDate(item.dueDate)}? Статус изменится на «Не оплачен», график пересчитается.`)) return;
                             setCancelingId(item.id);
                             try {
-                              await (paymentsApi as any).cancelSchedule(item.id);
+                              await paymentsApi.cancelSchedule(item.id);
                               await queryClient.invalidateQueries({ queryKey: ['credit', id] });
                               await queryClient.invalidateQueries({ queryKey: ['credits'] });
                               await queryClient.invalidateQueries({ queryKey: ['summary'] });

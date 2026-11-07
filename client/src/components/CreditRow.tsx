@@ -22,7 +22,6 @@ import {
   debtPaidPercent,
   describeDueDate,
   formatDateShort,
-  formatMoney,
   formatMoneyShort,
   urgencyTone,
 } from '../utils/format';
@@ -62,7 +61,6 @@ export function CreditRow({ credit, index = 0 }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [earlyOpen, setEarlyOpen] = useState(false);
   const [earlyAmount, setEarlyAmount] = useState('');
-  const [earlyMode, setEarlyMode] = useState('REDUCE_TERM');
   const [earlyDate, setEarlyDate] = useState(new Date().toISOString().slice(0,10));
   const [earlyPending, setEarlyPending] = useState(false);
   const [earlyError, setEarlyError] = useState<string | null>(null);
@@ -83,15 +81,13 @@ export function CreditRow({ credit, index = 0 }: Props) {
       creditsApi.toggleFreeze(id, newFrozenState),
     onMutate: async ({ id, newFrozenState }) => {
       await queryClient.cancelQueries({ queryKey: ['credits'] });
-      const previousCredits = queryClient.getQueryData(['credits']);
-      queryClient.setQueryData(['credits'], (old: any) =>
-        Array.isArray(old)
-          ? old.map((c: any) => (c.id === id ? { ...c, frozen: newFrozenState } : c))
-          : old,
+      const previousCredits = queryClient.getQueryData<CreditListItem[]>(['credits']);
+      queryClient.setQueryData<CreditListItem[]>(['credits'], (old) =>
+        old?.map((c) => (c.id === id ? { ...c, frozen: newFrozenState } : c)),
       );
       return { previousCredits };
     },
-    onError: (err, variables, context: any) => {
+    onError: (err, variables, context) => {
       queryClient.setQueryData(['credits'], context?.previousCredits);
       setError(extractErrorMessage(err));
       toast.show('Ошибка заморозки');
@@ -148,10 +144,10 @@ export function CreditRow({ credit, index = 0 }: Props) {
     mutationFn: () => paymentsApi.payInstallment(next!.id, {}),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: ['credits'] });
-      const prev = queryClient.getQueryData(['credits']);
+      const prev = queryClient.getQueryData<CreditListItem[]>(['credits']);
       return { prev };
     },
-    onError: (err, _v, ctx: any) => {
+    onError: (err, _v, ctx) => {
       queryClient.setQueryData(['credits'], ctx?.prev);
       toast.show(extractErrorMessage(err), 'error');
     },

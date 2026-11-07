@@ -76,7 +76,7 @@ if ('serviceWorker' in navigator) {
   };
 
   void checkUpdate();
-  const interval = setInterval(() => void checkUpdate(), 60_000);
+  window.setInterval(() => void checkUpdate(), 60_000);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') void checkUpdate();
   });

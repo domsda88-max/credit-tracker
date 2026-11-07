@@ -42,7 +42,6 @@ export function UpcomingPayments({ credits }: Props) {
   today.setHours(0, 0, 0, 0);
   const curYear = today.getUTCFullYear();
   const curMonth = today.getUTCMonth();
-  const endOfMonth = new Date(Date.UTC(curYear, curMonth + 1, 0));
 
   const items: Item[] = credits
     .filter((c) => c.status === 'ACTIVE' && c.nextPayment)
