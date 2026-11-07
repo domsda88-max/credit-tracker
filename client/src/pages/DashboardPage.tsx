@@ -20,6 +20,13 @@ function LoadingScreen() {
   );
 }
 
+/** Sr-only визуально скрытый заголовок для скринридеров. */
+function SrOnly({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="sr-only">{children}</h2>
+  );
+}
+
 export function DashboardPage() {
   const {
     data: credits,
@@ -55,6 +62,7 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-4 animate-fade-in">
+      <SrOnly>Мои долги</SrOnly>
       <OverdueAlert credits={list} />
 
       {list.length > 0 && summary && summary.activeCount > 0 && (
@@ -111,6 +119,7 @@ export function DashboardPage() {
               strokeLinecap="round"
             />
           </svg>
+          <p className="sr-only">Пока нет долгов</p>
           <p className="text-heading font-semibold text-t1">Пока нет долгов</p>
           <p className="max-w-xs text-caption text-t3">
             Добавьте первый кредит, карту или заём — всё будет под контролем
@@ -124,29 +133,12 @@ export function DashboardPage() {
         </div>
       ) : (
         <>
-          <section className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h2 className="section-title">Мои долги</h2>
-              <Link to="/credits/new" className="text-sm text-primary hover:text-primary">
-                + Добавить
-              </Link>
-            </div>
-            {active.map((credit) => (
+          <section className="space-y-2 pt-1">
+            <SrOnly>Закрытые</SrOnly>
+            {closed.map((credit) => (
               <CreditRow key={credit.id} credit={credit} />
             ))}
           </section>
-
-          {closed.length > 0 && (
-            <section className="space-y-2 pt-1">
-              <h2 className="section-title">
-                Закрытые ({closed.length})
-              </h2>
-              {closed.map((credit) => (
-                <CreditRow key={credit.id} credit={credit} />
-              ))}
-            </section>
-          )}
-
         </>
       )}
     </div>

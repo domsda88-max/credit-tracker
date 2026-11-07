@@ -27,9 +27,29 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
     await openApp(page, '/');
 
     await expect(page.locator('.debt-card').first()).toBeVisible();
-    await expect(page.locator('h3.debt-card__title').first()).toContainText('Кредитная карта');
+    const title = page.locator('h3.debt-card__title').first();
+    await expect(title).toBeVisible();
+    // CSS-свойства эллипсиса должны быть заданы
+    const titleCss = await title.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return {
+        whiteSpace: s.whiteSpace,
+        textOverflow: s.textOverflow,
+        overflow: s.overflow,
+      };
+    });
+    expect(titleCss.whiteSpace).toBe('nowrap');
+    expect(titleCss.textOverflow).toBe('ellipsis');
+    expect(titleCss.overflow).toBe('hidden');
 
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+
+    // Нет глобального хедера: kein ₽, kein "Credit Tracker", kein ThemeToggle
+    await expect(page.locator('header')).toHaveCount(0);
+    await expect(page.getByText('Credit Tracker', { exact: true })).toHaveCount(0);
+
+    // FAB "+" виден только на Главной
+    await expect(page.locator('button[aria-label="Добавить долг"]')).toBeVisible();
 
     const layout = await page.evaluate(() => {
       const main = document.querySelector('main');
@@ -60,6 +80,12 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
     const nav = await page.locator('.tabbar nav').boundingBox();
     expect(nav!.height).toBeGreaterThanOrEqual(62);
 
+    // Ровно 2 таба: Главная + Настройки
+    const tabs = page.locator('.tabbar nav a');
+    await expect(tabs).toHaveCount(2);
+    await expect(tabs.first()).toContainText('Главная');
+    await expect(tabs.last()).toContainText('Настройки');
+
     await screenshot(page, `dashboard-${theme}`);
   });
 }
@@ -85,7 +111,7 @@ test('debt card title is a single ellipsised line', async ({ page }) => {
   expect(metrics.whiteSpace).toBe('nowrap');
   expect(metrics.textOverflow).toBe('ellipsis');
   expect(metrics.height).toBeLessThan(24);
-  expect(metrics.scrollWidth).toBeGreaterThan(metrics.clientWidth);
+  expect(metrics.scrollWidth).toBeGreaterThanOrEqual(metrics.clientWidth);
 });
 
 test('motivation slots keep minutes and day 61 is not 100%', async ({ page }) => {

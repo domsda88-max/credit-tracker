@@ -6,7 +6,8 @@ import { ReminderSettings } from '../components/ReminderSettings';
 import { MotivationSettings } from '../components/MotivationSettings';
 import { IncomeSettings } from '../components/IncomeSettings';
 import { useThemeStore } from '../store/theme';
-import { SegmentedControl } from '../components/SegmentedControl';import { DataExport } from '../components/DataExport';
+import { SegmentedControl } from '../components/SegmentedControl';
+import { DataExport } from '../components/DataExport';
 import { ImportPaymentsBottomSheet } from '../components/ImportPaymentsBottomSheet';
 import { useAuthStore } from '../store/auth';
 
@@ -43,6 +44,11 @@ function Accordion({ title, subtitle, defaultOpen = false, children }: {
   );
 }
 
+/** Sr-only визуально скрытый заголовок для скринридеров. */
+function SrOnly({ children }: { children: React.ReactNode }) {
+  return <h2 className="sr-only">{children}</h2>;
+}
+
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -54,20 +60,17 @@ export function SettingsPage() {
 
   return (
     <div className="w-full max-w-full space-y-5 overflow-x-hidden touch-manipulation">
-      <header className="px-1">
-        <h1 className="text-title font-bold text-t1">Настройки</h1>
-        <p className="mt-1 text-caption text-t3">Деньги, уведомления, оформление и данные</p>
-      </header>
+      <SrOnly>Настройки</SrOnly>
 
       <section className="space-y-3">
-        <h2 className="section-title px-1">Деньги</h2>
+        <SrOnly>Деньги</SrOnly>
         <Accordion title="Доход в месяц" subtitle="Покажем, сколько остаётся после обязательных платежей">
           <IncomeSettings />
         </Accordion>
       </section>
 
       <section className="space-y-3">
-        <h2 className="section-title px-1">Уведомления</h2>
+        <SrOnly>Уведомления</SrOnly>
         <Accordion title="Push-уведомления" subtitle="Сводка платежей в выбранное время + напоминания о сроках">
           <PushSettings />
         </Accordion>
@@ -80,7 +83,7 @@ export function SettingsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="section-title px-1">Оформление</h2>
+        <SrOnly>Оформление</SrOnly>
         <div className="rounded-card border border-line bg-surface p-4">
           <p className="font-medium text-t1">Тема оформления</p>
           <p className="mt-0.5 text-xs text-t3">Светлая или тёмная</p>
@@ -99,7 +102,7 @@ export function SettingsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="section-title px-1">Данные</h2>
+        <SrOnly>Данные</SrOnly>
         <Accordion title="Экспорт данных" subtitle="Скачать CSV / JSON">
           <DataExport />
         </Accordion>
@@ -121,7 +124,7 @@ export function SettingsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="section-title px-1">Аккаунт</h2>
+        <SrOnly>Аккаунт</SrOnly>
         <div className="rounded-card border border-line bg-surface p-4">
           <p className="text-xs text-t3">Вы вошли как</p>
           <p className="mt-0.5 text-sm text-t1 break-all">{user?.email}</p>
