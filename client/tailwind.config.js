@@ -9,19 +9,19 @@ export default {
        * здесь — только семантические имена.
        */
       colors: {
-        primary: 'oklch(var(--c-primary) / <alpha-value>)',
-        'primary-soft': 'oklch(var(--c-primary-soft) / <alpha-value>)',
-        accent: 'oklch(var(--c-accent) / <alpha-value>)',
-        success: 'oklch(var(--c-success) / <alpha-value>)',
-        warning: 'oklch(var(--c-warning) / <alpha-value>)',
-        danger: 'oklch(var(--c-danger) / <alpha-value>)',
-        bg: 'oklch(var(--c-bg) / <alpha-value>)',
-        surface: 'oklch(var(--c-surface) / <alpha-value>)',
-        surface2: 'oklch(var(--c-surface2) / <alpha-value>)',
-        t1: 'oklch(var(--c-t1) / <alpha-value>)',
-        t2: 'oklch(var(--c-t2) / <alpha-value>)',
-        t3: 'oklch(var(--c-t3) / <alpha-value>)',
-        line: 'oklch(var(--c-line) / <alpha-value>)',
+        primary: 'rgb(var(--c-primary) / <alpha-value>)',
+        'primary-soft': 'rgb(var(--c-primary-soft) / <alpha-value>)',
+        accent: 'rgb(var(--c-accent) / <alpha-value>)',
+        success: 'rgb(var(--c-success) / <alpha-value>)',
+        warning: 'rgb(var(--c-warning) / <alpha-value>)',
+        danger: 'rgb(var(--c-danger) / <alpha-value>)',
+        bg: 'rgb(var(--c-bg) / <alpha-value>)',
+        surface: 'rgb(var(--c-surface) / <alpha-value>)',
+        surface2: 'rgb(var(--c-surface2) / <alpha-value>)',
+        t1: 'rgb(var(--c-t1) / <alpha-value>)',
+        t2: 'rgb(var(--c-t2) / <alpha-value>)',
+        t3: 'rgb(var(--c-t3) / <alpha-value>)',
+        line: 'rgb(var(--c-line) / <alpha-value>)',
       },
       fontFamily: {
         sans: [
