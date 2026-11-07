@@ -1,11 +1,37 @@
 import { expect, test } from '@playwright/test';
 import { mockApi, openApp, seedApp } from './fixtures';
 
-test('fab: tap opens add credit form', async ({ page }) => {
+test('speed dial: раскрывается <200ms', async ({ page }) => {
+  const errors: string[] = [];
+  const logs: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (msg) => {
+    logs.push(`${msg.type()}: ${msg.text()}`);
+    if (msg.type() === 'error') errors.push(`CONSOLE: ${msg.text()}`);
+  });
+
   await seedApp(page, 'light');
   await mockApi(page);
   await openApp(page, '/');
 
+  console.log('ERRORS BEFORE CLICK:', errors);
+  console.log('LOGS BEFORE CLICK:', logs);
+  const menuButton = page.locator('button[aria-label="Открыть навигацию"]');
+  await expect(menuButton).toBeVisible();
+
+  const start = Date.now();
+  await menuButton.click();
+  await expect(page.locator('button[aria-label="Главная"]')).toBeVisible();
+  const elapsed = Date.now() - start;
+  expect(elapsed).toBeLessThan(200);
+});
+
+test('кнопка Плюс в меню открывает /credits/new', async ({ page }) => {
+  await seedApp(page, 'light');
+  await mockApi(page);
+  await openApp(page, '/');
+
+  await page.locator('button[aria-label="Открыть навигацию"]').click();
   await expect(page.locator('button[aria-label="Добавить долг"]')).toBeVisible();
   await page.locator('button[aria-label="Добавить долг"]').click();
 
@@ -13,23 +39,39 @@ test('fab: tap opens add credit form', async ({ page }) => {
   await expect(page.getByPlaceholder('Например, Альфа-Банк')).toBeVisible();
 });
 
-test('tabs: switch instantly and no badge', async ({ page }) => {
+test('тап по backdrop закрывает меню', async ({ page }) => {
   await seedApp(page, 'light');
   await mockApi(page);
   await openApp(page, '/');
 
-  // Нет бейджа на таб-баре
-  await expect(page.locator('.badge')).toHaveCount(0);
+  await page.locator('button[aria-label="Открыть навигацию"]').click();
+  await expect(page.locator('button[aria-label="Главная"]')).toBeVisible();
 
-  // Переход в Настройки и обратно — мгновенно
-  await page.locator('.tabbar a[href="/settings"]').click();
+  // Тап по backdrop (открытый оверлей)
+  await page.locator('.bg-black\\/30').click();
+
+  await expect(page.locator('button[aria-label="Главная"]')).toBeHidden();
+});
+
+test('активная кнопка подсвечена', async ({ page }) => {
+  await seedApp(page, 'light');
+  await mockApi(page);
+  await openApp(page, '/');
+
+  await page.locator('button[aria-label="Открыть навигацию"]').click();
+
+  // На Главной активна кнопка «Главная» (Домик)
+  const homeBtn = page.locator('button[aria-label="Главная"]');
+  await expect(homeBtn).toHaveClass(/bg-accent/);
+
+  // Переход в Настройки
+  await page.locator('button[aria-label="Настройки"]').click();
   await expect(page.getByRole('heading', { name: 'Настройки' })).toBeVisible();
 
-  const start = Date.now();
-  await page.locator('.tabbar a[href="/"]').click();
-  await expect(page.locator('.debt-card').first()).toBeVisible();
-  const elapsed = Date.now() - start;
-  expect(elapsed).toBeLessThan(1000);
+  // Снова открываем меню — активна «Настройки» (Шестерёнка)
+  await page.locator('button[aria-label="Открыть навигацию"]').click();
+  const settingsBtn = page.locator('button[aria-label="Настройки"]');
+  await expect(settingsBtn).toHaveClass(/bg-accent/);
 });
 
 test('pay installment optimistically (no spinner)', async ({ page }) => {
@@ -37,7 +79,6 @@ test('pay installment optimistically (no spinner)', async ({ page }) => {
   await mockApi(page);
   await openApp(page, '/');
 
-  // Находим любую активную карточку с кнопкой «Оплатить»
   const cards = page.locator('.debt-card');
   let payButton = null;
   for (let i = 0; i < (await cards.count()); i += 1) {
@@ -51,7 +92,6 @@ test('pay installment optimistically (no spinner)', async ({ page }) => {
 
   await payButton!.click();
 
-  // Оптимистично: без спиннера, действие завершается с тостом
   await expect(page.getByText('Платёж отмечен')).toBeVisible({ timeout: 5_000 });
 });
 
@@ -63,17 +103,13 @@ test('freeze → unfreeze preserves balance', async ({ page }) => {
   const card = page.locator('.debt-card').first();
   const before = await card.locator('p.tabular.text-heading').first().textContent();
 
-  // Открываем кебаб-меню
   await card.locator('button[aria-label="Меню действий"]').click();
-
   const freezeButton = page.getByRole('button', { name: /Грейс/ });
   await expect(freezeButton).toBeVisible();
   await freezeButton.click();
 
-  // Баланс не изменился после заморозки
   await expect(card.locator('p.tabular.text-heading').first()).toHaveText(before ?? '');
 
-  // Открываем меню снова и снимаем заморозку
   await card.locator('button[aria-label="Меню действий"]').click();
   const unfreezeButton = page.getByRole('button', { name: /Грейс/ });
   await unfreezeButton.click();

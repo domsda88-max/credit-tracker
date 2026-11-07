@@ -210,40 +210,10 @@ input[type='range'] {
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 
-/* Единственный источник правды для отступа под таб-бар */
+/* Единственный источник правды для отступа контента */
 .page {
-  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 24px);
-  padding-top: calc(env(safe-area-inset-top) + 8px);
-}
-
-/* Дашборд: FAB живет в свободной полосе поверх первого этажа контента */
-.page--dashboard {
-  padding-top: calc(env(safe-area-inset-top) + 64px);
-}
-
-.tabbar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  display: flex;
-  justify-content: center;
-  height: 64px;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  background-color: var(--color-surface);
-  border-top: 1px solid var(--color-border);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  pointer-events: none;
-}
-
-.tabbar > nav {
-  pointer-events: auto;
-  width: 100%;
-  max-width: 24rem;
-  height: 100%;
-  box-shadow: var(--shadow-tabbar);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* Деликатный crossfade ключевых контейнеров при смене темы */

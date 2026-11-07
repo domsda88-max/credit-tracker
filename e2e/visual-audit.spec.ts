@@ -21,7 +21,7 @@ async function screenshot(page: Parameters<typeof openApp>[0], name: string) {
 }
 
 for (const theme of ['light', 'warm', 'dark'] as const) {
-  test(`dashboard: ${theme} theme, tokens, tabbar geometry`, async ({ page }) => {
+  test(`dashboard: ${theme} theme, tokens, immersive layout`, async ({ page }) => {
     await seedApp(page, theme);
     await mockApi(page);
     await openApp(page, '/');
@@ -44,50 +44,26 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
 
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
 
-    // Нет глобального хедера: kein ₽, kein "Credit Tracker", kein ThemeToggle
+    // Нет глобального хедера, нет таб-бара, нет верхнего FAB
     await expect(page.locator('header')).toHaveCount(0);
     await expect(page.getByText('Credit Tracker', { exact: true })).toHaveCount(0);
+    await expect(page.locator('.tabbar')).toHaveCount(0);
+    await expect(page.locator('button[aria-label="Добавить долг"]')).toHaveCount(0);
 
-    // FAB "+" виден только на Главной
-    await expect(page.locator('button[aria-label="Добавить долг"]')).toBeVisible();
+    // Speed Dial кнопка видна на Главной
+    await expect(page.locator('button[aria-label="Открыть навигацию"]')).toBeVisible();
 
     const layout = await page.evaluate(() => {
       const main = document.querySelector('main');
-      const tabbar = document.querySelector('.tabbar') as HTMLElement | null;
       return {
         docOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         mainOverflow: main ? main.scrollWidth - main.clientWidth : -1,
         bodyBackground: getComputedStyle(document.body).backgroundColor,
-        tabbarBottom: tabbar ? getComputedStyle(tabbar).bottom : null,
-        tabbarPaddingBottom: tabbar ? getComputedStyle(tabbar).paddingBottom : null,
       };
     });
     expect(layout.docOverflow).toBeLessThanOrEqual(0);
     expect(layout.mainOverflow).toBeLessThanOrEqual(0);
     expect(layout.bodyBackground).toMatch(/^oklch\(/);
-
-    // Таб-бар прижат к низу экрана (bottom: 0)
-    expect(layout.tabbarBottom).toBe('0px');
-
-    const tabbar = await page.locator('.tabbar').boundingBox();
-    expect(tabbar).not.toBeNull();
-    const viewport = page.viewportSize();
-    // Bar sits at bottom of viewport; gap should be ~0 (desktop, no safe-area inset)
-    const gap = viewport!.height - (tabbar!.y + tabbar!.height);
-    expect(gap).toBeGreaterThanOrEqual(0);
-    expect(gap).toBeLessThanOrEqual(2);
-
-    const nav = await page.locator('.tabbar nav').boundingBox();
-    expect(nav!.height).toBeGreaterThanOrEqual(62);
-
-    // Ровно 2 таба: Главная + Настройки
-    const tabs = page.locator('.tabbar nav a');
-    await expect(tabs).toHaveCount(2);
-    await expect(tabs.first()).toHaveAttribute('aria-label', 'Главная');
-    await expect(tabs.last()).toHaveAttribute('aria-label', 'Настройки');
-
-    // Нет бейджа на табах
-    await expect(page.locator('.badge')).toHaveCount(0);
 
     await screenshot(page, `dashboard-${theme}`);
   });
@@ -115,6 +91,16 @@ test('debt card title is a single ellipsised line', async ({ page }) => {
   expect(metrics.textOverflow).toBe('ellipsis');
   expect(metrics.height).toBeLessThan(24);
   expect(metrics.scrollWidth).toBeGreaterThanOrEqual(metrics.clientWidth);
+});
+
+test('speed dial: open state screenshot (light)', async ({ page }) => {
+  await seedApp(page, 'light');
+  await mockApi(page);
+  await openApp(page, '/');
+
+  await page.locator('button[aria-label="Открыть навигацию"]').click();
+  await expect(page.locator('button[aria-label="Главная"]')).toBeVisible();
+  await screenshot(page, 'dashboard-speed-dial-open');
 });
 
 test('motivation slots keep minutes and day 61 is not 100%', async ({ page }) => {

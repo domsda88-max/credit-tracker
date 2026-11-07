@@ -264,7 +264,7 @@ export async function mockApi(page: Page, options: MockOptions = {}) {
 /** Navigate and wait until the app shell has painted. */
 export async function openApp(page: Page, path = '/') {
   await page.goto(path, { waitUntil: 'domcontentloaded' });
-  await page.locator('.tabbar').waitFor({ state: 'visible' });
+  await page.locator('main').waitFor({ state: 'visible' });
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(450);
 }
