@@ -190,13 +190,18 @@ input[type='range'] {
 
 .tabbar {
   position: fixed;
-  left: 16px;
-  right: 16px;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+  bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 50;
   display: flex;
-  height: 64px;
   justify-content: center;
+  height: 64px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   pointer-events: none;
 }
 
@@ -243,6 +248,15 @@ button.bg-primary:disabled {
 [data-theme='dark'] button.bg-primary:disabled {
   opacity: 0.45;
   filter: saturate(0.6);
+}
+
+[data-theme='warm'] button:disabled,
+[data-theme='warm'] .btn-primary:disabled,
+[data-theme='warm'] button.bg-primary:disabled {
+  background-color: var(--color-surface-sunken);
+  color: var(--color-ink-muted);
+  opacity: 0.6;
+  filter: saturate(0.8);
 }
 
 /* Аккордеон: grid-template-rows, без «призраков» opacity */

@@ -23,7 +23,12 @@
       (function () {
         try {
           var stored = localStorage.getItem('credit-tracker-theme');
-          document.documentElement.dataset.theme = stored === 'light' ? 'light' : 'dark';
+          if (stored === 'light' || stored === 'warm' || stored === 'dark') {
+            document.documentElement.dataset.theme = stored;
+          } else {
+            var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.dataset.theme = systemDark ? 'dark' : 'light';
+          }
         } catch (e) {
           document.documentElement.dataset.theme = 'dark';
         }
@@ -37,6 +42,10 @@
       html[data-theme='dark'],
       html[data-theme='dark'] body {
         background: var(--color-bg, #0e1113);
+      }
+      html[data-theme='warm'],
+      html[data-theme='warm'] body {
+        background: var(--color-bg, #fdfbf7);
       }
       #splash {
         position: fixed;

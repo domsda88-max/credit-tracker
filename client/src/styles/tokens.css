@@ -1,7 +1,7 @@
 /*
- * ═══════════════════════ DESIGN TOKENS ═══════════════════════
+ * ══════════════════════════ DESIGN TOKENS ═══════════════════════
  *
- * Cloud Ledger (light) / Noir Terminal (dark).
+ * Cloud Ledger (light) / Amber Warm (warm) / Noir Terminal (dark).
  * OKLCH components live in --c-*; full colors live in --color-*.
  * Tailwind consumes --c-* so opacity modifiers keep working.
  *
@@ -45,6 +45,28 @@
   --shadow-tabbar: 0 8px 30px rgb(16 24 40 / 0.12);
   --radius-card: 16px;
   --radius-control: 12px;
+}
+
+[data-theme='warm'] {
+  color-scheme: light;
+
+  /* Palette C — Amber Warm (резервная тёплая тема) */
+  --c-bg: 97.5% 0.02 40;
+  --c-surface: 100% 0 0;
+  --c-surface2: 92% 0.02 45;
+  --c-t1: 25% 0.05 30;
+  --c-t2: 45% 0.05 35;
+  --c-t3: 45% 0.05 40;
+  --c-primary: 45% 0.14 40;
+  --c-primary-soft: 92% 0.05 45;
+  --c-accent: 55% 0.18 45;
+  --c-success: 45% 0.12 140;
+  --c-warning: 50% 0.12 45;
+  --c-danger: 45% 0.15 25;
+  --c-line: 90% 0.02 40;
+
+  --shadow-card: 0 1px 2px rgb(30 24 16 / 0.05);
+  --shadow-tabbar: 0 8px 30px rgb(30 24 16 / 0.1);
 }
 
 [data-theme='dark'] {
