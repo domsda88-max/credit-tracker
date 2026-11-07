@@ -27,7 +27,7 @@ import {
   urgencyTone,
 } from '../utils/format';
 import { BottomSheet } from './BottomSheet';
-import { useToast } from './Toast';
+import { useToast } from './useToast';
 import { creditsApi } from '../api/credits';
 import { paymentsApi } from '../api/payments';
 import { extractErrorMessage } from '../api/client';

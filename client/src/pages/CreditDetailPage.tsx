@@ -13,7 +13,7 @@ import { SkeletonCard } from '../components/Skeleton';
 import { SegmentedControl } from '../components/SegmentedControl';
 import { BalanceChart } from '../components/BalanceChart';
 import { EditCreditForm } from '../components/EditCreditForm';
-import { useToast } from '../components/Toast';
+import { useToast } from '../components/useToast';
 import type { EarlyPreview, PaymentEvent } from '../types';
 import { maxPrepaymentDate } from '../utils/date';
 import {

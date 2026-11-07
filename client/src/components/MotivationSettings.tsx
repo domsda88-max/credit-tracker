@@ -3,7 +3,7 @@ import { extractErrorMessage } from '../api/client';
 import { useState } from 'react';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/auth';
-import { useToast } from './Toast';
+import { useToast } from './useToast';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { motivationSlots } from '../utils/motivation';
 

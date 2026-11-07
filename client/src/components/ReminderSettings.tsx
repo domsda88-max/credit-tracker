@@ -2,7 +2,7 @@ import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';import { extractErrorMessage } from '../api/client';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/auth';
-import { useToast } from './Toast';
+import { useToast } from './useToast';
 
 /** Час из браузера — предлагаем его как значение по умолчанию при первом открытии. */
 function browserTimezone(): string {

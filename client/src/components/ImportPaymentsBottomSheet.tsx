@@ -7,7 +7,7 @@ import { paymentsApi } from '../api/payments';
 import type { ImportPaymentsResult } from '../types';
 import { parseCsv, type ParsedPaymentRow } from '../utils/csvParser';
 import { BottomSheet } from './BottomSheet';
-import { useToast } from './Toast';
+import { useToast } from './useToast';
 
 /** Сервер принимает body до 1 МБ и не более 2000 строк за раз. */
 const MAX_FILE_SIZE = 1_000_000;

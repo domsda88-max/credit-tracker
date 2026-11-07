@@ -4,7 +4,7 @@ import { authApi } from '../api/auth';
 import { extractErrorMessage } from '../api/client';
 import { useAuthStore } from '../store/auth';
 import { formatMoney } from '../utils/format';
-import { useToast } from './Toast';
+import { useToast } from './useToast';
 
 /**
  * Доход в месяц. Нужен, чтобы показать свободные деньги:
