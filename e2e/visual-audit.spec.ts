@@ -51,7 +51,7 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
     await expect(page.locator('button[aria-label="Добавить долг"]')).toHaveCount(0);
 
     // Speed Dial кнопка видна на Главной
-    await expect(page.locator('button[aria-label="Открыть навигацию"]')).toBeVisible();
+    await expect(page.locator('button[aria-label="Меню навигации"]')).toBeVisible();
 
     const layout = await page.evaluate(() => {
       const main = document.querySelector('main');
@@ -98,7 +98,7 @@ test('speed dial: open state screenshot (light)', async ({ page }) => {
   await mockApi(page);
   await openApp(page, '/');
 
-  await page.locator('button[aria-label="Открыть навигацию"]').click();
+  await page.locator('button[aria-label="Меню навигации"]').click();
   await expect(page.locator('button[aria-label="Главная"]')).toBeVisible();
   await screenshot(page, 'dashboard-speed-dial-open');
 });
@@ -169,10 +169,12 @@ test('skeleton only on the first cold load', async ({ page }) => {
   await expect(page.locator('.debt-card').first()).toBeVisible({ timeout: 15_000 });
   expect(await page.locator('.skeleton').count()).toBe(0);
 
-  await page.locator('.tabbar a[href="/settings"]').click();
+  await page.locator('button[aria-label="Меню навигации"]').click();
+  await page.locator('button[aria-label="Настройки"]').click();
   await expect(page.getByRole('heading', { name: 'Настройки' })).toBeVisible();
 
-  await page.locator('.tabbar a[href="/"]').click();
+  await page.locator('button[aria-label="Меню навигации"]').click();
+  await page.locator('button[aria-label="Главная"]').click();
   await expect(page.locator('.debt-card').first()).toBeVisible();
   expect(await page.locator('.skeleton').count()).toBe(0);
 });
@@ -361,7 +363,7 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
 
     await screenshot(page, `splash-${theme}`);
 
-    await expect(page.locator('.tabbar')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('button[aria-label="Меню навигации"]')).toBeVisible({ timeout: 15_000 });
     await expect(splash).toHaveCount(0);
   });
 }
