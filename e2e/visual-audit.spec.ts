@@ -364,7 +364,7 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
       };
     });
     expect(painted.body).toBe(painted.html);
-    expect(painted.html).toMatch(/^oklch\(/);
+    expect(painted.html).toMatch(/^rgb\(/);
 
     await screenshot(page, `splash-${theme}`);
 
