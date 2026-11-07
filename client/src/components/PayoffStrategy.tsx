@@ -42,7 +42,7 @@ export function PayoffStrategy({ credits }: Props) {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-medium uppercase tracking-wide text-t3">
+      <h2 className="section-title">
         Что гасить первым
       </h2>
       <div className="grid gap-3 sm:grid-cols-2">

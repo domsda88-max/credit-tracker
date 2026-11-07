@@ -21,7 +21,7 @@ export function PremiumCreditCard({ id, name, bankName, rate, outstanding, initi
     <Link
       to={`/credits/${id}`}
       className="block relative overflow-hidden rounded-card bg-surface p-6
-                 shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-line/40
+                 shadow-card border border-line/40
                  transition-transform duration-300 hover:scale-[1.01] active:scale-[0.99]"
     >
       {/* Декоративный фон-градиент (использует primary с прозрачностью) */}
@@ -57,7 +57,7 @@ export function PremiumCreditCard({ id, name, bankName, rate, outstanding, initi
         {/* Прогресс-бар */}
         <div className="h-2 w-full bg-surface2 rounded-full overflow-hidden">
           <div
-            className="h-full bg-primary rounded-full transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(59,130,246,0.6)]"
+            className="h-full rounded-full bg-primary transition-all duration-1000 ease-out"
             style={{ width: `${paidPercent}%` }}
           />
         </div>

@@ -37,7 +37,7 @@ export function CsvImportPage() {
   };
 
   return (
-    <div className="page">
+    <div>
       <header className="mb-4">
         <h1 className="text-heading font-semibold text-t1">Импорт транзакций (CSV)</h1>
         <p className="mt-1 text-sm text-t3">
@@ -71,7 +71,7 @@ export function CsvImportPage() {
             rows={6}
           />
           <button
-            className="self-start rounded-control bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary/90"
+            className="self-start rounded-control bg-primary px-4 py-2 text-sm font-medium text-bg transition hover:bg-primary/90"
             onClick={() => setParsed(parseClassicCsv(text))}
             type="button"
           >
@@ -131,7 +131,7 @@ export function CsvImportPage() {
           <div className="mt-4">
             <button
               type="button"
-              className="rounded-control bg-primary px-4 py-2 text-sm font-medium text-white opacity-60"
+              className="rounded-control bg-primary px-4 py-2 text-sm font-medium text-bg opacity-60"
               disabled
               title="Следующий шаг: привязка к кредитам и импорт платежей"
             >

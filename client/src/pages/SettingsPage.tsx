@@ -34,10 +34,10 @@ function Accordion({ title, subtitle, defaultOpen = false, children }: {
           className={`shrink-0 text-t3 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
         />
       </button>
-      <div
-        className={`overflow-hidden transition-[max-height] duration-200 ease-out ${open ? 'max-h-[2000px]' : 'max-h-0'}`}
-      >
-        <div className="border-t border-line">{children}</div>
+      <div className="acc" data-open={open}>
+        <div className="acc__inner">
+          <div className="border-t border-line">{children}</div>
+        </div>
       </div>
     </div>
   );
@@ -53,21 +53,21 @@ export function SettingsPage() {
   const handleLogout = () => { logout(); navigate('/login', { replace: true }); };
 
   return (
-    <div className="w-full max-w-full space-y-5 overflow-x-hidden pb-24 safe-area-bottom touch-manipulation">
+    <div className="w-full max-w-full space-y-5 overflow-x-hidden touch-manipulation">
       <header className="px-1">
         <h1 className="text-title font-bold text-t1">Настройки</h1>
         <p className="mt-1 text-caption text-t3">Деньги, уведомления, оформление и данные</p>
       </header>
 
       <section className="space-y-3">
-        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Деньги</h2>
+        <h2 className="section-title px-1">Деньги</h2>
         <Accordion title="Доход в месяц" subtitle="Покажем, сколько остаётся после обязательных платежей">
           <IncomeSettings />
         </Accordion>
       </section>
 
       <section className="space-y-3">
-        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Уведомления</h2>
+        <h2 className="section-title px-1">Уведомления</h2>
         <Accordion title="Push-уведомления" subtitle="Сводка платежей в выбранное время + напоминания о сроках">
           <PushSettings />
         </Accordion>
@@ -80,7 +80,7 @@ export function SettingsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Оформление</h2>
+        <h2 className="section-title px-1">Оформление</h2>
         <div className="rounded-card border border-line bg-surface p-4">
           <p className="font-medium text-t1">Тема оформления</p>
           <p className="mt-0.5 text-xs text-t3">Светлая или тёмная</p>
@@ -99,7 +99,7 @@ export function SettingsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Данные</h2>
+        <h2 className="section-title px-1">Данные</h2>
         <Accordion title="Экспорт данных" subtitle="Скачать CSV / JSON">
           <DataExport />
         </Accordion>
@@ -121,7 +121,7 @@ export function SettingsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Аккаунт</h2>
+        <h2 className="section-title px-1">Аккаунт</h2>
         <div className="rounded-card border border-line bg-surface p-4">
           <p className="text-xs text-t3">Вы вошли как</p>
           <p className="mt-0.5 text-sm text-t1 break-all">{user?.email}</p>

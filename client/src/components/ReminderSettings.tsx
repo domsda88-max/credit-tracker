@@ -109,7 +109,7 @@ export function ReminderSettings() {
           <select
             value={hour}
             onChange={(e) => setHour(Number(e.target.value))}
-            className="w-full appearance-none rounded-control border border-line bg-surface px-3 py-2.5 pr-8 text-t1 outline-none transition focus:border-primary"
+            className="w-full appearance-none rounded-control border border-line bg-surface px-3 py-2.5 pr-10 text-t1 outline-none transition focus:border-primary"
           >
             {HOURS.map((h) => (
               <option key={h} value={h}>
@@ -127,7 +127,7 @@ export function ReminderSettings() {
           <select
             value={timezone}
             onChange={(e) => setTimezone(e.target.value)}
-            className="w-full appearance-none rounded-control border border-line bg-surface px-3 py-2.5 pr-8 text-t1 outline-none transition focus:border-primary"
+            className="w-full appearance-none rounded-control border border-line bg-surface px-3 py-2.5 pr-10 text-t1 outline-none transition focus:border-primary"
           >
             {TIMEZONES.map((tz) => (
               <option key={tz} value={tz}>

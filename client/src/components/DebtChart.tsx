@@ -36,8 +36,8 @@ export function DebtChart({ data }: Props) {
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-48" role="img" aria-label="График динамики долга">
         <defs>
           <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgb(var(--c-primary))" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="rgb(var(--c-primary))" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
           </linearGradient>
         </defs>
         {[0.25, 0.5, 0.75].map((t) => (
@@ -47,20 +47,20 @@ export function DebtChart({ data }: Props) {
             x2={W - padX}
             y1={padY + (H - padY * 2) * t}
             y2={padY + (H - padY * 2) * t}
-            stroke="rgb(var(--c-line))"
+            stroke="var(--color-border)"
             strokeDasharray="4 4"
             opacity={0.5}
           />
         ))}
         {area && <path d={area} fill="url(#chartFill)" />}
-        {line && <path d={line} fill="none" stroke="rgb(var(--c-primary))" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />}
+        {line && <path d={line} fill="none" stroke="var(--color-primary)" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />}
         {points.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r={3.5} fill="rgb(var(--c-primary))" stroke="rgb(var(--c-surface))" strokeWidth={2} />
+          <circle key={i} cx={p.x} cy={p.y} r={3.5} fill="var(--color-primary)" stroke="var(--color-surface)" strokeWidth={2} />
         ))}
         {points.length > 0 && (
           <>
-            <text x={points[0].x} y={H - 2} fontSize={9} textAnchor="start" fill="rgb(var(--c-t3))">{points[0].d}</text>
-            <text x={points[points.length - 1].x} y={H - 2} fontSize={9} textAnchor="end" fill="rgb(var(--c-t3))">{points[points.length - 1].d}</text>
+            <text x={points[0].x} y={H - 2} fontSize={9} textAnchor="start" fill="var(--color-ink-subtle)">{points[0].d}</text>
+            <text x={points[points.length - 1].x} y={H - 2} fontSize={9} textAnchor="end" fill="var(--color-ink-subtle)">{points[points.length - 1].d}</text>
           </>
         )}
       </svg>

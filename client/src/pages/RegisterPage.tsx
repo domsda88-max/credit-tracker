@@ -69,7 +69,7 @@ export function RegisterPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded-control bg-primary py-2.5 font-medium text-white transition hover:bg-primary/90 disabled:opacity-50"
+          className="w-full rounded-control bg-primary py-2.5 font-medium text-bg transition hover:bg-primary/90 disabled:opacity-50"
         >
           {isSubmitting ? 'Создаю…' : 'Создать аккаунт'}
         </button>

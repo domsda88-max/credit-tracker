@@ -169,17 +169,18 @@ export function CreditRow({ credit, index = 0 }: Props) {
     return diff <= 3; // overdue (negative) or within 3 days
   })();
 
-  const payButtonColor =
-    next && daysUntil(next.dueDate) < 0
+  const payButtonColor = !next
+    ? 'bg-primary hover:bg-primary/90'
+    : daysUntil(next.dueDate) < 0
       ? 'bg-danger hover:bg-danger/90'
-      : daysUntil(next!.dueDate) === 0
-      ? 'bg-warning hover:bg-warning/90'
-      : 'bg-primary hover:bg-primary/90';
+      : daysUntil(next.dueDate) === 0
+        ? 'bg-warning hover:bg-warning/90'
+        : 'bg-primary hover:bg-primary/90';
 
   return (
     <>
       <div
-        className="animate-fade-up card tap relative"
+        className="animate-fade-up card tap debt-card relative"
         style={{ animationDelay: `${Math.min(index, 12) * 60}ms` }}
       >
         <Link to={`/credits/${credit.id}`} className="block p-4 pr-12">
@@ -190,7 +191,9 @@ export function CreditRow({ credit, index = 0 }: Props) {
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="text-sm font-semibold text-t1 leading-tight line-clamp-2 break-words">{credit.name}</h3>
+                  <h3 className="debt-card__title text-sm font-semibold leading-tight text-t1">
+                    {credit.name}
+                  </h3>
                   {credit.frozen && (
                     <Snowflake size={15} className="shrink-0 text-primary" aria-label="В заморозке" />
                   )}
@@ -228,18 +231,17 @@ export function CreditRow({ credit, index = 0 }: Props) {
           </div>
 
           {next && !isClosed && !freezeCycle && (
-            <div
-              className={`card-inner mt-3 flex flex-col gap-2 border-l-[3px] py-2 pl-2.5 pr-3 text-base ${tone.border}`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-t2">
-                  Ближайший платёж
-                </span>
-                <span className="text-right">
-                  <span className="tabular font-semibold text-t1">{formatMoneyShort(next.amount)}</span>
-                  <span className="ml-2 text-caption text-t2">{formatDateShort(next.dueDate)}</span>
-                  <span className="ml-2 text-caption text-t3">{describeDueDate(next.dueDate)}</span>
-                </span>
+            <div className={`card-inner mt-3 border-l-[3px] py-2 pl-2.5 pr-3 text-base ${tone.border}`}>
+              <div className="debt-card__next">
+                <div className="min-w-0">
+                  <p className="text-caption text-t2">Ближайший платёж</p>
+                  <p className="debt-card__next-date truncate">
+                    {formatDateShort(next.dueDate)} · {describeDueDate(next.dueDate)}
+                  </p>
+                </div>
+                <p className={`debt-card__next-sum font-semibold ${tone.text}`}>
+                  {formatMoneyShort(next.amount)}
+                </p>
               </div>
               {showPayButton && (
                 <button
@@ -250,7 +252,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
                     e.stopPropagation();
                     payMutation.mutate();
                   }}
-                  className={`w-full rounded-control px-3 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${payButtonColor}`}
+                  className={`mt-2 w-full rounded-control px-3 py-2 text-sm font-medium text-bg transition disabled:opacity-50 ${payButtonColor}`}
                 >
                   {payMutation.isPending ? '…' : 'Оплатить'}
                 </button>
@@ -399,7 +401,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
           <button
             type="submit"
             disabled={earlyPending}
-            className="w-full rounded-control bg-success px-4 py-2.5 font-medium text-white disabled:opacity-50"
+            className="w-full rounded-control bg-success px-4 py-2.5 font-medium text-bg disabled:opacity-50"
           >
             {earlyPending ? '…' : 'Внести'}
           </button>

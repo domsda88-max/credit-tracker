@@ -38,8 +38,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               t.kind === 'success'
                 ? 'border-success/30 bg-success/15 text-success'
                 : t.kind === 'error'
-                  ? 'border-rose-500/30 bg-rose-500/15 text-rose-200'
-                  : 'border-primary/30 bg-primary/15 text-sky-200'
+                  ? 'border-danger/30 bg-danger/15 text-danger'
+                  : 'border-primary/30 bg-primary/15 text-primary'
             }`}
           >
             {t.kind === 'success' && <CheckCircle2 size={14} className="mr-1 inline-block" />}

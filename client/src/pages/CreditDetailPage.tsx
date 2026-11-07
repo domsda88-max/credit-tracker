@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Pencil, Trash2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Check, CheckCircle2, Pencil, Trash2 } from 'lucide-react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useParams } from 'react-router-dom';
 import { z } from 'zod';
@@ -52,10 +52,12 @@ export function CreditDetailPage() {
   /** id платежа, для которого открыта форма фактической оплаты (сумма/дата). */
   const [payingId, setPayingId] = useState<string | null>(null);
 
-  const { data: credit, isLoading, error: loadError } = useQuery({
+  const { data: credit, isPending, error: loadError } = useQuery({
     queryKey: ['credit', id],
     queryFn: () => creditsApi.getById(id),
     enabled: Boolean(id),
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
   });
 
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -145,7 +147,7 @@ export function CreditDetailPage() {
     onError: (err) => setError(extractErrorMessage(err)),
   });
 
-  if (isLoading) return <div className="space-y-4"><SkeletonCard /><SkeletonCard /></div>;
+  if (isPending && !credit) return <div className="space-y-4"><SkeletonCard /><SkeletonCard /></div>;
   if (loadError || !credit) {
     return (
       <div>
@@ -171,8 +173,10 @@ export function CreditDetailPage() {
   );
   const visible = showAllPaid ? credit.schedule : pending;
   const collapsedCount = showAllPaid ? 0 : paid.length;
+  const nearestUnpaidId = pending[0]?.id ?? null;
+  const virtualizeRows = visible.length > 30;
   return (
-    <div className="min-h-0 w-full overflow-x-hidden pb-24 [-webkit-overflow-scrolling:touch]">
+    <div className="min-h-0 w-full overflow-x-hidden [-webkit-overflow-scrolling:touch]">
       <div className="space-y-4">
       <Link to="/" className="inline-block text-sm text-t3 hover:text-t2">
         ← Дашборд
@@ -357,7 +361,7 @@ export function CreditDetailPage() {
               <button
                 type="submit"
                 disabled={preview?.coversInterest === false}
-                className="rounded-control bg-success px-4 py-2.5 font-medium text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-control bg-success px-4 py-2.5 font-medium text-bg transition hover:bg-success/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Внести
               </button>
@@ -435,12 +439,25 @@ export function CreditDetailPage() {
           </p>
         )}
 
-        <div className="mt-3 divide-y divide-line">
-          {visible.map((item) => {
+        <div className="mt-3">
+          {visible.map((item, index) => {
             const expanded = payingId === item.id;
             const today = new Date().toISOString().slice(0, 10);
+            const year = new Date(item.dueDate).getFullYear();
+            const previousYear =
+              index > 0 ? new Date(visible[index - 1].dueDate).getFullYear() : null;
             return (
-              <div key={item.id} className="py-3">
+              <Fragment key={item.id}>
+                {year !== previousYear && (
+                  <h3 className="sticky top-0 z-10 -mx-4 border-b border-line bg-surface/95 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-t3 backdrop-blur">
+                    {year}
+                  </h3>
+                )}
+                <div
+                  className={`border-b border-line py-3 last:border-b-0 ${
+                    virtualizeRows ? 'schedule-row--virtual' : ''
+                  }`}
+                >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm text-t1">{formatDate(item.dueDate)}</p>
@@ -483,13 +500,23 @@ export function CreditDetailPage() {
                           {cancelingId === item.id ? '…' : 'Отменить'}
                         </button>
                       </div>
+                    ) : item.id === nearestUnpaidId ? (
+                      <button
+                        type="button"
+                        onClick={() => setPayingId(expanded ? null : item.id)}
+                        className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-bg transition hover:bg-primary/90"
+                      >
+                        {expanded ? 'Отмена' : 'Я оплатил'}
+                      </button>
                     ) : (
                       <button
                         type="button"
                         onClick={() => setPayingId(expanded ? null : item.id)}
-                        className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition hover:bg-primary/90"
+                        aria-label="Отметить оплаченным"
+                        aria-expanded={expanded}
+                        className="flex h-8 w-8 min-h-0 items-center justify-center rounded-full border border-line text-t2 transition hover:border-primary hover:text-primary"
                       >
-                        {expanded ? 'Отмена' : 'Я оплатил'}
+                        <Check size={16} />
                       </button>
                     )}
                   </div>
@@ -544,13 +571,14 @@ export function CreditDetailPage() {
                     <button
                       type="submit"
                       disabled={payMutation.isPending}
-                      className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition hover:bg-primary/90 disabled:opacity-50"
+                      className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-bg transition hover:bg-primary/90 disabled:opacity-50"
                     >
                       {payMutation.isPending ? '…' : 'Подтвердить оплату'}
                     </button>
                   </form>
                 )}
-              </div>
+                </div>
+              </Fragment>
             );
           })}
         </div>

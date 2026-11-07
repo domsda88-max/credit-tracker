@@ -8,7 +8,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Credit Tracker" />
-    <meta name="theme-color" content="#0b1020" />
+    <meta name="theme-color" content="#F5F3EE" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0E1113" media="(prefers-color-scheme: dark)" />
     <meta name="description" content="Учёт кредитов, график платежей и push-напоминания" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -17,8 +18,59 @@
       rel="stylesheet"
     />
     <title>Credit Tracker</title>
+    <script>
+      // Тема до первого кадра: никакого мигания белым/тёмным и splash не того цвета.
+      (function () {
+        try {
+          var stored = localStorage.getItem('credit-tracker-theme');
+          document.documentElement.dataset.theme = stored === 'light' ? 'light' : 'dark';
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
+    <style>
+      html,
+      body {
+        background: var(--color-bg, #f5f3ee);
+      }
+      html[data-theme='dark'],
+      html[data-theme='dark'] body {
+        background: var(--color-bg, #0e1113);
+      }
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        background: inherit;
+        transition: opacity 280ms ease;
+      }
+      #splash.is-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #splash svg {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgb(16 24 40 / 0.16);
+      }
+    </style>
   </head>
   <body>
+    <div id="splash" aria-hidden="true">
+      <svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="72" height="72" rx="20" style="fill: var(--color-primary, #2f6f8f)" />
+        <path
+          d="M22 26h28M22 36h20M22 46h28"
+          style="stroke: var(--color-bg, #f5f3ee)"
+          stroke-width="4"
+          stroke-linecap="round"
+        />
+      </svg>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
 import { ToastProvider } from './components/Toast';
 import { initTheme } from './store/theme';
+import './styles/tokens.css';
 import './index.css';
 
 // Тема ставится до первого рендера — чтобы не мигало белым/тёмным.
@@ -41,6 +42,15 @@ createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </StrictMode>,
 );
+
+// Splash живёт до первого кадра React, затем плавно уходит.
+const splash = document.getElementById('splash');
+if (splash) {
+  requestAnimationFrame(() => {
+    splash.classList.add('is-hidden');
+    window.setTimeout(() => splash.remove(), 320);
+  });
+}
 
 // PWA: автообновление при новой версии Service Worker.
 if ('serviceWorker' in navigator) {

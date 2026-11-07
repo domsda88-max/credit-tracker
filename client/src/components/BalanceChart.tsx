@@ -63,17 +63,23 @@ export function BalanceChart({ schedule, principal, outstanding }: Props) {
       >
         <defs>
           <linearGradient id="debtFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path d={areaPath} fill="url(#debtFill)" />
-        <path d={path} fill="none" stroke="#38bdf8" strokeWidth="0.8" vectorEffect="non-scaling-stroke" />
+        <path
+          d={path}
+          fill="none"
+          stroke="var(--color-primary)"
+          strokeWidth="0.8"
+          vectorEffect="non-scaling-stroke"
+        />
         <circle
           cx={(currentIndex * step).toFixed(2)}
           cy={(height - (points[currentIndex] / max) * height).toFixed(2)}
           r="1.6"
-          fill="#f8fafc"
+          fill="var(--color-surface)"
           vectorEffect="non-scaling-stroke"
         />
       </svg>

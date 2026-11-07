@@ -23,20 +23,24 @@ function LoadingScreen() {
 export function DashboardPage() {
   const {
     data: credits,
-    isLoading,
+    isPending,
     error,
   } = useQuery({
     queryKey: ['credits'],
     queryFn: () => creditsApi.list(),
     placeholderData: keepPreviousData,
+    staleTime: 60_000,
   });
   const { data: summary } = useQuery({
     queryKey: ['summary'],
     queryFn: () => creditsApi.summary(),
     placeholderData: keepPreviousData,
+    staleTime: 60_000,
   });
 
-  if (isLoading) {
+  // Скелетон — только на первом холодном загрузке. При возврате из кэша
+  // показываем прошлые данные, а не мигающую заглушку.
+  if (isPending && !credits) {
     return <LoadingScreen />;
   }
 
@@ -91,18 +95,18 @@ export function DashboardPage() {
       {list.length === 0 ? (
         <div className="card flex flex-col items-center gap-4 p-8 text-center">
           <svg width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden="true">
-            <circle cx="48" cy="48" r="44" fill="rgb(var(--c-surface2))" />
+            <circle cx="48" cy="48" r="44" fill="var(--color-surface-sunken)" />
             <path
               d="M30 52c0-9.94 8.06-18 18-18s18 8.06 18 18"
-              stroke="rgb(var(--c-primary))"
+              stroke="var(--color-primary)"
               strokeWidth="4"
               strokeLinecap="round"
             />
-            <circle cx="40" cy="44" r="3" fill="rgb(var(--c-t2))" />
-            <circle cx="56" cy="44" r="3" fill="rgb(var(--c-t2))" />
+            <circle cx="40" cy="44" r="3" fill="var(--color-ink-muted)" />
+            <circle cx="56" cy="44" r="3" fill="var(--color-ink-muted)" />
             <path
               d="M40 62c2.5 2.5 5.5 3.5 8 3.5s5.5-1 8-3.5"
-              stroke="rgb(var(--c-success))"
+              stroke="var(--color-success)"
               strokeWidth="3"
               strokeLinecap="round"
             />
@@ -122,7 +126,7 @@ export function DashboardPage() {
         <>
           <section className="space-y-2">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-t1">Мои долги</h2>
+              <h2 className="section-title">Мои долги</h2>
               <Link to="/credits/new" className="text-sm text-primary hover:text-primary">
                 + Добавить
               </Link>
@@ -134,7 +138,7 @@ export function DashboardPage() {
 
           {closed.length > 0 && (
             <section className="space-y-2 pt-1">
-              <h2 className="text-sm font-medium uppercase tracking-wide text-t3">
+              <h2 className="section-title">
                 Закрытые ({closed.length})
               </h2>
               {closed.map((credit) => (

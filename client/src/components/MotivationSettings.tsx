@@ -5,6 +5,7 @@ import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/auth';
 import { useToast } from './Toast';
 import { usePushNotifications } from '../hooks/usePushNotifications';
+import { motivationSlots } from '../utils/motivation';
 
 export function MotivationSettings() {
   const user = useAuthStore((s) => s.user);
@@ -56,11 +57,9 @@ export function MotivationSettings() {
     }
   };
 
-  const interval = perDay > 0 ? Math.floor(24 / perDay) : 24;
-  const times = Array.from({ length: perDay }, (_, i) => {
-    const hh = (parseInt(time.split(':')[0], 10) + i * interval) % 24;
-    return `${hh.toString().padStart(2, '0')}:00`;
-  });
+  const times = motivationSlots(time, perDay);
+  const cycleDay = Math.min(70, Math.max(1, user.motivationDay ?? 1));
+  const cycleProgress = Math.min(100, Math.round((cycleDay / 70) * 100));
 
   return (
     <div className="p-4">
@@ -83,7 +82,7 @@ export function MotivationSettings() {
           aria-label="Включить ежедневную мотивацию"
         >
           <span
-            className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            className={`inline-block h-6 w-6 transform rounded-full bg-surface shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
               enabled ? 'translate-x-[1.375rem]' : 'translate-x-0.5'
             }`}
           />
@@ -103,7 +102,7 @@ export function MotivationSettings() {
                   min="00:00"
                   max="23:59"
                   step={60}
-                  className="field pr-8"
+                  className="field pr-10"
                 />
                 <Clock size={16} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-t3" />
               </div>
@@ -114,16 +113,15 @@ export function MotivationSettings() {
                 <select
                   value={perDay}
                   onChange={(e) => setPerDay(Number(e.target.value))}
-                  className="w-full appearance-none rounded-control border border-line bg-surface px-3 py-2 pr-8 text-t1"
+                  className="w-full appearance-none rounded-control border border-line bg-surface px-3 py-2 pr-10 text-t1"
                 >
-
                 <option value={1}>1 раз в день</option>
-                <option value={2}>2 раза в день (каждые 12 ч)</option>
-                <option value={3}>3 раза в день (каждые 8 ч)</option>
-                <option value={4}>4 раза в день (каждые 6 ч)</option>
-                <option value={6}>6 раз в день (каждые 4 ч)</option>
-                <option value={8}>8 раз в день (каждые 3 ч)</option>
-                <option value={12}>12 раз в день (каждые 2 ч)</option>
+                <option value={2}>2 раза в день</option>
+                <option value={3}>3 раза в день</option>
+                <option value={4}>4 раза в день</option>
+                <option value={6}>6 раз в день</option>
+                <option value={8}>8 раз в день</option>
+                <option value={12}>12 раз в день</option>
                 <option value={24}>Каждый час</option>
               </select>
                 <ChevronDown size={16} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-t3" />
@@ -142,12 +140,19 @@ export function MotivationSettings() {
           </button>
           <div className="flex items-center justify-between text-caption">
             <span className="text-t3">Мотивационный цикл</span>
-            <span className="tabular text-t2">сообщение {user.motivationDay ?? 1} из 70</span>
+            <span className="tabular text-t2">сообщение {cycleDay} из 70</span>
           </div>
-          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface2">
+          <div
+            className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface2"
+            role="progressbar"
+            aria-label="Прогресс мотивационного цикла"
+            aria-valuemin={0}
+            aria-valuemax={70}
+            aria-valuenow={cycleDay}
+          >
             <div
-              className="h-full rounded-full bg-gradient-to-r from-primary to-success"
-              style={{ width: `${((user.motivationDay ?? 1) / 30) * 100}%` }}
+              className="h-full rounded-full bg-gradient-to-r from-primary to-success transition-[width] duration-500 ease-app"
+              style={{ width: `${cycleProgress}%` }}
             />
           </div>
         </div>

@@ -27,7 +27,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="rounded-control bg-primary px-4 py-2.5 font-medium text-white"
+            className="rounded-control bg-primary px-4 py-2.5 font-medium text-bg"
           >
             Перезагрузить
           </button>

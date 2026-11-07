@@ -16,7 +16,7 @@ export function SegmentedControl<T extends string>({ value, options, onChange, a
           aria-checked={value === o.value}
           onClick={() => onChange(o.value)}
           className={`flex-1 rounded-[10px] px-3 py-2 text-sm font-medium transition ${
-            value === o.value ? 'bg-primary text-white' : 'text-t2 hover:text-t1'
+            value === o.value ? 'bg-primary text-bg' : 'text-t2 hover:text-t1'
           }`}
         >
           {o.label}

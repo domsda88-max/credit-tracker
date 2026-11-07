@@ -264,7 +264,7 @@ export function AddCreditPage() {
   const sectionClass = 'transition-all duration-300 ease-in-out';
 
   return (
-    <div className="min-w-0 w-full max-w-full space-y-4 px-4 pb-28 safe-area-bottom">
+    <div className="min-w-0 w-full max-w-full space-y-4 px-4">
       <h1 className="text-heading font-bold text-t1">Добавить долг</h1>
       <p className="mt-1 text-sm text-t3">
         График платежей будет построен автоматически по выбранному типу
@@ -719,11 +719,11 @@ export function AddCreditPage() {
           <button
             type="submit"
             disabled={isSubmitting || mutation.isPending}
-            className="inline-flex w-full items-center justify-center gap-2 whitespace-normal rounded-control bg-primary px-4 py-2.5 font-medium text-white disabled:opacity-70"
+            className="inline-flex w-full items-center justify-center gap-2 whitespace-normal rounded-control bg-primary px-4 py-2.5 font-medium text-bg disabled:opacity-70"
           >
             {mutation.isPending ? (
               <>
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-bg/40 border-t-bg" />
                 …
               </>
             ) : (
@@ -733,7 +733,7 @@ export function AddCreditPage() {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="rounded-control border border-line px-4 py-2.5 text-t2 transition hover:border-slate-500"
+            className="rounded-control border border-line px-4 py-2.5 text-t2 transition hover:border-t3"
           >
             Отмена
           </button>

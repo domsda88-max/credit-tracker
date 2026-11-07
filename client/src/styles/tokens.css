@@ -1,0 +1,70 @@
+/*
+ * ═══════════════════════ DESIGN TOKENS ═══════════════════════
+ *
+ * Cloud Ledger (light) / Noir Terminal (dark).
+ * OKLCH components live in --c-*; full colors live in --color-*.
+ * Tailwind consumes --c-* so opacity modifiers keep working.
+ *
+ * Rule: components use semantic classes (bg-surface, text-t2 …),
+ * never raw HEX/RGB values.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Palette A — Cloud Ledger */
+  --c-bg: 96.4% 0.008 95;
+  --c-surface: 100% 0 0;
+  --c-surface2: 93.2% 0.01 95;
+  --c-t1: 19.5% 0.01 250;
+  --c-t2: 45.5% 0.012 250;
+  --c-t3: 52% 0.012 250;
+  --c-primary: 48.5% 0.075 235;
+  --c-primary-soft: 91.5% 0.03 235;
+  --c-accent: 66% 0.17 350;
+  --c-success: 48% 0.11 155;
+  --c-warning: 50% 0.11 85;
+  --c-danger: 48.5% 0.16 30;
+  --c-line: 90.5% 0.01 250;
+
+  --color-bg: oklch(var(--c-bg));
+  --color-surface: oklch(var(--c-surface));
+  --color-surface-sunken: oklch(var(--c-surface2));
+  --color-ink: oklch(var(--c-t1));
+  --color-ink-muted: oklch(var(--c-t2));
+  --color-ink-subtle: oklch(var(--c-t3));
+  --color-primary: oklch(var(--c-primary));
+  --color-primary-soft: oklch(var(--c-primary-soft));
+  --color-accent: oklch(var(--c-accent));
+  --color-success: oklch(var(--c-success));
+  --color-warning: oklch(var(--c-warning));
+  --color-danger: oklch(var(--c-danger));
+  --color-border: oklch(var(--c-line));
+
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04);
+  --shadow-tabbar: 0 8px 30px rgb(16 24 40 / 0.12);
+  --radius-card: 16px;
+  --radius-control: 12px;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Palette B — Noir Terminal */
+  --c-bg: 15% 0.01 250;
+  --c-surface: 20.5% 0.012 250;
+  --c-surface2: 17.5% 0.011 250;
+  --c-t1: 93.5% 0.008 250;
+  --c-t2: 70% 0.01 250;
+  --c-t3: 62% 0.01 250;
+  --c-primary: 72% 0.085 235;
+  --c-primary-soft: 26% 0.035 235;
+  --c-accent: 72% 0.17 350;
+  --c-success: 74% 0.12 155;
+  --c-warning: 78% 0.11 85;
+  --c-danger: 72% 0.16 35;
+  --c-line: 28% 0.012 250;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow-tabbar: 0 8px 30px rgb(0 0 0 / 0.45);
+}

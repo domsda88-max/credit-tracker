@@ -5,21 +5,23 @@ export default {
     extend: {
       /**
        * Дизайн-токены. Единственный источник цветов в приложении.
-       * Значения живут в index.css как CSS-переменные (тёмная/светлая тема),
-       * здесь — только семантические имена. Хардкодить hex в компонентах нельзя.
+       * Значения живут в styles/tokens.css как OKLCH-компоненты,
+       * здесь — только семантические имена.
        */
       colors: {
-        primary: 'rgb(var(--c-primary) / <alpha-value>)',
-        success: 'rgb(var(--c-success) / <alpha-value>)',
-        warning: 'rgb(var(--c-warning) / <alpha-value>)',
-        danger: 'rgb(var(--c-danger) / <alpha-value>)',
-        bg: 'rgb(var(--c-bg) / <alpha-value>)',
-        surface: 'rgb(var(--c-surface) / <alpha-value>)',
-        surface2: 'rgb(var(--c-surface2) / <alpha-value>)',
-        t1: 'rgb(var(--c-t1) / <alpha-value>)',
-        t2: 'rgb(var(--c-t2) / <alpha-value>)',
-        t3: 'rgb(var(--c-t3) / <alpha-value>)',
-        line: 'rgb(var(--c-line) / <alpha-value>)',
+        primary: 'oklch(var(--c-primary) / <alpha-value>)',
+        'primary-soft': 'oklch(var(--c-primary-soft) / <alpha-value>)',
+        accent: 'oklch(var(--c-accent) / <alpha-value>)',
+        success: 'oklch(var(--c-success) / <alpha-value>)',
+        warning: 'oklch(var(--c-warning) / <alpha-value>)',
+        danger: 'oklch(var(--c-danger) / <alpha-value>)',
+        bg: 'oklch(var(--c-bg) / <alpha-value>)',
+        surface: 'oklch(var(--c-surface) / <alpha-value>)',
+        surface2: 'oklch(var(--c-surface2) / <alpha-value>)',
+        t1: 'oklch(var(--c-t1) / <alpha-value>)',
+        t2: 'oklch(var(--c-t2) / <alpha-value>)',
+        t3: 'oklch(var(--c-t3) / <alpha-value>)',
+        line: 'oklch(var(--c-line) / <alpha-value>)',
       },
       fontFamily: {
         sans: [
@@ -33,14 +35,15 @@ export default {
         ],
       },
       fontSize: {
-        // Шкала из дизайн-системы: 32 / 24 / 20 / 17 / 15 / 13 / 12
+        // Шкала из дизайн-системы: 32 / 24 / 20 / 16 / 15 / 13 / 12
         hero: ['32px', { lineHeight: '36px', letterSpacing: '-0.02em' }],
         title: ['24px', { lineHeight: '30px', letterSpacing: '-0.01em' }],
         heading: ['20px', { lineHeight: '26px' }],
-        body: ['17px', { lineHeight: '24px' }],
+        body: ['16px', { lineHeight: '1.55' }],
         base: ['15px', { lineHeight: '22px' }],
-        caption: ['13px', { lineHeight: '18px' }],
+        caption: ['13px', { lineHeight: '1.45' }],
         micro: ['12px', { lineHeight: '16px' }],
+        money: ['20px', { lineHeight: '1.3' }],
       },
       borderRadius: {
         card: '16px',
@@ -48,7 +51,7 @@ export default {
         chip: '10px',
       },
       boxShadow: {
-        card: '0 1px 3px rgb(0 0 0 / 0.05)',
+        card: 'var(--shadow-card)',
         sheet: '0 -8px 32px rgb(0 0 0 / 0.24)',
       },
       transitionTimingFunction: {

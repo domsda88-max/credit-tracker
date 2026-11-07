@@ -8,7 +8,7 @@ export function AppSettingsPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="w-full max-w-full space-y-5 overflow-x-hidden pb-24 safe-area-bottom touch-manipulation">
+    <div className="w-full max-w-full space-y-5 overflow-x-hidden touch-manipulation">
       <header className="px-1">
         <button
           type="button"
@@ -26,14 +26,14 @@ export function AppSettingsPage() {
       </header>
 
       <section className="space-y-3">
-        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Push-уведомления</h2>
+        <h2 className="section-title px-1">Push-уведомления</h2>
         <div className="overflow-hidden rounded-card border border-line bg-surface">
           <PushSettings />
         </div>
       </section>
 
       <section className="space-y-3">
-        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Расписание</h2>
+        <h2 className="section-title px-1">Расписание</h2>
         <div className="overflow-hidden rounded-card border border-line bg-surface">
           <ReminderSettings />
         </div>

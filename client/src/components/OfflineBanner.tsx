@@ -17,7 +17,7 @@ export function OfflineBanner() {
   }, []);
   if (online) return null;
   return (
-    <div className="fixed inset-x-0 top-0 z-[60] flex items-center justify-center gap-2 bg-warning/90 px-3 py-1.5 text-xs font-medium text-slate-950">
+    <div className="fixed inset-x-0 top-0 z-[60] flex items-center justify-center gap-2 bg-warning/90 px-3 py-1.5 text-xs font-medium text-bg">
       <WifiOff size={14} /> Нет соединения — показаны последние загруженные данные
     </div>
   );

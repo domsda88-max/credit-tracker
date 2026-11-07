@@ -47,7 +47,7 @@ export function PushSettings() {
           aria-label="Включить push-уведомления"
         >
           <span
-            className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            className={`inline-block h-6 w-6 transform rounded-full bg-surface shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
               enabled ? 'translate-x-[1.375rem]' : 'translate-x-0.5'
             }`}
           />
@@ -60,12 +60,12 @@ export function PushSettings() {
         </p>
       )}
       {status === 'denied' && (
-        <p className="mt-2 text-xs text-amber-400">
+        <p className="mt-2 text-xs text-warning">
           Уведомления запрещены в браузере. Разрешите их в настройках сайта и попробуйте снова.
         </p>
       )}
       {status === 'unsupported' && (
-        <p className="mt-2 text-xs text-amber-400">
+        <p className="mt-2 text-xs text-warning">
           Этот браузер не поддерживает Web Push. На iPhone добавьте приложение на экран «Домой»
           (Safari → Поделиться → На экран «Домой») и откройте его оттуда.
         </p>
