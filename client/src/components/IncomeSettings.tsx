@@ -55,7 +55,6 @@ export function IncomeSettings() {
           <Wallet size={16} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-body font-semibold text-t1">Доход в месяц</p>
           <p className="mt-0.5 text-caption text-t3">
             Покажем, сколько остаётся после обязательных платежей
           </p>
@@ -71,7 +70,7 @@ export function IncomeSettings() {
           step="1000"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="Например, 120000"
+          placeholder="120 000"
           className="field"
         />
       </label>

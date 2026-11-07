@@ -30,7 +30,6 @@ export function PushSettings() {
     <div className="p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-medium text-t1">Push-уведомления</p>
           <p className="mt-0.5 text-xs text-t3">
             Сводка платежей в выбранное время + напоминания о сроках
           </p>

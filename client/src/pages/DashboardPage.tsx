@@ -7,7 +7,7 @@ import { MoneyFlow } from '../components/MoneyFlow';
 import { GraceReplenishBlock } from '../components/GraceReplenishBlock';
 import { OverdueAlert } from '../components/OverdueAlert';
 import { UpcomingPayments } from '../components/UpcomingPayments';
-import { formatDate, formatMoney } from '../utils/format';
+import type { CreditListItem } from '../types';
 
 /** Экран загрузки: скелетоны карточек вместо спиннера. */
 function LoadingScreen() {
@@ -20,13 +20,6 @@ function LoadingScreen() {
   );
 }
 
-/** Sr-only визуально скрытый заголовок для скринридеров. */
-function SrOnly({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="sr-only">{children}</h2>
-  );
-}
-
 export function DashboardPage() {
   const {
     data: credits,
@@ -35,12 +28,6 @@ export function DashboardPage() {
   } = useQuery({
     queryKey: ['credits'],
     queryFn: () => creditsApi.list(),
-    placeholderData: keepPreviousData,
-    staleTime: 60_000,
-  });
-  const { data: summary } = useQuery({
-    queryKey: ['summary'],
-    queryFn: () => creditsApi.summary(),
     placeholderData: keepPreviousData,
     staleTime: 60_000,
   });
@@ -58,49 +45,41 @@ export function DashboardPage() {
   const list = credits ?? [];
   const active = list.filter((c) => c.status === 'ACTIVE');
   const closed = list.filter((c) => c.status === 'CLOSED');
-  const percentPaid = summary && summary.principalSum > 0 ? Math.min(100, Math.round((summary.paidByPrincipal / summary.principalSum) * 100)) : 0;
 
   return (
-    <div className="space-y-4 animate-fade-in">
-      <SrOnly>Мои долги</SrOnly>
+    <div className="space-y-4 animate-fade-in page--dashboard">
       <OverdueAlert credits={list} />
 
-      {list.length > 0 && summary && summary.activeCount > 0 && (
-        <section className="rounded-card border border-line bg-gradient-to-br from-primary/10 via-transparent to-success/5 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-t2">Всего к погашению</p>
-              <p className="mt-1 tabular text-2xl font-semibold text-t1 sm:text-3xl">
-                {formatMoney(summary.outstandingSum)}
-              </p>
-            </div>
-            {summary.debtFreeDate && (
-              <div className="text-right">
-                <p className="text-xs text-t3">Последний платёж</p>
-                <p className="mt-1 text-sm text-t2">{formatDate(summary.debtFreeDate)}</p>
-              </div>
-            )}
-          </div>
-          <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-surface2/80">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-primary via-primary to-success"
-              style={{ width: `${percentPaid}%` }}
-            />
-          </div>
-          <div className="mt-2 flex items-center justify-between text-xs text-t3">
-            <span>Погашено: {formatMoney(summary.paidByPrincipal)}</span>
-            <span>Выплачено всего: {formatMoney(summary.totalPaidSum)}</span>
-          </div>
-        </section>
-      )}
-
-      {list.length > 0 && <DebtOverview />}
+      <DebtOverview />
       <MoneyFlow />
       <GraceReplenishBlock />
 
       <UpcomingPayments credits={list} />
 
-      {list.length === 0 ? (
+      {/* === МОИ ДОЛГИ: карточки активных долгов === */}
+      <section className="space-y-3">
+        <h2 className="section-title">Мои долги</h2>
+        {active.length === 0 ? (
+          <p className="py-4 text-center text-caption text-t3">Нет активных долгов</p>
+        ) : (
+          <>
+            {active.map((credit) => (
+              <CreditRow key={credit.id} credit={credit} />
+            ))}
+          </>
+        )}
+      </section>
+
+      {closed.length > 0 && (
+        <section className="space-y-2 pt-1 border-t border-line pt-4">
+          <h2 className="section-title">Закрытые</h2>
+          {closed.map((credit) => (
+            <CreditRow key={credit.id} credit={credit} />
+          ))}
+        </section>
+      )}
+
+      {list.length === 0 && (
         <div className="card flex flex-col items-center gap-4 p-8 text-center">
           <svg width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden="true">
             <circle cx="48" cy="48" r="44" fill="var(--color-surface-sunken)" />
@@ -131,15 +110,6 @@ export function DashboardPage() {
             Добавить первый долг
           </Link>
         </div>
-      ) : (
-        <>
-          <section className="space-y-2 pt-1">
-            <SrOnly>Закрытые</SrOnly>
-            {closed.map((credit) => (
-              <CreditRow key={credit.id} credit={credit} />
-            ))}
-          </section>
-        </>
       )}
     </div>
   );

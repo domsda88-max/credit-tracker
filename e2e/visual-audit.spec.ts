@@ -83,8 +83,11 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
     // Ровно 2 таба: Главная + Настройки
     const tabs = page.locator('.tabbar nav a');
     await expect(tabs).toHaveCount(2);
-    await expect(tabs.first()).toContainText('Главная');
-    await expect(tabs.last()).toContainText('Настройки');
+    await expect(tabs.first()).toHaveAttribute('aria-label', 'Главная');
+    await expect(tabs.last()).toHaveAttribute('aria-label', 'Настройки');
+
+    // Нет бейджа на табах
+    await expect(page.locator('.badge')).toHaveCount(0);
 
     await screenshot(page, `dashboard-${theme}`);
   });

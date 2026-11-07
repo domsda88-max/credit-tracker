@@ -2,6 +2,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth';
 import { BottomNavigation } from './BottomNavigation';
 import { OfflineBanner } from './OfflineBanner';
+import { useEffect, useRef, useState } from 'react';
 
 export function Layout() {
   const navigate = useNavigate();
@@ -16,6 +17,28 @@ export function Layout() {
 
   const isDashboard = location.pathname === '/';
 
+  // FAB: скрывать при скролле вниз, показывать при скролле вверх / остановке (как в Telegram).
+  const [fabVisible, setFabVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y > lastScrollY.current && y > 40) {
+        setFabVisible(false);
+      } else if (y < lastScrollY.current) {
+        setFabVisible(true);
+      }
+      lastScrollY.current = y > 0 ? y : 0;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const handleFabClick = () => {
+    navigate('/credits/new');
+  };
+
   return (
     <>
       <OfflineBanner />
@@ -25,11 +48,19 @@ export function Layout() {
         </main>
 
         {isDashboard && (
-          <button
-            type="button"
-            aria-label="Добавить долг"
-            className="fixed top-[calc(env(safe-area-inset-top)+12px)] right-[16px] z-[60] h-[48px] w-[48px] rounded-full bg-accent text-bg flex items-center justify-center shadow-[0_8px_30px_rgb(0_0_0_/_0.16)] transition-all duration-200 active:scale-[0.95]"
-          >
+          <>
+            <div
+              className="fixed top-0 left-0 right-0 h-[40px] z-[58] pointer-events-none"
+              style={{
+                background: `linear-gradient(to bottom, var(--color-bg), transparent)`,
+              }}
+            />
+            <button
+              type="button"
+              aria-label="Добавить долг"
+              className={`fixed top-[calc(env(safe-area-inset-top)+12px)] right-[16px] z-[60] h-[48px] w-[48px] rounded-full bg-accent text-bg flex items-center justify-center shadow-[0_8px_30px_rgb(0_0_0_/_0.16)] transition-all duration-200 active:scale-[0.95] ${!fabVisible ? 'pointer-events-none opacity-0 translate-y-12' : ''}`}
+              onClick={handleFabClick}
+            >
             <svg
               width="20"
               height="20"
@@ -44,6 +75,7 @@ export function Layout() {
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
           </button>
+          </>
         )}
 
         <BottomNavigation />

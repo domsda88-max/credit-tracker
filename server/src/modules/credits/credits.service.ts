@@ -303,17 +303,24 @@ export const creditsService = {
       // Ежемесячная нагрузка: сумма платежей, приходящих в ТЕКУЩЕМ
       // календарном месяце (с 1 по последнее число). Не «все платежи
       // по всем кредитам навсегда», а только те, что в этом месяце.
+      const today = utcToday();
+      const curYear = today.getUTCFullYear();
+      const curMonth = today.getUTCMonth();
       const isCreditCard = c.type === 'CREDIT_CARD';
       if (!(c.frozen && isCreditCard)) {
         const pending = (c.schedule || []).filter((i: any) => i.status === 'PENDING');
+        const thisMonth = pending.filter((i: any) => {
+          const d = new Date(i.dueDate);
+          return d.getUTCFullYear() === curYear && d.getUTCMonth() === curMonth;
+        });
         let mp = 0;
         if (isCreditCard) {
-          const nonGrace = pending.find((i: any) => !(toNumber(i.interestPart) === 0 && toNumber(i.amount) === toNumber(c.graceReplenishSum)));
+          const nonGrace = thisMonth.find((i: any) => !(toNumber(i.interestPart) === 0 && toNumber(i.amount) === toNumber(c.graceReplenishSum)));
           if (nonGrace) mp = toNumber(nonGrace.amount);
-          else if (pending.length > 0) mp = 0; // в грейсе — живёт в блоке грейса
+          else if (thisMonth.length > 0) mp = 0; // в грейсе — живёт в блоке грейса
           else mp = toNumber(c.minPayment ?? 0);
         } else {
-          const first = pending[0];
+          const first = thisMonth[0];
           if (first) mp = toNumber(first.amount);
         }
         monthlyPayments += mp;

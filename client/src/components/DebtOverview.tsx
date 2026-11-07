@@ -198,7 +198,7 @@ export function DebtOverview() {
       {summary.overpay > 0 && (
         <p className="mt-3 border-t border-line pt-3 text-micro text-t3">
           Если платить строго по графику, банкам уйдёт{' '}
-          <span className="tabular font-medium text-warning">{formatMoney(summary.overpay)}</span>{' '}
+          <span className="tabular font-medium text-t2">{formatMoney(summary.overpay)}</span>{' '}
           процентов
         </p>
       )}

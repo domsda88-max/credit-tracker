@@ -63,6 +63,8 @@ textarea {
   width: 100%;
   box-sizing: border-box;
   touch-action: manipulation;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 select {
@@ -86,6 +88,20 @@ button {
   min-height: 44px;
   width: auto;
   box-sizing: border-box;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Ссылки таб-бара (NavLink), чипы, FAB и кнопки-ссылки — запрет выделения и вызова контекста */
+a,
+.nav-link,
+.rounded-chip,
+[aria-label="Добавить долг"],
+.link-button {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   touch-action: manipulation;
 }
 
@@ -197,6 +213,12 @@ input[type='range'] {
 /* Единственный источник правды для отступа под таб-бар */
 .page {
   padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 24px);
+  padding-top: calc(env(safe-area-inset-top) + 8px);
+}
+
+/* Дашборд: FAB живет в свободной полосе поверх первого этажа контента */
+.page--dashboard {
+  padding-top: calc(env(safe-area-inset-top) + 64px);
 }
 
 .tabbar {
@@ -227,7 +249,7 @@ input[type='range'] {
 /* Деликатный crossfade ключевых контейнеров при смене темы */
 main,
 .card {
-  transition: background-color 300ms ease, color 300ms ease, border-color 300ms ease;
+  transition: none;
 }
 
 /* Кастомный вид нативного инпута времени — скрываем системные спиннеры/стрелки */
@@ -257,8 +279,11 @@ button.bg-primary:disabled {
 [data-theme='dark'] button:disabled,
 [data-theme='dark'] .btn-primary:disabled,
 [data-theme='dark'] button.bg-primary:disabled {
-  opacity: 0.45;
-  filter: saturate(0.6);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface2);
+  color: var(--color-t3);
+  opacity: 1;
+  filter: none;
 }
 
 [data-theme='warm'] button:disabled,
@@ -268,6 +293,21 @@ button.bg-primary:disabled {
   color: var(--color-ink-muted);
   opacity: 0.6;
   filter: saturate(0.8);
+}
+
+/* Тёмная тема: видимые состояния OFF переключателей, треки прогресс-баров, чипы */
+[data-theme='dark'] [role="switch"] {
+  border: 1px solid var(--color-line);
+  background: var(--color-surface2);
+}
+[data-theme='dark'] [role="switch"][aria-checked="false"]::after {
+  background: var(--color-t3);
+}
+[data-theme='dark'] .progress-track,
+[data-theme='dark'] input[type="range"]::-webkit-slider-runnable-track,
+[data-theme='dark'] input[type="range"]::-moz-range-track {
+  background: var(--color-line);
+  height: 6px;
 }
 
 /* Аккордеон: grid-template-rows, без «призраков» opacity */

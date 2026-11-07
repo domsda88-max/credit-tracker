@@ -263,9 +263,21 @@ export function AddCreditPage() {
 
   const sectionClass = 'transition-all duration-300 ease-in-out';
 
+  const handleClose = () => navigate(-1);
+
   return (
     <div className="min-w-0 w-full max-w-full space-y-4 px-4">
-      <h1 className="text-heading font-bold text-t1">Добавить долг</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-heading font-bold text-t1">Добавить долг</h1>
+        <button
+          type="button"
+          onClick={handleClose}
+          aria-label="Закрыть"
+          className="rounded-full p-1.5 text-t3 hover:bg-surface2 transition"
+        >
+          ×
+        </button>
+      </div>
       <p className="mt-1 text-sm text-t3">
         График платежей будет построен автоматически по выбранному типу
       </p>
