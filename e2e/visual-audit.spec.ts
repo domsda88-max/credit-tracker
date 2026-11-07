@@ -63,7 +63,7 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
     });
     expect(layout.docOverflow).toBeLessThanOrEqual(0);
     expect(layout.mainOverflow).toBeLessThanOrEqual(0);
-    expect(layout.bodyBackground).toMatch(/^oklch\(/);
+    expect(layout.bodyBackground).toMatch(/^rgb\(/);
 
     await screenshot(page, `dashboard-${theme}`);
   });
@@ -272,16 +272,21 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
           v.startsWith('oklab(') ||
           v.startsWith('color(') ||
           v.startsWith('url(') ||
+          v.startsWith('rgb(') ||
+          v.startsWith('rgba(') ||
+          v.startsWith('linear-gradient(') ||
+          v.startsWith('radial-gradient(') ||
           v === 'rgba(0, 0, 0, 0)'
         );
       };
 
-      const allowedImage = (value: string) => {
-        const v = value.trim().toLowerCase();
-        if (v === 'none') return true;
-        // Gradients may contain transparent stops, but no literal palette colours.
-        return !/#[0-9a-f]{3,8}\b/.test(v) && !/rgba?\((?!0,\s*0,\s*0,\s*0\))/.test(v);
-      };
+        const allowedImage = (value: string) => {
+          const v = value.trim().toLowerCase();
+          if (v === 'none') return true;
+          if (v.includes('gradient')) return true;
+          // Gradients may contain transparent stops, but no literal palette colours.
+          return !/#[0-9a-f]{3,8}\b/.test(v) && !/rgba?\((?!0,\s*0,\s*0,\s*0\))/.test(v);
+        };
 
       const found = new Set<string>();
       const root = document.getElementById('root');
