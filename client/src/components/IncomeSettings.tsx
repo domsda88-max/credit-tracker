@@ -4,7 +4,7 @@ import { authApi } from '../api/auth';
 import { extractErrorMessage } from '../api/client';
 import { useAuthStore } from '../store/auth';
 import { formatMoney } from '../utils/format';
-import { useToast } from './Toast';
+import { useToast } from './useToast';
 
 /**
  * Доход в месяц. Нужен, чтобы показать свободные деньги:
@@ -51,7 +51,7 @@ export function IncomeSettings() {
   return (
     <div className="p-4">
       <div className="flex items-start gap-3">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip bg-success/12 text-success">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip bg-success/12 text-success-fg">
           <Wallet size={16} />
         </span>
         <div className="min-w-0 flex-1">
@@ -90,8 +90,8 @@ export function IncomeSettings() {
         {saving ? '…' : 'Сохранить доход'}
       </button>
 
-      {invalid && <p className="mt-2 text-caption text-danger">Введите неотрицательное число</p>}
-      {error && <p className="mt-2 text-caption text-danger">{error}</p>}
+      {invalid && <p className="mt-2 text-caption text-danger-fg">Введите неотрицательное число</p>}
+      {error && <p className="mt-2 text-caption text-danger-fg">{error}</p>}
     </div>
   );
 }

@@ -1,18 +1,12 @@
 import { CheckCircle2 } from 'lucide-react';
-import { createContext, useCallback, useContext, useState } from 'react';
-
-type ToastKind = 'success' | 'error' | 'info';
+import { useCallback, useState } from 'react';
+import { ToastContext } from './useToast';
+import type { ToastKind } from './useToast';
 interface Toast {
   id: number;
   message: string;
   kind: ToastKind;
 }
-
-interface ToastContextValue {
-  show: (message: string, kind?: ToastKind) => void;
-}
-
-const ToastContext = createContext<ToastContextValue | null>(null);
 
 let counter = 0;
 
@@ -36,10 +30,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             key={t.id}
             className={`pointer-events-auto w-full max-w-sm rounded-card border px-4 py-3 text-sm shadow-lg backdrop-blur ${
               t.kind === 'success'
-                ? 'border-success/30 bg-success/15 text-success'
+                ? 'border-success/30 bg-success/15 text-success-fg'
                 : t.kind === 'error'
-                  ? 'border-danger/30 bg-danger/15 text-danger'
-                  : 'border-primary/30 bg-primary/15 text-primary'
+                  ? 'border-danger/30 bg-danger/15 text-danger-fg'
+                  : 'border-primary/30 bg-primary/15 text-primary-fg'
             }`}
           >
             {t.kind === 'success' && <CheckCircle2 size={14} className="mr-1 inline-block" />}
@@ -49,10 +43,4 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       </div>
     </ToastContext.Provider>
   );
-}
-
-export function useToast() {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error('useToast должен использоваться внутри ToastProvider');
-  return ctx;
 }

@@ -7,7 +7,7 @@ import { paymentsApi } from '../api/payments';
 import type { ImportPaymentsResult } from '../types';
 import { parseCsv, type ParsedPaymentRow } from '../utils/csvParser';
 import { BottomSheet } from './BottomSheet';
-import { useToast } from './Toast';
+import { useToast } from './useToast';
 
 /** Сервер принимает body до 1 МБ и не более 2000 строк за раз. */
 const MAX_FILE_SIZE = 1_000_000;
@@ -174,7 +174,7 @@ export function ImportPaymentsBottomSheet({ isOpen, onClose, onSuccess }: Props)
     <BottomSheet open={isOpen} onClose={close} title="Импорт оплат">
       {step === 'upload' && (
         <div className="flex flex-col items-center gap-4 px-2 py-6 text-center">
-          <FileUp size={40} className="text-primary" aria-hidden="true" />
+          <FileUp size={40} className="text-primary-fg" aria-hidden="true" />
           <div>
             <p className="text-base font-medium text-t1">Выберите CSV-файл</p>
             <p className="mt-1 text-sm text-t3">
@@ -205,7 +205,7 @@ export function ImportPaymentsBottomSheet({ isOpen, onClose, onSuccess }: Props)
             <div className="flex gap-2">
               <button
                 type="button"
-                className="text-xs text-primary"
+                className="text-xs text-primary-fg"
                 onClick={() =>
                   setSelected(
                     new Set(rows.filter((row) => row.status === 'PAID').map((row) => row.rawRowNumber)),
@@ -221,7 +221,7 @@ export function ImportPaymentsBottomSheet({ isOpen, onClose, onSuccess }: Props)
           </div>
 
           {parseErrors.length > 0 && (
-            <div className="rounded-control border border-warning/30 bg-warning/10 p-2 text-xs text-warning">
+            <div className="rounded-control border border-warning/30 bg-warning/10 p-2 text-xs text-warning-fg">
               {parseErrors.slice(0, 5).map((error) => (
                 <p key={error}>{error}</p>
               ))}
@@ -255,7 +255,7 @@ export function ImportPaymentsBottomSheet({ isOpen, onClose, onSuccess }: Props)
                       <span className="text-sm font-medium text-t1">{displayDate(row.dueDate)}</span>
                       <span
                         className={`rounded-chip px-1.5 py-0.5 text-[10px] ${
-                          isPaid ? 'bg-success/15 text-success' : 'bg-surface2 text-t3'
+                          isPaid ? 'bg-success/15 text-success-fg' : 'bg-surface2 text-t3'
                         }`}
                       >
                         {STATUS_LABELS[row.status] ?? row.status}
@@ -287,7 +287,7 @@ export function ImportPaymentsBottomSheet({ isOpen, onClose, onSuccess }: Props)
                     )}
 
                     {matches.length === 0 && (
-                      <p className="mt-1 text-xs text-danger">Кредит не найден — строка будет пропущена</p>
+                      <p className="mt-1 text-xs text-danger-fg">Кредит не найден — строка будет пропущена</p>
                     )}
                   </div>
                 </div>
@@ -317,7 +317,7 @@ export function ImportPaymentsBottomSheet({ isOpen, onClose, onSuccess }: Props)
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="rounded-control bg-success/10 p-3">
-              <p className="text-title font-bold text-success">{result.created}</p>
+              <p className="text-title font-bold text-success-fg">{result.created}</p>
               <p className="text-xs text-t3">создано</p>
             </div>
             <div className="rounded-control bg-surface2 p-3">
@@ -325,7 +325,7 @@ export function ImportPaymentsBottomSheet({ isOpen, onClose, onSuccess }: Props)
               <p className="text-xs text-t3">пропущено</p>
             </div>
             <div className="rounded-control bg-danger/10 p-3">
-              <p className="text-title font-bold text-danger">{result.failed.length}</p>
+              <p className="text-title font-bold text-danger-fg">{result.failed.length}</p>
               <p className="text-xs text-t3">ошибок</p>
             </div>
           </div>
@@ -333,7 +333,7 @@ export function ImportPaymentsBottomSheet({ isOpen, onClose, onSuccess }: Props)
           {result.failed.length > 0 && (
             <div className="max-h-[40vh] overflow-auto rounded-control border border-line bg-surface2/50 p-2">
               {result.failed.map((failure, index) => (
-                <p key={`${failure.row}-${index}`} className="text-xs text-danger">
+                <p key={`${failure.row}-${index}`} className="text-xs text-danger-fg">
                   Строка {resultRows[failure.row - 1]?.rawRowNumber ?? failure.row}: {failure.reason}
                 </p>
               ))}

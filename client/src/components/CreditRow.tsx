@@ -22,12 +22,11 @@ import {
   debtPaidPercent,
   describeDueDate,
   formatDateShort,
-  formatMoney,
   formatMoneyShort,
   urgencyTone,
 } from '../utils/format';
 import { BottomSheet } from './BottomSheet';
-import { useToast } from './Toast';
+import { useToast } from './useToast';
 import { creditsApi } from '../api/credits';
 import { paymentsApi } from '../api/payments';
 import { extractErrorMessage } from '../api/client';
@@ -43,8 +42,8 @@ const TYPE_ICON: Record<CreditType, typeof CreditCard> = {
 
 /** Акцент срочности для плашки ближайшего платежа. */
 const TONE = {
-  danger: { border: 'border-l-danger', text: 'text-danger', dot: 'bg-danger' },
-  warning: { border: 'border-l-warning', text: 'text-warning', dot: 'bg-warning' },
+  danger: { border: 'border-l-danger', text: 'text-danger-fg', dot: 'bg-danger' },
+  warning: { border: 'border-l-warning', text: 'text-warning-fg', dot: 'bg-warning' },
   muted: { border: 'border-l-line', text: 'text-t2', dot: 'bg-t3' },
 } as const;
 
@@ -62,7 +61,6 @@ export function CreditRow({ credit, index = 0 }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [earlyOpen, setEarlyOpen] = useState(false);
   const [earlyAmount, setEarlyAmount] = useState('');
-  const [earlyMode, setEarlyMode] = useState('REDUCE_TERM');
   const [earlyDate, setEarlyDate] = useState(new Date().toISOString().slice(0,10));
   const [earlyPending, setEarlyPending] = useState(false);
   const [earlyError, setEarlyError] = useState<string | null>(null);
@@ -83,15 +81,13 @@ export function CreditRow({ credit, index = 0 }: Props) {
       creditsApi.toggleFreeze(id, newFrozenState),
     onMutate: async ({ id, newFrozenState }) => {
       await queryClient.cancelQueries({ queryKey: ['credits'] });
-      const previousCredits = queryClient.getQueryData(['credits']);
-      queryClient.setQueryData(['credits'], (old: any) =>
-        Array.isArray(old)
-          ? old.map((c: any) => (c.id === id ? { ...c, frozen: newFrozenState } : c))
-          : old,
+      const previousCredits = queryClient.getQueryData<CreditListItem[]>(['credits']);
+      queryClient.setQueryData<CreditListItem[]>(['credits'], (old) =>
+        old?.map((c) => (c.id === id ? { ...c, frozen: newFrozenState } : c)),
       );
       return { previousCredits };
     },
-    onError: (err, variables, context: any) => {
+    onError: (err, variables, context) => {
       queryClient.setQueryData(['credits'], context?.previousCredits);
       setError(extractErrorMessage(err));
       toast.show('Ошибка заморозки');
@@ -148,10 +144,10 @@ export function CreditRow({ credit, index = 0 }: Props) {
     mutationFn: () => paymentsApi.payInstallment(next!.id, {}),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: ['credits'] });
-      const prev = queryClient.getQueryData(['credits']);
+      const prev = queryClient.getQueryData<CreditListItem[]>(['credits']);
       return { prev };
     },
-    onError: (err, _v, ctx: any) => {
+    onError: (err, _v, ctx) => {
       queryClient.setQueryData(['credits'], ctx?.prev);
       toast.show(extractErrorMessage(err), 'error');
     },
@@ -186,7 +182,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
         <Link to={`/credits/${credit.id}`} className="block p-4 pr-12">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-primary/12 text-primary">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-primary/12 text-primary-fg">
                 <Icon size={20} />
               </div>
               <div className="min-w-0">
@@ -195,12 +191,12 @@ export function CreditRow({ credit, index = 0 }: Props) {
                     {credit.name}
                   </h3>
                   {credit.frozen && (
-                    <Snowflake size={15} className="shrink-0 text-primary" aria-label="В заморозке" />
+                    <Snowflake size={15} className="shrink-0 text-primary-fg" aria-label="В заморозке" />
                   )}
                   {isClosed && (
                     <CheckCircle2
                       size={15}
-                      className="shrink-0 text-success"
+                      className="shrink-0 text-success-fg"
                       aria-label="Закрыт"
                     />
                   )}
@@ -263,7 +259,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
           {freezeCycle && !isClosed && (
             <div className="card-inner mt-3 flex items-center justify-between py-2 pl-2.5 pr-3 text-base">
               <span className="flex items-center gap-2 text-t2">
-                <Snowflake size={15} className="text-primary" />
+                <Snowflake size={15} className="text-primary-fg" />
                 Обновить период{cycleDay ? ` до ${cycleDay}-го` : ''}
               </span>
               <span className="text-right">
@@ -314,14 +310,14 @@ export function CreditRow({ credit, index = 0 }: Props) {
             onClick={handleFreezeClick}
             className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-t1 transition-colors active:bg-surface2"
           >
-            <Snowflake size={18} className="text-primary" />
+            <Snowflake size={18} className="text-primary-fg" />
             <span>{credit.frozen ? 'Грейс слетел' : 'Грейс активен'}</span>
           </button>
           {freezeCycle && (
             <button
               type="button"
               onClick={renewCycle}
-              className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-primary transition-colors active:bg-primary/10"
+              className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-primary-fg transition-colors active:bg-primary/10"
             >
               <CheckCircle2 size={18} />
               <span>Я обновил период (внёс сумму)</span>
@@ -336,19 +332,19 @@ export function CreditRow({ credit, index = 0 }: Props) {
               }}
               className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-t1 transition-colors active:bg-surface2"
             >
-              <TrendingDown size={18} className="text-success" />
+              <TrendingDown size={18} className="text-success-fg" />
               <span>Досрочное погашение</span>
             </button>
           )}
           <button
             type="button"
             onClick={remove}
-            className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-danger transition-colors active:bg-danger/10"
+            className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-danger-fg transition-colors active:bg-danger/10"
           >
             <Trash2 size={18} />
             <span>Удалить</span>
           </button>
-          {error && <p className="px-3 pt-1 text-caption text-danger">{error}</p>}
+          {error && <p className="px-3 pt-1 text-caption text-danger-fg">{error}</p>}
         </div>
       </BottomSheet>
 
@@ -397,7 +393,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
             />
           </label>
            <p className="text-xs text-t3">�����: ���������� �����</p>
-          {earlyError && <p className="text-sm text-danger">{earlyError}</p>}
+          {earlyError && <p className="text-sm text-danger-fg">{earlyError}</p>}
           <button
             type="submit"
             disabled={earlyPending}

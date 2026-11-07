@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { extractErrorMessage } from '../api/client';
+import type { CreateCreditPayload } from '../types';
 import { creditsApi } from '../api/credits';
 
 const optionalNumber = (min: number, max: number) =>
@@ -111,17 +112,12 @@ const schema = z
 
 type FormValues = z.infer<typeof schema>;
 
+type MutationValues = FormValues & {
+  earlyRepayments: NonNullable<CreateCreditPayload['earlyRepayments']>;
+};
+
 const inputClass =
   'mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none transition focus:border-primary';
-
-const TYPE_LABELS: Record<FormValues['type'], string> = {
-  CREDIT_CARD: 'Кредитная карта',
-  CONSUMER: 'Потребительский кредит',
-  MORTGAGE: 'Ипотека',
-  INSTALLMENT: 'Рассрочка / Сплит',
-  MICROLOAN: 'Займ (МФО)',
-  LOAN: 'Заем (частный)',
-};
 
 export function AddCreditPage() {
   const navigate = useNavigate();
@@ -148,7 +144,6 @@ export function AddCreditPage() {
   });
 
   const type = watch('type');
-  const paymentType = watch('paymentType');
   const frozen = watch('frozen');
   const markPast = watch('markPastAsPaid');
   const startDate = watch('startDate');
@@ -232,8 +227,8 @@ export function AddCreditPage() {
     }
   }, [type, setValue]);
 
-  const mutation = useMutation({
-    mutationFn: (values: FormValues) => {
+   const mutation = useMutation({
+    mutationFn: (values: MutationValues) => {
       const parsed = schema.parse(values);
       return creditsApi.create({
         ...parsed,
@@ -249,7 +244,7 @@ export function AddCreditPage() {
         markPastAsPaid: parsed.markPastAsPaid,
         outstanding: parsed.outstanding ?? null,
         paymentType: parsed.paymentType ?? 'ANNUITY',
-        earlyRepayments: (values as any).earlyRepayments,        // Кредитная карта — revolving-продукт, срок не нужен
+        earlyRepayments: values.earlyRepayments,        // Кредитная карта — revolving-продукт, срок не нужен
         termMonths:
           parsed.type === 'CREDIT_CARD' || parsed.type === 'MICROLOAN' ? undefined : parsed.termMonths,
       });
@@ -282,7 +277,7 @@ export function AddCreditPage() {
         График платежей будет построен автоматически по выбранному типу
       </p>
       {Object.keys(errors).length > 0 && (
-        <p className="mt-3 rounded-control border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
+        <p className="mt-3 rounded-control border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger-fg">
           Проверьте выделенные поля — форма не отправится, пока они не заполнены верно.
         </p>
       )}
@@ -293,16 +288,16 @@ export function AddCreditPage() {
             ...values,
             earlyRepayments: earlyRepayments
               .filter((er) => er.amount && er.date)
-              .map((er) => ({ amount: Number(er.amount), date: er.date })),
-          } as any),
+               .map((er) => ({ amount: Number(er.amount), date: er.date })),
+          }),
         )}
         className="mt-5 space-y-4 touch-manipulation"
       >
         {/* === ОБЩИЕ ПОЛЯ (всегда видны) === */}
         <label className="block">
-          <span className="text-sm text-t2">Название <span className="text-danger">*</span></span>
+          <span className="text-sm text-t2">Название <span className="text-danger-fg">*</span></span>
           <input placeholder="Например, Альфа-Банк" {...register('name')} className={inputClass} />
-          {errors.name && <p className="mt-1 text-xs text-danger">{errors.name.message}</p>}
+          {errors.name && <p className="mt-1 text-xs text-danger-fg">{errors.name.message}</p>}
         </label>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -319,10 +314,10 @@ export function AddCreditPage() {
           </label>
 
           <label className="block">
-            <span className="text-sm text-t2">Сумма долга, ₽ <span className="text-danger">*</span></span>
+            <span className="text-sm text-t2">Сумма долга, ₽ <span className="text-danger-fg">*</span></span>
             <input type="number" step="0.01" inputMode="decimal" placeholder="150 000.00" {...register('principal')} className={inputClass} />
             {errors.principal && (
-              <p className="mt-1 text-xs text-danger">{errors.principal.message}</p>
+              <p className="mt-1 text-xs text-danger-fg">{errors.principal.message}</p>
             )}
           </label>
         </div>
@@ -332,10 +327,10 @@ export function AddCreditPage() {
           <>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
-                <span className="text-sm text-t2">Ставка, % годовых <span className="text-danger">*</span></span>
+                <span className="text-sm text-t2">Ставка, % годовых <span className="text-danger-fg">*</span></span>
                 <input type="number" step="0.01" inputMode="decimal" placeholder="19.9" {...register('annualRate')} className={inputClass} />
                 {errors.annualRate && (
-                  <p className="mt-1 text-xs text-danger">{errors.annualRate.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>
                 )}
               </label>
 
@@ -351,7 +346,7 @@ export function AddCreditPage() {
                   className={inputClass}
                 />
                 {errors.paymentDay && (
-                  <p className="mt-1 text-xs text-danger">{errors.paymentDay.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>
                 )}
               </label>
 
@@ -365,7 +360,7 @@ export function AddCreditPage() {
                   className={inputClass}
                 />
                 {errors.graceReplenishSum && (
-                  <p className="mt-1 text-xs text-danger">{errors.graceReplenishSum.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{errors.graceReplenishSum.message}</p>
                 )}
               </label>
             </div>
@@ -409,7 +404,7 @@ export function AddCreditPage() {
                     className={inputClass}
                   />
                   {errors.freezeCycleDays && (
-                    <p className="mt-1 text-xs text-danger">{errors.freezeCycleDays.message}</p>
+                    <p className="mt-1 text-xs text-danger-fg">{errors.freezeCycleDays.message}</p>
                   )}
                 </label>
               )}
@@ -440,7 +435,7 @@ export function AddCreditPage() {
                 <span className="text-sm text-t2">Ставка, % годовых</span>
                 <input type="number" step="0.01" {...register('annualRate')} className={inputClass} />
                 {errors.annualRate && (
-                  <p className="mt-1 text-xs text-danger">{errors.annualRate.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>
                 )}
               </label>
 
@@ -448,7 +443,7 @@ export function AddCreditPage() {
                 <span className="text-sm text-t2">Дата выдачи <span className="text-t3">(необязательно)</span></span>
                 <input type="date" {...register('startDate')} className={inputClass} />
                 {errors.startDate && (
-                  <p className="mt-1 text-xs text-danger">{errors.startDate.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{errors.startDate.message}</p>
                 )}
                 <p className="mt-1 text-xs text-t3">Если не указана — берётся дата создания записи.</p>
               </label>
@@ -459,7 +454,7 @@ export function AddCreditPage() {
                 <span className="text-sm text-t2">Срок, месяцев</span>
                 <input type="number" {...register('termMonths')} className={inputClass} />
                 {errors.termMonths && (
-                  <p className="mt-1 text-xs text-danger">{errors.termMonths.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{errors.termMonths.message}</p>
                 )}
               </label>
 
@@ -475,7 +470,7 @@ export function AddCreditPage() {
                   className={inputClass}
                 />
                 {errors.paymentDay && (
-                  <p className="mt-1 text-xs text-danger">{errors.paymentDay.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>
                 )}
               </label>
 
@@ -490,10 +485,10 @@ export function AddCreditPage() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
-                <span className="text-sm text-t2">Срок, дней <span className="text-danger">*</span></span>
+                <span className="text-sm text-t2">Срок, дней <span className="text-danger-fg">*</span></span>
                 <input type="number" inputMode="numeric" min="1" placeholder="напр. 30" {...register('termDays')} className={inputClass} />
                 {errors.termDays && (
-                  <p className="mt-1 text-xs text-danger">{errors.termDays.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{errors.termDays.message}</p>
                 )}
               </label>
 
@@ -509,7 +504,7 @@ export function AddCreditPage() {
                   className={inputClass}
                 />
                 {errors.paymentDay && (
-                  <p className="mt-1 text-xs text-danger">{errors.paymentDay.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>
                 )}
               </label>
 
@@ -517,7 +512,7 @@ export function AddCreditPage() {
                 <span className="text-sm text-t2">Ставка, % годовых</span>
                 <input type="number" step="0.01" {...register('annualRate')} className={inputClass} />
                 {errors.annualRate && (
-                  <p className="mt-1 text-xs text-danger">{errors.annualRate.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>
                 )}
                 <span className="mt-1 block text-xs text-t3">0% — без процентов, либо укажите свою ставку</span>
               </label>
@@ -551,7 +546,7 @@ export function AddCreditPage() {
                   className={inputClass}
                 />
                 {errors.startDate && (
-                  <p className="mt-1 text-xs text-danger">{errors.startDate.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{errors.startDate.message}</p>
                 )}
               </label>
             )}
@@ -573,7 +568,7 @@ export function AddCreditPage() {
                   Если знаете точный остаток из приложения банка — введите его, и он заменит расчёт.
                 </span>
                 {errors.outstanding && (
-                  <p className="mt-1 text-xs text-danger">{errors.outstanding.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{errors.outstanding.message}</p>
                 )}
               </label>
             )}
@@ -589,7 +584,7 @@ export function AddCreditPage() {
                 <span className="text-sm text-t2">Ставка, % годовых</span>
                 <input type="number" step="0.01" {...register('annualRate')} className={inputClass} />
                 {errors.annualRate && (
-                  <p className="mt-1 text-xs text-danger">{errors.annualRate.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>
                 )}
               </label>
 
@@ -602,7 +597,7 @@ export function AddCreditPage() {
                   className={inputClass}
                 />
                 {errors.termDays && (
-                  <p className="mt-1 text-xs text-danger">{errors.termDays.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{errors.termDays.message}</p>
                 )}
               </label>
 
@@ -618,7 +613,7 @@ export function AddCreditPage() {
                   className={inputClass}
                 />
                 {errors.paymentDay && (
-                  <p className="mt-1 text-xs text-danger">{errors.paymentDay.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>
                 )}
               </label>
             </div>
@@ -671,7 +666,7 @@ export function AddCreditPage() {
                   Если знаете точный остаток из приложения банка — введите его, и он заменит расчёт.
                 </span>
                 {errors.outstanding && (
-                  <p className="mt-1 text-xs text-danger">{errors.outstanding.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{errors.outstanding.message}</p>
                 )}
               </label>
             )}
@@ -709,7 +704,7 @@ export function AddCreditPage() {
                 <button
                   type="button"
                   onClick={() => setEarlyRepayments(earlyRepayments.filter((_, i) => i !== idx))}
-                  className="rounded-control border border-danger/40 px-3 text-danger"
+                  className="rounded-control border border-danger/40 px-3 text-danger-fg"
                 >
                   ×
                 </button>
@@ -725,7 +720,7 @@ export function AddCreditPage() {
           </div>
         </details>
 
-        {error && <p className="text-sm text-danger">{error}</p>}
+        {error && <p className="text-sm text-danger-fg">{error}</p>}
 
         <div className="flex gap-3">
           <button

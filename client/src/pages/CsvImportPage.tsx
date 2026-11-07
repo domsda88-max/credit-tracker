@@ -107,10 +107,10 @@ export function CsvImportPage() {
                       <input type="checkbox" checked={r.included} onChange={() => toggleRow(idx)} />
                     </td>
                     <td className="py-1 pr-2 tabular">
-                      {r.date ? formatDate(r.date) : <span className="text-danger">{r.raw[0]}</span>}
+                      {r.date ? formatDate(r.date) : <span className="text-danger-fg">{r.raw[0]}</span>}
                     </td>
                     <td className="py-1 pr-2 tabular">
-                      {r.amount !== null ? r.amount.toFixed(2) : <span className="text-danger">{r.raw[1]}</span>}
+                      {r.amount !== null ? r.amount.toFixed(2) : <span className="text-danger-fg">{r.raw[1]}</span>}
                     </td>
                     <td className="py-1 pr-2 text-t3">{r.note || '—'}</td>
                   </tr>
@@ -120,7 +120,7 @@ export function CsvImportPage() {
           </div>
 
           {parsed.rows.some((r) => r.error) && (
-            <div className="mt-3 rounded-control border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+            <div className="mt-3 rounded-control border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger-fg">
               {parsed.rows
                 .map((r, idx) => (r.error ? `${idx + 1}: ${r.error}` : null))
                 .filter(Boolean)

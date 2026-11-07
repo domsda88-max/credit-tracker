@@ -1,19 +1,8 @@
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store/auth';
+import { Outlet } from 'react-router-dom';
 import { FloatingNav } from './FloatingNav';
 import { OfflineBanner } from './OfflineBanner';
 
 export function Layout() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const logout = useAuthStore((state) => state.logout);
-  const user = useAuthStore((state) => state.user);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
-  };
-
   return (
     <>
       <OfflineBanner />

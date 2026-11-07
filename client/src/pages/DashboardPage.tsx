@@ -7,7 +7,6 @@ import { MoneyFlow } from '../components/MoneyFlow';
 import { GraceReplenishBlock } from '../components/GraceReplenishBlock';
 import { OverdueAlert } from '../components/OverdueAlert';
 import { UpcomingPayments } from '../components/UpcomingPayments';
-import type { CreditListItem } from '../types';
 
 /** Экран загрузки: скелетоны карточек вместо спиннера. */
 function LoadingScreen() {
@@ -39,7 +38,7 @@ export function DashboardPage() {
   }
 
   if (error) {
-    return <p className="text-sm text-danger">Не удалось загрузить данные: {(error as Error).message}</p>;
+    return <p className="text-sm text-danger-fg">Не удалось загрузить данные: {(error as Error).message}</p>;
   }
 
   const list = credits ?? [];

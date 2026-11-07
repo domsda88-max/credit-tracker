@@ -54,22 +54,22 @@ export function PushSettings() {
       </div>
 
       {status === 'subscribed' && (
-        <p className="mt-2 flex items-center gap-1 text-xs text-success">
+        <p className="mt-2 flex items-center gap-1 text-xs text-success-fg">
           Уведомления включены
         </p>
       )}
       {status === 'denied' && (
-        <p className="mt-2 text-xs text-warning">
+        <p className="mt-2 text-xs text-warning-fg">
           Уведомления запрещены в браузере. Разрешите их в настройках сайта и попробуйте снова.
         </p>
       )}
       {status === 'unsupported' && (
-        <p className="mt-2 text-xs text-warning">
+        <p className="mt-2 text-xs text-warning-fg">
           Этот браузер не поддерживает Web Push. На iPhone добавьте приложение на экран «Домой»
           (Safari → Поделиться → На экран «Домой») и откройте его оттуда.
         </p>
       )}
-      {status === 'error' && error && <p className="mt-2 text-xs text-danger">{error}</p>}
+      {status === 'error' && error && <p className="mt-2 text-xs text-danger-fg">{error}</p>}
     </div>
   );
 }

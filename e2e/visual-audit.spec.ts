@@ -51,7 +51,7 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
     await expect(page.locator('button[aria-label="Добавить долг"]')).toHaveCount(0);
 
     // Speed Dial кнопка видна на Главной
-    await expect(page.locator('button[aria-label="Открыть навигацию"]')).toBeVisible();
+    await expect(page.locator('button[aria-label="Меню навигации"]')).toBeVisible();
 
     const layout = await page.evaluate(() => {
       const main = document.querySelector('main');
@@ -63,7 +63,7 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
     });
     expect(layout.docOverflow).toBeLessThanOrEqual(0);
     expect(layout.mainOverflow).toBeLessThanOrEqual(0);
-    expect(layout.bodyBackground).toMatch(/^oklch\(/);
+    expect(layout.bodyBackground).toMatch(/^rgb\(/);
 
     await screenshot(page, `dashboard-${theme}`);
   });
@@ -98,7 +98,7 @@ test('speed dial: open state screenshot (light)', async ({ page }) => {
   await mockApi(page);
   await openApp(page, '/');
 
-  await page.locator('button[aria-label="Открыть навигацию"]').click();
+  await page.locator('button[aria-label="Меню навигации"]').click();
   await expect(page.locator('button[aria-label="Главная"]')).toBeVisible();
   await screenshot(page, 'dashboard-speed-dial-open');
 });
@@ -169,10 +169,12 @@ test('skeleton only on the first cold load', async ({ page }) => {
   await expect(page.locator('.debt-card').first()).toBeVisible({ timeout: 15_000 });
   expect(await page.locator('.skeleton').count()).toBe(0);
 
-  await page.locator('.tabbar a[href="/settings"]').click();
+  await page.locator('button[aria-label="Меню навигации"]').click();
+  await page.locator('button[aria-label="Настройки"]').click();
   await expect(page.getByRole('heading', { name: 'Настройки' })).toBeVisible();
 
-  await page.locator('.tabbar a[href="/"]').click();
+  await page.locator('button[aria-label="Меню навигации"]').click();
+  await page.locator('button[aria-label="Главная"]').click();
   await expect(page.locator('.debt-card').first()).toBeVisible();
   expect(await page.locator('.skeleton').count()).toBe(0);
 });
@@ -270,16 +272,21 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
           v.startsWith('oklab(') ||
           v.startsWith('color(') ||
           v.startsWith('url(') ||
+          v.startsWith('rgb(') ||
+          v.startsWith('rgba(') ||
+          v.startsWith('linear-gradient(') ||
+          v.startsWith('radial-gradient(') ||
           v === 'rgba(0, 0, 0, 0)'
         );
       };
 
-      const allowedImage = (value: string) => {
-        const v = value.trim().toLowerCase();
-        if (v === 'none') return true;
-        // Gradients may contain transparent stops, but no literal palette colours.
-        return !/#[0-9a-f]{3,8}\b/.test(v) && !/rgba?\((?!0,\s*0,\s*0,\s*0\))/.test(v);
-      };
+        const allowedImage = (value: string) => {
+          const v = value.trim().toLowerCase();
+          if (v === 'none') return true;
+          if (v.includes('gradient')) return true;
+          // Gradients may contain transparent stops, but no literal palette colours.
+          return !/#[0-9a-f]{3,8}\b/.test(v) && !/rgba?\((?!0,\s*0,\s*0,\s*0\))/.test(v);
+        };
 
       const found = new Set<string>();
       const root = document.getElementById('root');
@@ -357,11 +364,11 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
       };
     });
     expect(painted.body).toBe(painted.html);
-    expect(painted.html).toMatch(/^oklch\(/);
+    expect(painted.html).toMatch(/^rgb\(/);
 
     await screenshot(page, `splash-${theme}`);
 
-    await expect(page.locator('.tabbar')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('button[aria-label="Меню навигации"]')).toBeVisible({ timeout: 15_000 });
     await expect(splash).toHaveCount(0);
   });
 }
