@@ -19,7 +19,7 @@ export default defineConfig({
     hasTouch: true,
     serviceWorkers: 'block',
     colorScheme: 'light',
-    screenshot: 'only-on-failure',
+    screenshot: 'on',
     trace: 'retain-on-failure',
   },
   webServer: {
