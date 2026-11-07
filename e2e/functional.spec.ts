@@ -35,7 +35,8 @@ test('FloatingNav: Скрытие на форме — триггер исчез�
   await page.getByRole('button', { name: 'Добавить долг' }).click();
 
   await expect(page).toHaveURL(/\/credits\/new$/);
-  await expect(page.locator('button[aria-label="Меню навигации"]')).toHaveCount(0);
+  const trigger = await page.evaluate(() => document.querySelector('button[aria-label="Меню навигации"]'));
+  expect(trigger).toBeNull();
 });
 
 test('FloatingNav: Возврат с формы — реальный крестик, SPA и без ошибок React', async ({ page }) => {
