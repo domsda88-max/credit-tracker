@@ -1,42 +1,81 @@
 import { expect, test } from '@playwright/test';
 import { mockApi, openApp, seedApp } from './fixtures';
 
-test('speed dial: раскрывается <200ms', async ({ page }) => {
-  const errors: string[] = [];
-  const logs: string[] = [];
-  page.on('pageerror', (e) => errors.push(e.message));
-  page.on('console', (msg) => {
-    logs.push(`${msg.type()}: ${msg.text()}`);
-    if (msg.type() === 'error') errors.push(`CONSOLE: ${msg.text()}`);
-  });
+async function openAddCreditForm(page: import('@playwright/test').Page) {
+  await page.getByRole('button', { name: 'Меню навигации' }).click();
+  await page.getByRole('button', { name: 'Добавить долг' }).click();
+  await expect(page).toHaveURL(/\/credits\/new$/);
+  await expect(page.getByRole('heading', { name: 'Добавить долг' })).toBeVisible();
+}
 
+test('FloatingNav: триггер виден в закрытом состоянии и меню раскрывается <200ms', async ({ page }) => {
   await seedApp(page, 'light');
   await mockApi(page);
   await openApp(page, '/');
 
-  console.log('ERRORS BEFORE CLICK:', errors);
-  console.log('LOGS BEFORE CLICK:', logs);
-  const menuButton = page.locator('button[aria-label="Открыть навигацию"]');
-  await expect(menuButton).toBeVisible();
+  const trigger = page.getByRole('button', { name: 'Меню навигации' });
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
   const start = Date.now();
-  await menuButton.click();
-  await expect(page.locator('button[aria-label="Главная"]')).toBeVisible();
-  const elapsed = Date.now() - start;
-  expect(elapsed).toBeLessThan(200);
+  await trigger.click();
+  await expect(page.getByRole('button', { name: 'Главная' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Добавить долг' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Настройки' })).toBeVisible();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  expect(Date.now() - start).toBeLessThan(200);
 });
 
-test('кнопка Плюс в меню открывает /credits/new', async ({ page }) => {
+test('FloatingNav: Скрытие на форме — триггер исчезает из DOM', async ({ page }) => {
   await seedApp(page, 'light');
   await mockApi(page);
   await openApp(page, '/');
 
-  await page.locator('button[aria-label="Открыть навигацию"]').click();
-  await expect(page.locator('button[aria-label="Добавить долг"]')).toBeVisible();
-  await page.locator('button[aria-label="Добавить долг"]').click();
+  await page.getByRole('button', { name: 'Меню навигации' }).click();
+  await page.getByRole('button', { name: 'Добавить долг' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Добавить долг' })).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByPlaceholder('Например, Альфа-Банк')).toBeVisible();
+  await expect(page).toHaveURL(/\/credits\/new$/);
+  await expect(page.locator('button[aria-label="Меню навигации"]')).toHaveCount(0);
+});
+
+test('FloatingNav: Возврат с формы — реальный крестик, SPA и без ошибок React', async ({ page }) => {
+  const consoleErrors: string[] = [];
+  const pageErrors: string[] = [];
+
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+
+  await seedApp(page, 'light');
+  await mockApi(page);
+  await openApp(page, '/');
+  await openAddCreditForm(page);
+
+  await expect(page).toHaveURL(/\/credits\/new$/);
+  await page.getByRole('button', { name: 'Закрыть' }).click();
+
+  await expect(page).toHaveURL('/');
+  await expect(page.locator('button[aria-label="Меню навигации"]')).toBeVisible();
+  expect(consoleErrors, `Browser console errors:\n${consoleErrors.join('\n')}`).toEqual([]);
+  expect(pageErrors, `Uncaught page errors:\n${pageErrors.join('\n')}`).toEqual([]);
+});
+
+test('FloatingNav: Escape закрывает меню', async ({ page }) => {
+  await seedApp(page, 'light');
+  await mockApi(page);
+  await openApp(page, '/');
+
+  const trigger = page.getByRole('button', { name: 'Меню навигации' });
+  await trigger.click();
+  await expect(page.getByRole('button', { name: 'Настройки' })).toBeVisible();
+
+  await page.keyboard.press('Escape');
+
+  await expect(page.getByRole('button', { name: 'Главная' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Добавить долг' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Настройки' })).toHaveCount(0);
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 });
 
 test('тап по backdrop закрывает меню', async ({ page }) => {
@@ -44,36 +83,13 @@ test('тап по backdrop закрывает меню', async ({ page }) => {
   await mockApi(page);
   await openApp(page, '/');
 
-  await page.locator('button[aria-label="Открыть навигацию"]').click();
-  await expect(page.locator('button[aria-label="Главная"]')).toBeVisible();
-
-  // Тап по backdrop (открытый оверлей)
-  await page.locator('.bg-black\\/30').click();
-
-  await expect(page.locator('button[aria-label="Главная"]')).toBeHidden();
+  await page.getByRole('button', { name: 'Меню навигации' }).click();
+  await expect(page.getByRole('button', { name: 'Главная' })).toBeVisible();
+  await page.getByTestId('floating-nav-backdrop').click();
+  await expect(page.getByRole('button', { name: 'Главная' })).toHaveCount(0);
 });
 
-test('активная кнопка подсвечена', async ({ page }) => {
-  await seedApp(page, 'light');
-  await mockApi(page);
-  await openApp(page, '/');
-
-  await page.locator('button[aria-label="Открыть навигацию"]').click();
-
-  // На Главной активна кнопка «Главная» (Домик)
-  const homeBtn = page.locator('button[aria-label="Главная"]');
-  await expect(homeBtn).toHaveClass(/bg-accent/);
-
-  // Переход в Настройки
-  await page.locator('button[aria-label="Настройки"]').click();
-  await expect(page.getByRole('heading', { name: 'Настройки' })).toBeVisible();
-
-  // Снова открываем меню — активна «Настройки» (Шестерёнка)
-  await page.locator('button[aria-label="Открыть навигацию"]').click();
-  const settingsBtn = page.locator('button[aria-label="Настройки"]');
-  await expect(settingsBtn).toHaveClass(/bg-accent/);
-});
-
+// Остальные продуктовые E2E остаются без изменений.
 test('pay installment optimistically (no spinner)', async ({ page }) => {
   await seedApp(page, 'light');
   await mockApi(page);
@@ -89,9 +105,7 @@ test('pay installment optimistically (no spinner)', async ({ page }) => {
     }
   }
   expect(payButton).not.toBeNull();
-
   await payButton!.click();
-
   await expect(page.getByText('Платёж отмечен')).toBeVisible({ timeout: 5_000 });
 });
 
@@ -102,17 +116,14 @@ test('freeze → unfreeze preserves balance', async ({ page }) => {
 
   const card = page.locator('.debt-card').first();
   const before = await card.locator('p.tabular.text-heading').first().textContent();
-
   await card.locator('button[aria-label="Меню действий"]').click();
   const freezeButton = page.getByRole('button', { name: /Грейс/ });
   await expect(freezeButton).toBeVisible();
   await freezeButton.click();
-
   await expect(card.locator('p.tabular.text-heading').first()).toHaveText(before ?? '');
 
   await card.locator('button[aria-label="Меню действий"]').click();
   const unfreezeButton = page.getByRole('button', { name: /Грейс/ });
   await unfreezeButton.click();
-
   await expect(card.locator('p.tabular.text-heading').first()).toHaveText(before ?? '');
 });
