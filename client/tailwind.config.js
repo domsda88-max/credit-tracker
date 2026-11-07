@@ -10,11 +10,15 @@ export default {
        */
       colors: {
         primary: 'rgb(var(--c-primary) / <alpha-value>)',
+        'primary-fg': 'var(--color-primary-fg)',
         'primary-soft': 'rgb(var(--c-primary-soft) / <alpha-value>)',
         accent: 'rgb(var(--c-accent) / <alpha-value>)',
         success: 'rgb(var(--c-success) / <alpha-value>)',
+        'success-fg': 'var(--color-success-fg)',
         warning: 'rgb(var(--c-warning) / <alpha-value>)',
+        'warning-fg': 'var(--color-warning-fg)',
         danger: 'rgb(var(--c-danger) / <alpha-value>)',
+        'danger-fg': 'var(--color-danger-fg)',
         bg: 'rgb(var(--c-bg) / <alpha-value>)',
         surface: 'rgb(var(--c-surface) / <alpha-value>)',
         surface2: 'rgb(var(--c-surface2) / <alpha-value>)',

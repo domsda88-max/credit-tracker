@@ -31,6 +31,11 @@
   --color-danger: rgb(var(--c-danger));
   --color-border: rgb(var(--c-line));
 
+  --color-success-fg: rgb(13 107 74);
+  --color-danger-fg: rgb(185 28 28);
+  --color-primary-fg: rgb(20 60 140);
+  --color-warning-fg: rgb(146 64 14);
+
   --color-chart: #3598F3;
   --color-grace: #67BDF5;
   --color-grid: #C9DCF2;
@@ -66,6 +71,11 @@
   --color-grace: #67BDF5;
   --color-grid: #C9DCF2;
 
+  --color-success-fg: rgb(13 107 74);
+  --color-danger-fg: rgb(185 28 28);
+  --color-primary-fg: rgb(20 60 140);
+  --color-warning-fg: rgb(146 64 14);
+
   --card-gradient: linear-gradient(135deg, #F4F0E8, #EAE5DA);
   --fab-gradient: linear-gradient(135deg, #3598F3, #286FD6);
 
@@ -94,6 +104,11 @@
   --color-chart: #3598F3;
   --color-grace: #67BDF5;
   --color-grid: #263B55;
+
+  --color-success-fg: rgb(110 231 183);
+  --color-danger-fg: rgb(252 165 165);
+  --color-primary-fg: rgb(147 197 253);
+  --color-warning-fg: rgb(253 224 71);
 
   --card-gradient: linear-gradient(135deg, #183653, #10243B);
   --fab-gradient: linear-gradient(135deg, #3598F3, #1769E8);
