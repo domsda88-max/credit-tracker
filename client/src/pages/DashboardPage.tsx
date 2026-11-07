@@ -38,7 +38,7 @@ export function DashboardPage() {
   }
 
   if (error) {
-    return <p className="text-sm text-danger">Не удалось загрузить данные: {(error as Error).message}</p>;
+    return <p className="text-sm text-danger-fg">Не удалось загрузить данные: {(error as Error).message}</p>;
   }
 
   const list = credits ?? [];

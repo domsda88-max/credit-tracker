@@ -111,7 +111,7 @@ export function DataExport() {
           <Save size={16} className="inline-block" /> Экспорт JSON
         </button>
       </div>
-      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+      {error && <p className="mt-2 text-xs text-danger-fg">{error}</p>}
     </section>
   );
 }

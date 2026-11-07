@@ -142,10 +142,10 @@ export function CreditDetailPage() {
   if (loadError || !credit) {
     return (
       <div>
-        <p className="text-sm text-danger">
+        <p className="text-sm text-danger-fg">
           Не удалось загрузить кредит: {(loadError as Error | null)?.message ?? 'не найден'}
         </p>
-        <Link to="/" className="mt-3 inline-block text-sm text-primary">
+        <Link to="/" className="mt-3 inline-block text-sm text-primary-fg">
           ← Назад к дашборду
         </Link>
       </div>
@@ -179,7 +179,7 @@ export function CreditDetailPage() {
             <div className="flex items-center gap-2">
               <h1 className="truncate text-xl font-semibold text-t1">{credit.name}</h1>
               {credit.frozen && <span title="Цикл заморозки">🧊</span>}
-              {credit.status === 'CLOSED' && <CheckCircle2 size={18} className="text-success" aria-label="Закрыт" />}
+              {credit.status === 'CLOSED' && <CheckCircle2 size={18} className="text-success-fg" aria-label="Закрыт" />}
             </div>
             <p className="mt-1 text-xs text-t3">
               {CREDIT_TYPE_LABELS[credit.type]}
@@ -197,7 +197,7 @@ export function CreditDetailPage() {
             <button
               type="button"
               onClick={() => setEditing((v) => !v)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-t3 transition hover:border-primary/50 hover:text-primary"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-t3 transition hover:border-primary/50 hover:text-primary-fg"
               aria-label={editing ? 'Закрыть редактирование' : 'Изменить кредит'}
             >
               <Pencil size={18} />
@@ -214,7 +214,7 @@ export function CreditDetailPage() {
                   setError(extractErrorMessage(err));
                 }
               }}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-danger/40 text-danger transition hover:bg-danger/10"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-danger/40 text-danger-fg transition hover:bg-danger/10"
               aria-label="Удалить кредит"
             >
               <Trash2 size={18} />
@@ -233,7 +233,7 @@ export function CreditDetailPage() {
           </div>
           <div>
             <p className="text-xs text-t3">Выплачено</p>
-            <p className="tabular text-lg font-semibold text-success">{formatMoney(credit.totalPaid)}</p>
+            <p className="tabular text-lg font-semibold text-success-fg">{formatMoney(credit.totalPaid)}</p>
           </div>
           {credit.type !== 'LOAN' ? (
             <div>
@@ -277,7 +277,7 @@ export function CreditDetailPage() {
         </div>
 
         {credit.frozen && credit.nextFreezeCheckAt && (
-          <p className="mt-3 rounded-control bg-primary/10 px-3 py-2 text-xs text-primary">
+          <p className="mt-3 rounded-control bg-primary/10 px-3 py-2 text-xs text-primary-fg">
             🧊 Цикл заморозки до {formatDate(credit.nextFreezeCheckAt)}
             {credit.freezeCycleDays ? ` (каждые ${credit.freezeCycleDays} дн.)` : ''}
           </p>
@@ -319,7 +319,7 @@ export function CreditDetailPage() {
                 <span className="text-sm text-t2">Сумма, ₽</span>
                 <input type="number" step="0.01" inputMode="decimal" {...register('amount')} className={inputClass} />
                 {formState.errors.amount && (
-                  <p className="mt-1 text-xs text-danger">{formState.errors.amount.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{formState.errors.amount.message}</p>
                 )}
               </label>
 
@@ -333,14 +333,14 @@ export function CreditDetailPage() {
                   className={inputClass + " w-full max-w-full box-border"}
                 />
                 {formState.errors.date && (
-                  <p className="mt-1 text-xs text-danger">{formState.errors.date.message}</p>
+                  <p className="mt-1 text-xs text-danger-fg">{formState.errors.date.message}</p>
                 )}
               </label>
 
               <div className="block sm:w-48">
                 <span className="text-sm text-t2">Режим</span>
                 <div className="mt-1">
-                  <span className="rounded-full bg-primary/15 px-2 py-1 text-xs font-medium text-primary">Сокращение срока</span>
+                  <span className="rounded-full bg-primary/15 px-2 py-1 text-xs font-medium text-primary-fg">Сокращение срока</span>
                 </div>
               </div>
 
@@ -361,10 +361,10 @@ export function CreditDetailPage() {
 
           {preview && !preview.coversInterest && (
             <div className="mt-3 rounded-control border border-danger/30 bg-danger/10 px-4 py-3 text-sm">
-              <p className="font-medium text-danger">
+              <p className="font-medium text-danger-fg">
                 Минимум к погашению: <span className="tabular">{formatMoney(preview.minAmount)}</span>
               </p>
-              <p className="mt-1 text-xs text-danger/80">
+              <p className="mt-1 text-xs text-danger-fg/80">
                 Сумма должна покрыть начисленные проценты за {preview.days} дн.
               </p>
             </div>
@@ -372,25 +372,25 @@ export function CreditDetailPage() {
 
           {preview && preview.coversInterest && (
             <div className="mt-3 rounded-control border border-success/30 bg-success/10 px-4 py-3 text-sm">
-              <p className="text-xs text-success/70">
+              <p className="text-xs text-success-fg/70">
                 Проценты за период: {formatMoney(preview.accruedInterest)} · в тело: {formatMoney(preview.principalPart)}
               </p>
               {preview.isFull ? (
-                <p className="font-medium text-success">
+                <p className="font-medium text-success-fg">
                   🎉 Полное закрытие кредита: сэкономите{' '}
                   <span className="tabular">{formatMoney(preview.interestSaved)}</span> процентов
                   {' '}и <span className="font-semibold">{preview.monthSaved} мес.</span>
                 </p>
               ) : (
                 <>
-                  <p className="font-medium text-success">
+                  <p className="font-medium text-success-fg">
                     Экономия: <span className="tabular">{formatMoney(preview.interestSaved)}</span>{' '}
                     процентов
                     {preview.monthSaved > 0 && (
                       <> и <span className="font-semibold">{preview.monthSaved} мес.</span> срока</>
                     )}
                   </p>
-                  <p className="mt-1 text-xs text-success/70">
+                  <p className="mt-1 text-xs text-success-fg/70">
                     {watchMode === 'REDUCE_TERM' ? (
                       <>Останется платежей: {preview.monthsAfter} · платёж {formatMoney(preview.paymentAfter)}</>
                     ) : (
@@ -404,7 +404,7 @@ export function CreditDetailPage() {
         </section>
       )}
 
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && <p className="text-sm text-danger-fg">{error}</p>}
 
       {credit.type !== 'LOAN' && (
       <section className="rounded-card border border-line bg-surface p-4">
@@ -464,7 +464,7 @@ export function CreditDetailPage() {
                     {item.status === 'PAID' ? (
                       <div className="flex items-center gap-2">
                         {earlyKeys.has(`${new Date(item.paidAt ?? item.dueDate).toISOString().slice(0, 10)}|${Number(item.paidAmount ?? item.amount)}`) ? (
-                          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">Досрочно</span>
+                          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary-fg">Досрочно</span>
                         ) : (
                           <StatusBadge status="PAID" />
                         )}
@@ -486,7 +486,7 @@ export function CreditDetailPage() {
                             }
                           }}
                           disabled={cancelingId === item.id}
-                          className="rounded-lg border border-danger/40 px-2 py-1 text-[11px] font-medium text-danger transition hover:bg-danger/10 disabled:opacity-50"
+                          className="rounded-lg border border-danger/40 px-2 py-1 text-[11px] font-medium text-danger-fg transition hover:bg-danger/10 disabled:opacity-50"
                         >
                           {cancelingId === item.id ? '…' : 'Отменить'}
                         </button>
@@ -505,7 +505,7 @@ export function CreditDetailPage() {
                         onClick={() => setPayingId(expanded ? null : item.id)}
                         aria-label="Отметить оплаченным"
                         aria-expanded={expanded}
-                        className="flex h-8 w-8 min-h-0 items-center justify-center rounded-full border border-line text-t2 transition hover:border-primary hover:text-primary"
+                        className="flex h-8 w-8 min-h-0 items-center justify-center rounded-full border border-line text-t2 transition hover:border-primary hover:text-primary-fg"
                       >
                         <Check size={16} />
                       </button>

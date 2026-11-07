@@ -100,7 +100,7 @@ export function EditCreditForm({
         <label className="block">
           <span className="text-sm text-t2">Название</span>
           <input {...register('name')} className={inputClass} />
-          {errors.name && <p className="mt-1 text-xs text-danger">{errors.name.message}</p>}
+          {errors.name && <p className="mt-1 text-xs text-danger-fg">{errors.name.message}</p>}
         </label>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -108,7 +108,7 @@ export function EditCreditForm({
             <span className="text-sm text-t2">Сумма долга, ₽</span>
             <input type="number" step="0.01" inputMode="decimal" {...register('principal')} className={inputClass} />
             {errors.principal && (
-              <p className="mt-1 text-xs text-danger">{errors.principal.message}</p>
+              <p className="mt-1 text-xs text-danger-fg">{errors.principal.message}</p>
             )}
           </label>
 
@@ -116,7 +116,7 @@ export function EditCreditForm({
             <span className="text-sm text-t2">Ставка, % годовых</span>
             <input type="number" step="0.01" inputMode="decimal" {...register('annualRate')} className={inputClass} />
             {errors.annualRate && (
-              <p className="mt-1 text-xs text-danger">{errors.annualRate.message}</p>
+              <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>
             )}
           </label>
         </div>
@@ -126,7 +126,7 @@ export function EditCreditForm({
             <span className="text-sm text-t2">Дата выдачи</span>
             <input type="date" {...register('startDate')} className={inputClass} />
             {errors.startDate && (
-              <p className="mt-1 text-xs text-danger">{errors.startDate.message}</p>
+              <p className="mt-1 text-xs text-danger-fg">{errors.startDate.message}</p>
             )}
           </label>
 
@@ -134,7 +134,7 @@ export function EditCreditForm({
             <span className="text-sm text-t2">Срок, месяцев</span>
             <input type="number" inputMode="numeric" {...register('termMonths')} className={inputClass} />
             {errors.termMonths && (
-              <p className="mt-1 text-xs text-danger">{errors.termMonths.message}</p>
+              <p className="mt-1 text-xs text-danger-fg">{errors.termMonths.message}</p>
             )}
           </label>
 
@@ -150,7 +150,7 @@ export function EditCreditForm({
               className={inputClass}
             />
             {errors.paymentDay && (
-              <p className="mt-1 text-xs text-danger">{errors.paymentDay.message}</p>
+              <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>
             )}
           </label>
         </div>
@@ -173,7 +173,7 @@ export function EditCreditForm({
               Оставьте пустым — рассчитаю сам. Заполните, чтобы точно совпадало с приложением банка.
             </span>
             {errors.outstanding && (
-              <p className="mt-1 text-xs text-danger">{errors.outstanding.message}</p>
+              <p className="mt-1 text-xs text-danger-fg">{errors.outstanding.message}</p>
             )}
           </label>
         </div>
@@ -190,7 +190,7 @@ export function EditCreditForm({
         </label>
       </div>
 
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && <p className="text-sm text-danger-fg">{error}</p>}
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <button

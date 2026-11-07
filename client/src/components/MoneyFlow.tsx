@@ -30,7 +30,7 @@ export function MoneyFlow() {
           <Wallet size={14} />
           Деньги в месяц
         </p>
-        <Link to="/settings" className="text-caption text-primary">
+        <Link to="/settings" className="text-caption text-primary-fg">
           {hasIncome ? 'Изменить' : 'Указать доход'}
         </Link>
       </div>
@@ -67,7 +67,7 @@ export function MoneyFlow() {
         </span>
         <span
           className={`tabular text-heading font-bold ${
-            free === null ? 'text-t2' : free < 0 ? 'text-danger' : 'text-success'
+            free === null ? 'text-t2' : free < 0 ? 'text-danger-fg' : 'text-success-fg'
           }`}
         >
           {free === null ? 'Укажите доход' : formatMoney(free)}
@@ -80,7 +80,7 @@ export function MoneyFlow() {
         </p>
       )}
       {free !== null && free < 0 && (
-        <p className="mt-2 text-micro text-danger">
+        <p className="mt-2 text-micro text-danger-fg">
           Платежи больше дохода на {formatMoney(Math.abs(free))} — стоит пересмотреть нагрузку.
         </p>
       )}

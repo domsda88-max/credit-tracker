@@ -3,9 +3,9 @@ import type { InstallmentStatus } from '../types';
 import { STATUS_LABELS } from '../utils/format';
 
 const styles: Record<InstallmentStatus, string> = {
-  PENDING: 'bg-warning/15 text-warning',
-  PAID: 'bg-success/15 text-success',
-  OVERDUE: 'bg-danger/15 text-danger',
+  PENDING: 'bg-warning/15 text-warning-fg',
+  PAID: 'bg-success/15 text-success-fg',
+  OVERDUE: 'bg-danger/15 text-danger-fg',
 };
 
 export function StatusBadge({ status }: { status: InstallmentStatus }) {

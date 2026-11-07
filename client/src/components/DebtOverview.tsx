@@ -104,7 +104,7 @@ export function DebtOverview() {
       <div className="flex items-baseline justify-between gap-3">
         <div>
           <p className="section-title">Долг погашен на</p>
-          <p className="tabular mt-1 text-hero font-extrabold text-primary">{percent}%</p>
+          <p className="tabular mt-1 text-hero font-extrabold text-primary-fg">{percent}%</p>
         </div>
         <div className="text-right">
           <p className="section-title">Остаток долга</p>
@@ -135,7 +135,7 @@ export function DebtOverview() {
       {summary.debtFreeDate && (
         <div className="mt-4 flex items-center justify-between gap-3 rounded-control bg-gradient-to-r from-primary/10 to-success/10 px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-chip bg-primary/15 text-primary">
+            <span className="flex h-8 w-8 items-center justify-center rounded-chip bg-primary/15 text-primary-fg">
               <Target size={18} />
             </span>
             <div>
@@ -150,7 +150,7 @@ export function DebtOverview() {
       {activeDebtsExist && (
         <div className="mt-3 rounded-control border border-success/15 bg-success/[0.05] px-4 py-3" style={{ minHeight: 150, overflowAnchor: 'none' }}>
           <p className="flex items-center gap-1.5 text-micro uppercase tracking-[0.04em] text-t2">
-            <Zap size={14} className="text-success" />
+            <Zap size={14} className="text-success-fg" />
             Ускорь свободу
           </p>
           <p className="mt-1.5 text-caption leading-relaxed text-t1" style={{ minHeight: 44 }}>
@@ -162,7 +162,7 @@ export function DebtOverview() {
                 <span className="font-medium text-t1">{accelerator.targetName}</span>):
                 <br />
                 освободишься{' '}
-                <span className="font-semibold text-success">
+                <span className="font-semibold text-success-fg">
                   через {monthsLabel(accelerator.acceleratedMonths)} ({accelerator.acceleratedMonths.toFixed(1)} мес.)
                 </span>{' '}
                 вместо {monthsLabel(accelerator.baselineMonths)}

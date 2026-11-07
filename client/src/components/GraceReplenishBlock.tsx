@@ -25,13 +25,13 @@ export function GraceReplenishBlock() {
       <div className="flex items-center gap-2">
         <span
           className={`flex h-8 w-8 items-center justify-center rounded-chip ${
-            overdue ? 'bg-danger/15 text-danger' : 'bg-primary/15 text-primary'
+            overdue ? 'bg-danger/15 text-danger-fg' : 'bg-primary/15 text-primary-fg'
           }`}
         >
           {overdue ? <AlertTriangle size={18} /> : <Snowflake size={18} />}
         </span>
         <div>
-          <p className={`text-body font-semibold ${overdue ? 'text-danger' : 'text-t1'}`}>
+          <p className={`text-body font-semibold ${overdue ? 'text-danger-fg' : 'text-t1'}`}>
             {overdue ? 'Внимание: грейс-период слетает!' : 'Резерв для сохранения грейса'}
           </p>
           <p className="text-caption text-t2">

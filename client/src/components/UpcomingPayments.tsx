@@ -105,7 +105,7 @@ export function UpcomingPayments({ credits }: Props) {
           {items.map((item) => {
             const tone = urgencyTone(daysUntil(item.dueDate));
             const toneClass =
-              tone === 'danger' ? 'text-danger' : tone === 'warning' ? 'text-warning' : 'text-t2';
+              tone === 'danger' ? 'text-danger-fg' : tone === 'warning' ? 'text-warning-fg' : 'text-t2';
             return (
               <Link
                 key={item.creditId}

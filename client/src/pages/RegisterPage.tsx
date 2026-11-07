@@ -64,7 +64,7 @@ export function RegisterPage() {
           />
         </label>
 
-        {error && <p className="text-sm text-danger">{error}</p>}
+        {error && <p className="text-sm text-danger-fg">{error}</p>}
 
         <button
           type="submit"
@@ -77,7 +77,7 @@ export function RegisterPage() {
 
       <p className="mt-4 text-sm text-t3">
         Уже есть аккаунт?{' '}
-        <Link to="/login" className="text-primary hover:text-primary">
+        <Link to="/login" className="text-primary-fg hover:text-primary-fg">
           Войти
         </Link>
       </p>

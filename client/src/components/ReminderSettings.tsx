@@ -151,7 +151,7 @@ export function ReminderSettings() {
                 onClick={() => toggleDay(opt.value)}
                 className={`rounded-control border px-3 py-1.5 text-xs transition ${
                   active
-                    ? 'border-primary bg-primary/15 text-primary'
+                    ? 'border-primary bg-primary/15 text-primary-fg'
                     : 'border-line bg-surface text-t2 hover:border-t3'
                 }`}
               >
@@ -178,7 +178,7 @@ export function ReminderSettings() {
         </button>
       </div>
 
-      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+      {error && <p className="mt-2 text-xs text-danger-fg">{error}</p>}
       <p className="mt-2 text-xs text-t3">
         Работает без открытого приложения: уведомление приходит, даже если телефон заблокирован
         (нужно разрешить уведомления и включить push выше).

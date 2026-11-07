@@ -55,7 +55,7 @@ export function LoginPage() {
           />
         </label>
 
-        {error && <p className="text-sm text-danger">{error}</p>}
+        {error && <p className="text-sm text-danger-fg">{error}</p>}
 
         <button
           type="submit"
@@ -68,7 +68,7 @@ export function LoginPage() {
 
       <p className="mt-4 text-sm text-t3">
         Нет аккаунта?{' '}
-        <Link to="/register" className="text-primary hover:text-primary">
+        <Link to="/register" className="text-primary-fg hover:text-primary-fg">
           Зарегистрироваться
         </Link>
       </p>

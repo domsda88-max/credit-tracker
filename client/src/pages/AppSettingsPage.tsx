@@ -19,7 +19,7 @@ export function AppSettingsPage() {
           Назад
         </button>
         <div className="flex items-center gap-2">
-          <Bell size={20} className="text-primary" />
+          <Bell size={20} className="text-primary-fg" />
           <h1 className="text-title font-bold text-t1">Настройки приложения</h1>
         </div>
         <p className="mt-1 text-caption text-t3">Уведомления и напоминания</p>
