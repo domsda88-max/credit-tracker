@@ -19,15 +19,15 @@ function Accordion({ title, subtitle, defaultOpen = false, children }: {
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="overflow-hidden rounded-card border border-line bg-surface">
+    <div className="overflow-hidden rounded-card border border-line bg-surface shadow-card">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-surface2"
+        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition-colors hover:bg-surface2"
         aria-expanded={open}
       >
         <div>
-          <p className="font-medium text-t1">{title}</p>
+          <p className="font-semibold text-t1">{title}</p>
           {subtitle && <p className="mt-0.5 text-xs text-t3">{subtitle}</p>}
         </div>
         <ChevronDown
@@ -37,7 +37,7 @@ function Accordion({ title, subtitle, defaultOpen = false, children }: {
       </button>
       <div className="acc" data-open={open}>
         <div className="acc__inner">
-          <div className="border-t border-line">{children}</div>
+          <div className="border-t border-line px-5 py-4">{children}</div>
         </div>
       </div>
     </div>
