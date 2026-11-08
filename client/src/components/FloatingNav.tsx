@@ -91,9 +91,9 @@ export function FloatingNav() {
         />
       )}
 
-      <div className="fixed right-[16px] bottom-[calc(env(safe-area-inset-bottom)+16px)] z-[50] pointer-events-auto flex flex-col items-end gap-3">
+       <div className="fixed right-[16px] bottom-[calc(env(safe-area-inset-bottom)+16px)] z-[50] pointer-events-auto flex flex-row-reverse items-center gap-3">
         {isOpen && (
-          <div className="flex flex-col items-end gap-3" aria-label="Пункты меню">
+           <div className="flex flex-row-reverse items-center gap-3" aria-label="Пункты меню">
             {ITEMS.slice().reverse().map(({ path, icon, label }) => (
               <button
                 key={path}

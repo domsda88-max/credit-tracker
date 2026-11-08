@@ -60,7 +60,23 @@ export function SettingsPage() {
 
   return (
     <div className="w-full max-w-full space-y-5 overflow-x-hidden touch-manipulation">
-      <SrOnly>Настройки</SrOnly>
+      <section className="space-y-3">
+        <SrOnly>Тема</SrOnly>
+        <div className="flex items-center gap-4 rounded-card border border-line bg-surface px-5 py-4">
+          {(['light','warm','dark'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              aria-label={`Тема ${m}`}
+              onClick={() => setThemeMode(m)}
+              className={`h-10 w-10 rounded-full border-2 transition ${themeMode === m ? 'border-primary scale-110' : 'border-line'}`}
+              style={{
+                background: m === 'light' ? 'linear-gradient(135deg,#ECF4FC,#DCECFC)' : m === 'warm' ? 'linear-gradient(135deg,#F4F0E8,#FFFDF8)' : 'linear-gradient(135deg,#0B1421,#14243C)',
+              }}
+            />
+          ))}
+        </div>
+      </section>
 
       <section className="space-y-3">
         <SrOnly>Деньги</SrOnly>
