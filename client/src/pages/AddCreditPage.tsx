@@ -110,6 +110,22 @@ type MutationValues = FormValues & { earlyRepayments: NonNullable<CreateCreditPa
 const inputClass =
   'mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none transition focus:border-primary';
 
+const typePassport: Record<FormValues['type'], { title: string; desc: string; req: string[]; icons: string }> = {
+  CONSUMER: { title: 'Потребительский кредит', desc: 'Стандартный кредит с фиксированным сроком и ставкой. График строится сервером.', req: ['Ставка %', 'Дата выдачи', 'Срок мес.', 'День платежа'], icons: '🏦' },
+  CREDIT_CARD: { title: 'Кредитная карта', desc: 'Revolving-лимит. Не нужны срок и дата выдачи — только ставка и день платежа.', req: ['Ставка %', 'День платежа'], icons: '💳' },
+  MORTGAGE: { title: 'Ипотека', desc: 'Долгосрочный кредит на недвижимость. Требует дату выдачи и срок.', req: ['Ставка %', 'Дата выдачи', 'Срок мес.', 'День платежа'], icons: '🏠' },
+  INSTALLMENT: { title: 'Рассрочка / Сплит', desc: 'Короткая рассрочка в днях. Ставка может быть 0%.', req: ['Срок дней', 'День платежа'], icons: '🧾' },
+  MICROLOAN: { title: 'Займ (МФО)', desc: 'Краткосрочный balloon-займ — один платёж в конце срока.', req: ['Ставка %', 'Срок дней', 'День платежа'], icons: '⚡' },
+  LOAN: { title: 'Займ (частный)', desc: 'Долг человеку без графика и ставки. Только название, сумма и дата выдачи.', req: ['Дата выдачи'], icons: '🤝' },
+};
+
+function annuityMonthly(principal: number, annualRate: number, termMonths: number) {
+  if (!principal || !termMonths) return 0;
+  const r = annualRate / 100 / 12;
+  if (r === 0) return principal / termMonths;
+  return (principal * r) / (1 - Math.pow(1 + r, -termMonths));
+}
+
 function MoneyInput({ register, name, placeholder }: { register: ReturnType<typeof useForm<FormValues>>['register']; name: Parameters<ReturnType<typeof useForm<FormValues>>['register']>[0]; placeholder?: string }) {
   return (
     <input
@@ -158,6 +174,10 @@ export function AddCreditPage() {
   const startDate = watch('startDate');
   const name = watch('name');
   const principal = watch('principal');
+  const annualRate = watch('annualRate');
+  const termMonths = watch('termMonths');
+  const termDays = watch('termDays');
+  const paymentDay = watch('paymentDay');
 
   const startInPast = Boolean(startDate) && new Date(startDate ?? '') < new Date();
 
@@ -263,6 +283,11 @@ export function AddCreditPage() {
   const hasName = Boolean(name && String(name).trim());
   const hasPrincipal = principal !== undefined && Number(principal) > 0;
   const hasStartDate = !!(startDate && String(startDate).trim());
+  const hasRate = annualRate !== undefined && Number.isFinite(Number(annualRate));
+  const hasTerm = !!((termMonths && Number(termMonths) > 0) || (termDays && Number(termDays) > 0));
+  const hasPayDay = !!(paymentDay && Number(paymentDay) >= 1 && Number(paymentDay) <= 31);
+  const pass = typePassport[type];
+  const monthly = type === 'CONSUMER' || type === 'MORTGAGE' ? annuityMonthly(Number(principal || 0), Number(annualRate || 0), Number(termMonths || 0)) : 0;
 
   const handleClose = () => navigate(-1);
 
@@ -281,17 +306,31 @@ export function AddCreditPage() {
         </label>
 
         {hasName && (
-          <label className="block">
-            <span className="text-sm text-t2">Тип долга</span>
-            <select {...register('type')} className={inputClass}>
-              <option value="CONSUMER">Потребительский кредит</option>
-              <option value="CREDIT_CARD">Кредитная карта</option>
-              <option value="MORTGAGE">Ипотека</option>
-              <option value="INSTALLMENT">Рассрочка / Сплит</option>
-              <option value="MICROLOAN">Займ (МФО)</option>
-              <option value="LOAN">Займ (частный)</option>
-            </select>
-          </label>
+          <div className="rounded-card border border-line bg-surface p-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-lg">{pass.icons}</span>
+              <div>
+                <p className="font-semibold text-t1">{pass.title}</p>
+                <p className="mt-0.5 text-xs text-t3">{pass.desc}</p>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {pass.req.map((r) => (
+                <span key={r} className="rounded-full border border-line bg-surface2/60 px-2 py-0.5 text-[11px] text-t2">{r}</span>
+              ))}
+            </div>
+            <label className="block mt-4">
+              <span className="text-sm text-t2">Тип долга</span>
+              <select {...register('type')} className={inputClass}>
+                <option value="CONSUMER">Потребительский кредит</option>
+                <option value="CREDIT_CARD">Кредитная карта</option>
+                <option value="MORTGAGE">Ипотека</option>
+                <option value="INSTALLMENT">Рассрочка / Сплит</option>
+                <option value="MICROLOAN">Займ (МФО)</option>
+                <option value="LOAN">Займ (частный)</option>
+              </select>
+            </label>
+          </div>
         )}
 
         {hasName && hasPrincipal && (
@@ -302,7 +341,7 @@ export function AddCreditPage() {
           </label>
         )}
 
-        {type === 'CREDIT_CARD' && hasName && hasPrincipal && (
+        {hasName && hasPrincipal && type === 'CREDIT_CARD' && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <label className="block">
               <span className="text-sm text-t2">Ставка, % годовых <span className="text-danger-fg">*</span></span>
@@ -318,13 +357,17 @@ export function AddCreditPage() {
               <span className="text-sm text-t2">Сумма для продления грейса, ₽</span>
               <MoneyInput register={register} name="graceReplenishSum" placeholder="43 000" />
               {errors.graceReplenishSum && <p className="mt-1 text-xs text-danger-fg">{errors.graceReplenishSum.message}</p>}
+              <span className="mt-1 block text-xs text-t3">Для продления льготного периода (опционально)</span>
             </label>
           </div>
         )}
 
         {(type === 'CONSUMER' || type === 'MORTGAGE') && hasName && hasPrincipal && (
           <section className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
-            <h3 className="text-sm font-medium text-t2">Параметры {type === 'CONSUMER' ? 'потребительского кредита' : 'ипотеки'}</h3>
+            <h3 className="text-sm font-medium text-t2">
+              Параметры {type === 'CONSUMER' ? 'потребительского кредита' : 'ипотеки'}
+              {hasRate && hasStartDate && hasTerm && hasPayDay && <span className="ml-2 text-xs text-success-fg">✓</span>}
+            </h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
                 <span className="text-sm text-t2">Тип платежа</span>
@@ -332,11 +375,13 @@ export function AddCreditPage() {
                   <option value="ANNUITY">Аннуитетный</option>
                   <option value="DIFFERENTIAL">Дифференцированный</option>
                 </select>
+                <span className="mt-1 block text-xs text-t3">Аннуитет — равные платежи, Дифф. — убывающие</span>
               </label>
               <label className="block">
                 <span className="text-sm text-t2">Ставка, % годовых</span>
                 <input type="number" step="0.01" {...register('annualRate')} className={inputClass} />
                 {errors.annualRate && <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>}
+                <span className="mt-1 block text-xs text-t3">Годовая ставка, напр. 19.9</span>
               </label>
               <label className="block">
                 <span className="text-sm text-t2">Дата выдачи</span>
@@ -357,6 +402,7 @@ export function AddCreditPage() {
                 {errors.paymentDay && <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>}
               </label>
             </div>
+            {monthly > 0 && <p className="text-sm text-t2">≈ Ежемесячно <b className="text-t1">{formatMoney(monthly)}</b></p>}
           </section>
         )}
 
@@ -386,7 +432,10 @@ export function AddCreditPage() {
 
         {type === 'MICROLOAN' && hasName && hasPrincipal && (
           <section className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
-            <h3 className="text-sm font-medium text-t2">Параметры займа (МФО)</h3>
+            <h3 className="text-sm font-medium text-t2">
+              Параметры займа (МФО)
+              {hasRate && hasTerm && hasPayDay && <span className="ml-2 text-xs text-success-fg">✓</span>}
+            </h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
                 <span className="text-sm text-t2">Ставка, % годовых</span>
@@ -409,11 +458,16 @@ export function AddCreditPage() {
         )}
 
         {type === 'LOAN' && hasName && hasPrincipal && (
-          <div className="space-y-4">
+          <div className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
+            <h3 className="text-sm font-medium text-t2">
+              Частный займ
+              {hasStartDate && <span className="ml-2 text-xs text-success-fg">✓</span>}
+            </h3>
             <label className="block">
               <span className="text-sm text-t2">Дата выдачи</span>
               <input type="date" {...register('startDate')} className={inputClass} />
               {errors.startDate && <p className="mt-1 text-xs text-danger-fg">{errors.startDate.message}</p>}
+              <span className="mt-1 block text-xs text-t3">Обязательно для корректного учёта срока займа</span>
             </label>
             <p className="mt-2 text-xs text-t3">Частный займ без графика — только название и сумма. Ставка 0%.</p>
           </div>
@@ -491,7 +545,8 @@ export function AddCreditPage() {
           <div className="rounded-card border border-line bg-surface p-4">
             <h3 className="text-sm font-medium text-t1">Предпросмотр</h3>
             <p className="mt-2 text-sm text-t2">Сумма долга: <b className="text-t1">{formatMoney(Number(principal))}</b></p>
-            <p className="mt-1 text-sm text-t2">Тип: <b className="text-t1">{type}</b></p>
+            <p className="mt-1 text-sm text-t2">Тип: <b className="text-t1">{pass.title}</b></p>
+            {monthly > 0 && <p className="mt-1 text-sm text-t2">≈ Ежемесячно <b className="text-t1">{formatMoney(monthly)}</b></p>}
             <p className="mt-1 text-xs text-t3">Точный график построится на сервере после сохранения.</p>
           </div>
         )}
