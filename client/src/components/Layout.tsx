@@ -30,15 +30,16 @@ export function Layout() {
   return (
     <>
       <OfflineBanner />
-      <div className="mx-auto flex h-[100dvh] w-full max-w-full flex-col overflow-hidden px-4 sm:px-6 relative">
+      <div className="mx-auto flex h-[100dvh] w-full max-w-2xl flex-col overflow-hidden px-4 sm:px-6 relative">
         <main className="page min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
           <Outlet />
         </main>
 
-        {/* Scrim под статус-баром (оставляем) */}
+        {/* Scrim под статус-баром (только на устройствах с вырезом) */}
         <div
-          className="fixed top-0 left-0 right-0 h-[40px] z-[58] pointer-events-none"
+          className="fixed top-0 left-0 right-0 z-[58] pointer-events-none"
           style={{
+            height: 'env(safe-area-inset-top, 0px)',
             background: `linear-gradient(to bottom, var(--color-bg), transparent)`,
           }}
         />

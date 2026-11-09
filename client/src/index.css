@@ -213,7 +213,7 @@ input[type='range'] {
 /* Единственный источник правды для отступа контента (нижняя навигация 56px + 12px отступ) */
 .page {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
-  padding-top: env(safe-area-inset-top, 0px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
 }
 
 /* Деликатный crossfade ключевых контейнеров при смене темы */

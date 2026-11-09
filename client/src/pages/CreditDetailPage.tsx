@@ -212,7 +212,7 @@ export function CreditDetailPage() {
             <button
               type="button"
               onClick={() => setEditing((v) => !v)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-t3 transition hover:border-primary/50 hover:text-primary-fg"
+              className="flex h-9 w-9 min-h-0 items-center justify-center rounded-lg border border-line text-t3 transition hover:border-primary/50 hover:text-primary-fg"
               aria-label={editing ? 'Закрыть редактирование' : 'Изменить кредит'}
             >
               <Pencil size={18} />
@@ -229,7 +229,7 @@ export function CreditDetailPage() {
                   setError(extractErrorMessage(err));
                 }
               }}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-danger/40 text-danger-fg transition hover:bg-danger/10"
+              className="flex h-9 w-9 min-h-0 items-center justify-center rounded-lg border border-danger/40 text-danger-fg transition hover:bg-danger/10"
               aria-label="Удалить кредит"
             >
               <Trash2 size={18} />

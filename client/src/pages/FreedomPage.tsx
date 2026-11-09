@@ -165,7 +165,7 @@ export function FreedomPage() {
       )}
 
       <section className="card p-6">
-        <div className="flex items-baseline justify-between gap-2 mb-4">
+        <div className="mb-4 flex items-center justify-between gap-2">
           <h2 className="text-heading font-semibold text-t1">Ваши активные долги</h2>
           <span className="text-micro text-t3">{activeDebts.length} кредит(ов)</span>
         </div>
@@ -210,15 +210,15 @@ export function FreedomPage() {
           Каждый досрочный платеж сокращает срок кредита и экономит проценты. Используйте
           кнопку «Досрочное погашение» на странице любого кредита.
         </p>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="p-4 rounded-control border border-line bg-surface">
             <p className="text-micro uppercase tracking-[0.04em] text-t3">Срок по графику</p>
             <p className="tabular mt-0.5 text-t1">{monthsLabel(baselineMonths)}</p>
           </div>
           <div className="p-4 rounded-control border border-success/20 bg-success/5">
-            <p className="text-micro uppercase tracking-[0.04em] text-success-fg">Потенциальная экономия</p>
+            <p className="text-micro uppercase tracking-[0.04em] text-success-fg">Переплата по графику</p>
             <p className="tabular mt-0.5 font-semibold text-success-fg">
-              {formatMoneyShort(summary.overpay)} процентов
+              {formatMoneyShort(summary.overpay)}
             </p>
           </div>
         </div>

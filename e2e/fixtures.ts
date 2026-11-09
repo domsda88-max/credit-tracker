@@ -204,6 +204,8 @@ export async function seedApp(page: Page, theme: 'light' | 'dark' = 'dark') {
         }),
       );
       localStorage.setItem('credit-tracker-theme', selectedTheme);
+      // Пропускаем онбординг, чтобы тесты сразу видели приложение.
+      localStorage.setItem('credit-tracker-onboarded', '1');
     },
     { user: USER, selectedTheme: theme },
   );

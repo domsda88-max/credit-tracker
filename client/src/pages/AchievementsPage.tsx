@@ -8,7 +8,7 @@ export function AchievementsPage() {
   return (
     <section className="space-y-6 animate-fade-up">
       <header className="card p-6 border border-primary/30 bg-primary/5">
-        <div className="flex items-center gap-3 mb-4">
+        <div className="mb-4 flex items-center gap-3">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-surface">
             <span className="text-3xl">{currentLevel.icon}</span>
           </div>
@@ -18,7 +18,7 @@ export function AchievementsPage() {
           </div>
         </div>
 
-        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-surface2">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-surface2">
           <div
             className="h-full rounded-full bg-gradient-to-r from-primary to-success transition-[width] duration-700 ease-app"
             style={{ width: `${progress}%` }}
@@ -31,12 +31,12 @@ export function AchievementsPage() {
       </header>
 
       <section className="card p-6">
-        <div className="flex items-baseline justify-between gap-2 mb-6">
+        <div className="mb-6 flex items-center justify-between gap-2">
           <h2 className="text-heading font-semibold text-t1">Ваши достижения</h2>
           <span className="tabular text-sm font-semibold text-t1">{state.badges.length}</span>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {unlockedBadges.map((badge) => (
             <div
               key={badge.id}
@@ -57,7 +57,7 @@ export function AchievementsPage() {
         {lockedBadges.length > 0 && (
           <div className="mt-6">
             <h3 className="text-micro uppercase tracking-[0.04em] text-t3">Скоро</h3>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-3">
+            <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {lockedBadges.map((badge) => (
                 <div
                   key={badge.id}
@@ -78,10 +78,10 @@ export function AchievementsPage() {
       </section>
 
       <section className="card p-6 border border-warning/20 bg-warning/5">
-        <div className="flex items-baseline justify-between gap-2 mb-4">
+        <div className="mb-4 flex items-center justify-between gap-2">
           <h3 className="text-heading font-semibold text-t1">Статистика активности</h3>
         </div>
-        <div className="grid gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
           <div className="p-4 rounded-control border border-line bg-surface">
             <p className="text-micro uppercase tracking-[0.04em] text-t3">Платежей отмечено</p>
             <p className="tabular mt-0.5 text-t1">{state.totalPayments}</p>
@@ -103,7 +103,7 @@ export function AchievementsPage() {
 
       <section className="card p-6 border border-primary/30 bg-primary/5">
         <h3 className="text-micro uppercase tracking-[0.04em] text-t3 mb-4">Как получать достижения</h3>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="p-3 rounded-control border border-line bg-surface/50">
             <p className="text-xs text-t3">💳 Первый кредит</p>
             <p className="mt-1 text-[10px] text-t3">Добавьте любой долг в приложение</p>

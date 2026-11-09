@@ -68,9 +68,10 @@ export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
       aria-label="Основная навигация"
       className="fixed bottom-[calc(env(safe-area-inset-bottom)+12px)] left-1/2 z-[60] -translate-x-1/2"
     >
-      <div className="flex items-center justify-between rounded-full border border-line bg-surface/95 p-1.5 shadow-[0_10px_40px_rgb(0_0_0_/_0.20)] backdrop-blur-md">
+      <div className="flex items-center justify-center gap-1 rounded-full border border-line bg-surface/95 p-1.5 shadow-[0_10px_40px_rgb(0_0_0_/_0.20)] backdrop-blur-md">
         {ITEMS.map(({ path, icon, label }) => {
           const active = isActive(path);
+          const showOffline = path === '/settings' && offlineCount > 0;
           return (
             <button
               key={path}
@@ -78,21 +79,18 @@ export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
               aria-label={label}
               aria-current={active ? 'page' : undefined}
               onClick={() => navigate(path)}
-              className={`flex h-[48px] w-[48px] items-center justify-center rounded-full transition-all duration-200 ${
+              className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors duration-200 ${
                 active
-                  ? 'bg-accent text-bg shadow-[0_4px_12px_rgb(0_0_0_/_0.25)] scale-105'
-                  : 'text-t3 transition-colors hover:bg-surface2 hover:text-t1'
+                  ? 'bg-accent text-bg'
+                  : 'text-t3 hover:bg-surface2 hover:text-t1'
               }`}
             >
               {icon}
-              {label === 'Настройки' && offlineCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-bg border border-line">
-                  {offlineCount}
+              {showOffline && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-[20px] items-center justify-center rounded-full border border-line bg-danger px-1 text-[10px] font-bold leading-none text-bg">
+                  {offlineCount > 9 ? '9+' : offlineCount}
                 </span>
               )}
-              <span className={`mt-0.5 text-[10px] font-medium ${active ? 'text-bg' : 'text-t3'}`}>
-                {label}
-              </span>
             </button>
           );
         })}

@@ -40,7 +40,7 @@ export function Onboarding() {
   return (
     <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-bg p-6">
       <div className="max-w-md w-full space-y-6">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary-fg mb-4">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary-fg mb-4">
           {SLIDES[index].icon}
         </div>
         <h2 className="text-2xl font-bold text-t1 text-center">{SLIDES[index].title}</h2>
@@ -62,17 +62,17 @@ export function Onboarding() {
             <button
               type="button"
               onClick={finish}
-              className="w-full rounded-control bg-primary px-6 py-3 font-semibold text-bg transition hover:bg-primary/90"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-6 py-3 font-semibold text-bg transition hover:bg-primary/90"
             >
-              Начать пользоваться <CheckCircle2 size={18} className="ml-1" />
+              Начать пользоваться <CheckCircle2 size={18} />
             </button>
           ) : (
             <button
               type="button"
               onClick={() => setIndex((i) => i + 1)}
-              className="w-full rounded-control border border-line px-6 py-3 font-semibold text-t1 transition hover:bg-surface2"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-control border border-line px-6 py-3 font-semibold text-t1 transition hover:bg-surface2"
             >
-              Далее <ArrowRight size={18} className="ml-1" />
+              Далее <ArrowRight size={18} />
             </button>
           )}
           {!isLast && (

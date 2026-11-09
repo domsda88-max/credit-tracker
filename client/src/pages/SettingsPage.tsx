@@ -69,7 +69,7 @@ export function SettingsPage() {
               type="button"
               aria-label={`Тема ${m}`}
               onClick={() => setThemeMode(m)}
-              className={`h-10 w-10 rounded-full border-2 transition ${themeMode === m ? 'border-primary scale-110' : 'border-line'}`}
+              className={`h-11 w-11 rounded-full border-2 transition ${themeMode === m ? 'border-primary ring-2 ring-primary/30' : 'border-line'}`}
               style={{
                 background: m === 'light' ? 'linear-gradient(135deg,#ECF4FC,#DCECFC)' : m === 'warm' ? 'linear-gradient(135deg,#F4F0E8,#FFFDF8)' : 'linear-gradient(135deg,#0B1421,#14243C)',
               }}
