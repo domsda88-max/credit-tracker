@@ -282,6 +282,7 @@ export function AddCreditPage() {
 
   const hasName = Boolean(name && String(name).trim());
   const hasPrincipal = principal !== undefined && Number(principal) > 0;
+  const hasType = !!(type && String(type).trim());
   const hasStartDate = !!(startDate && String(startDate).trim());
   const hasRate = annualRate !== undefined && Number.isFinite(Number(annualRate));
   const hasTerm = !!((termMonths && Number(termMonths) > 0) || (termDays && Number(termDays) > 0));
@@ -333,7 +334,7 @@ export function AddCreditPage() {
           </div>
         )}
 
-        {hasName && hasPrincipal && (
+        {hasName && hasType && (
           <label className="block">
             <span className="text-sm text-t2">Остаток долга, ₽ <span className="text-danger-fg">*</span></span>
             <MoneyInput register={register} name="principal" placeholder="150 000" />
@@ -341,7 +342,7 @@ export function AddCreditPage() {
           </label>
         )}
 
-        {hasName && hasPrincipal && type === 'CREDIT_CARD' && (
+        {hasName && hasType && hasPrincipal && type === 'CREDIT_CARD' && (
           <section className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
             <h3 className="text-sm font-medium text-t2">
               Параметры карты
@@ -370,7 +371,7 @@ export function AddCreditPage() {
           </section>
         )}
 
-        {(type === 'CONSUMER' || type === 'MORTGAGE') && hasName && hasPrincipal && (
+        {(type === 'CONSUMER' || type === 'MORTGAGE') && hasName && hasType && hasPrincipal && (
           <section className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
             <h3 className="text-sm font-medium text-t2">
               Параметры {type === 'CONSUMER' ? 'потребительского кредита' : 'ипотеки'}
@@ -414,7 +415,7 @@ export function AddCreditPage() {
           </section>
         )}
 
-        {type === 'INSTALLMENT' && hasName && hasPrincipal && (
+        {type === 'INSTALLMENT' && hasName && hasType && hasPrincipal && (
           <section className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
             <h3 className="text-sm font-medium text-t2">
               Параметры рассрочки / сплита
@@ -443,7 +444,7 @@ export function AddCreditPage() {
           </section>
         )}
 
-        {type === 'MICROLOAN' && hasName && hasPrincipal && (
+        {type === 'MICROLOAN' && hasName && hasType && hasPrincipal && (
           <section className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
             <h3 className="text-sm font-medium text-t2">
               Параметры займа (МФО)
@@ -473,7 +474,7 @@ export function AddCreditPage() {
           </section>
         )}
 
-        {type === 'LOAN' && hasName && hasPrincipal && (
+        {type === 'LOAN' && hasName && hasType && hasPrincipal && (
           <div className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
             <h3 className="text-sm font-medium text-t2">
               Частный займ
@@ -489,7 +490,7 @@ export function AddCreditPage() {
           </div>
         )}
 
-        {type === 'CREDIT_CARD' && hasName && hasPrincipal && (
+        {type === 'CREDIT_CARD' && hasName && hasType && hasPrincipal && (
           <>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="block">
@@ -505,7 +506,7 @@ export function AddCreditPage() {
           </>
         )}
 
-        {(type === 'CONSUMER' || type === 'MORTGAGE') && markPast && hasName && hasPrincipal && (
+        {(type === 'CONSUMER' || type === 'MORTGAGE') && markPast && hasName && hasType && hasPrincipal && (
           <div className="space-y-3 rounded-card border border-line bg-surface2/40 p-4">
             <label className="flex items-start gap-2 text-sm text-t2">
               <input type="checkbox" {...register('markPastAsPaid')} className="mt-0.5 h-4 w-4 shrink-0 accent-success" />
@@ -524,7 +525,7 @@ export function AddCreditPage() {
           </div>
         )}
 
-        {type === 'CREDIT_CARD' && frozen && hasName && hasPrincipal && (
+        {type === 'CREDIT_CARD' && frozen && hasName && hasType && hasPrincipal && (
           <div className="space-y-3 rounded-card border border-line bg-surface2/40 p-4">
             <label className="block">
               <span className="text-sm text-t2">Период заморозки, дней</span>
@@ -534,14 +535,14 @@ export function AddCreditPage() {
           </div>
         )}
 
-        {hasName && hasPrincipal && type === 'CREDIT_CARD' && (
+        {hasName && hasType && hasPrincipal && type === 'CREDIT_CARD' && (
           <label className="flex items-start gap-2 text-sm text-t2">
             <input type="checkbox" {...register('frozen')} className="mt-0.5 h-4 w-4 shrink-0 accent-success" />
             <span>Цикл заморозки («снежинка»)</span>
           </label>
         )}
 
-        {hasName && hasPrincipal && (
+        {hasName && hasType && hasPrincipal && (
           <details className="rounded-card border border-line bg-surface p-4">
             <summary className="cursor-pointer text-sm font-medium text-t1">История досрочных погашений (опционально)</summary>
             <div className="mt-3 space-y-3">
@@ -557,7 +558,7 @@ export function AddCreditPage() {
           </details>
         )}
 
-        {hasName && hasPrincipal && principal && Number(principal) > 0 && (
+        {hasName && hasType && hasPrincipal && principal && Number(principal) > 0 && (
           <div className="rounded-card border border-line bg-surface p-4">
             <h3 className="text-sm font-medium text-t1">Предпросмотр</h3>
             <p className="mt-2 text-sm text-t2">Сумма долга: <b className="text-t1">{formatMoney(Number(principal))}</b></p>
@@ -569,7 +570,7 @@ export function AddCreditPage() {
 
         {error && <p className="text-sm text-danger-fg">{error}</p>}
 
-        {(hasName && hasPrincipal) && (
+        {(hasName && hasType && hasPrincipal) && (
           <div className="flex gap-3">
             <button type="submit" disabled={isSubmitting || mutation.isPending} className="inline-flex w-full items-center justify-center gap-2 whitespace-normal rounded-control bg-primary px-4 py-2.5 font-medium text-bg disabled:opacity-70">
               {mutation.isPending ? (<><span className="h-4 w-4 animate-spin rounded-full border-2 border-bg/40 border-t-bg" />…</>) : ('Сохранить')}
