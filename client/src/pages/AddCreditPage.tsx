@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { extractErrorMessage } from '../api/client';
 import type { CreateCreditPayload } from '../types';
 import { creditsApi } from '../api/credits';
+import { formatMoney } from '../utils/format';
 
 const optionalNumber = (min: number, max: number) =>
   z
@@ -52,72 +53,80 @@ const schema = z
     outstanding: optionalNumber(0, Number.MAX_SAFE_INTEGER),
   })
   .superRefine((data, ctx) => {
-    // ----- Кредитная карта -----
     if (data.type === 'CREDIT_CARD') {
       if (data.annualRate == null || Number.isNaN(data.annualRate)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите ставку % годовых', path: ['annualRate'] });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите ставку % годовых…', path: ['annualRate'] });
       }
       if (!data.paymentDay) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите день платежа', path: ['paymentDay'] });
       }
     }
-
-    // ----- Потребительский кредит / Ипотека -----
     if (data.type === 'CONSUMER' || data.type === 'MORTGAGE') {
       if (!data.paymentType) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Выберите тип платежа', path: ['paymentType'] });
       }
       if (data.annualRate == null || Number.isNaN(data.annualRate)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите ставку % годовых', path: ['annualRate'] });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите ставку % годовых…', path: ['annualRate'] });
       }
       if (!data.startDate) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите дату выдачи', path: ['startDate'] });
       }
       if (!data.termMonths || data.termMonths <= 0) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите срок в месяцах', path: ['termMonths'] });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите срок в месяцах…', path: ['termMonths'] });
       }
       if (!data.paymentDay) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите день платежа', path: ['paymentDay'] });
       }
     }
-
-    // ----- Рассрочка / Сплит -----
     if (data.type === 'INSTALLMENT') {
-      if (!data.termMonths || data.termMonths <= 0) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите срок в месяцах', path: ['termMonths'] });
+      if (!data.termDays && !(data.termMonths && data.termMonths > 0)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите срок…', path: ['termMonths'] });
       }
       if (!data.paymentDay) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите день платежа', path: ['paymentDay'] });
       }
     }
-
-    // ----- Займ / МФО -----
     if (data.type === 'MICROLOAN') {
       if (data.annualRate == null || Number.isNaN(data.annualRate)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите ставку % годовых', path: ['annualRate'] });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите ставку % годовых…', path: ['annualRate'] });
       }
-      if (!data.termDays || data.termDays < 1 || data.termDays > 365) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите срок в днях (1–365)', path: ['termDays'] });
+      if (!data.termDays) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите срок в днях… (1–365)', path: ['termDays'] });
       }
       if (!data.paymentDay) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите день платежа', path: ['paymentDay'] });
       }
     }
-
-    // ----- Заем (частный) — PRIVATE_LOAN -----
     if (data.type === 'LOAN') {
-      // Ставка не обязательна — по умолчанию 0%. Срок не нужен.
+      if (!data.startDate) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите дату выдачи', path: ['startDate'] });
+      }
     }
   });
 
 type FormValues = z.infer<typeof schema>;
-
-type MutationValues = FormValues & {
-  earlyRepayments: NonNullable<CreateCreditPayload['earlyRepayments']>;
-};
+type MutationValues = FormValues & { earlyRepayments: NonNullable<CreateCreditPayload['earlyRepayments']> };
 
 const inputClass =
   'mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none transition focus:border-primary';
+
+function MoneyInput({ register, name, placeholder }: { register: ReturnType<typeof useForm<FormValues>>['register']; name: Parameters<ReturnType<typeof useForm<FormValues>>['register']>[0]; placeholder?: string }) {
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      placeholder={placeholder}
+      {...register(name, {
+        setValueAs: (v: string) => {
+          if (typeof v !== 'string') return v;
+          const cleaned = v.replace(/\s/g, '').replace(',', '.');
+          return cleaned === '' ? '' : Number(cleaned);
+        },
+      })}
+      className={inputClass}
+    />
+  );
+}
 
 export function AddCreditPage() {
   const navigate = useNavigate();
@@ -147,14 +156,14 @@ export function AddCreditPage() {
   const frozen = watch('frozen');
   const markPast = watch('markPastAsPaid');
   const startDate = watch('startDate');
+  const name = watch('name');
+  const principal = watch('principal');
 
   const startInPast = Boolean(startDate) && new Date(startDate ?? '') < new Date();
 
-  // --- Сбрасываем поля, нерелевантные для нового типа продукта ---
   useEffect(() => {
     if (prevTypeRef.current === type) return;
     prevTypeRef.current = type;
-
     switch (type) {
       case 'CREDIT_CARD':
         setValue('paymentType', 'MIN_PAYMENT');
@@ -165,7 +174,6 @@ export function AddCreditPage() {
         setValue('markPastAsPaid', true);
         setValue('outstanding', undefined);
         break;
-
       case 'CONSUMER':
       case 'MORTGAGE':
         setValue('paymentType', 'ANNUITY');
@@ -177,7 +185,6 @@ export function AddCreditPage() {
         setValue('frozen', false);
         setValue('freezeCycleDays', null);
         break;
-
       case 'INSTALLMENT':
         setValue('paymentType', 'ANNUITY');
         setValue('prepaymentMode', undefined);
@@ -192,7 +199,6 @@ export function AddCreditPage() {
         setValue('markPastAsPaid', true);
         setValue('outstanding', undefined);
         break;
-
       case 'MICROLOAN':
         setValue('paymentType', undefined);
         setValue('prepaymentMode', undefined);
@@ -207,14 +213,12 @@ export function AddCreditPage() {
         setValue('markPastAsPaid', true);
         setValue('outstanding', undefined);
         break;
-
       case 'LOAN':
         setValue('paymentType', undefined);
         setValue('prepaymentMode', undefined);
-        setValue('startDate', undefined);
+        setValue('annualRate', undefined);
         setValue('termMonths', undefined);
         setValue('termDays', undefined);
-        setValue('annualRate', undefined);
         setValue('minPayment', undefined);
         setValue('gracePeriodEnds', undefined);
         setValue('graceReplenishSum', undefined);
@@ -227,7 +231,7 @@ export function AddCreditPage() {
     }
   }, [type, setValue]);
 
-   const mutation = useMutation({
+  const mutation = useMutation({
     mutationFn: (values: MutationValues) => {
       const parsed = schema.parse(values);
       return creditsApi.create({
@@ -244,7 +248,7 @@ export function AddCreditPage() {
         markPastAsPaid: parsed.markPastAsPaid,
         outstanding: parsed.outstanding ?? null,
         paymentType: parsed.paymentType ?? 'ANNUITY',
-        earlyRepayments: values.earlyRepayments,        // Кредитная карта — revolving-продукт, срок не нужен
+        earlyRepayments: values.earlyRepayments,
         termMonths:
           parsed.type === 'CREDIT_CARD' || parsed.type === 'MICROLOAN' ? undefined : parsed.termMonths,
       });
@@ -256,172 +260,71 @@ export function AddCreditPage() {
     onError: (err) => setError(extractErrorMessage(err)),
   });
 
-  const sectionClass = 'transition-all duration-300 ease-in-out';
+  const hasName = Boolean(name && String(name).trim());
+  const hasPrincipal = principal !== undefined && Number(principal) > 0;
+  const hasStartDate = !!(startDate && String(startDate).trim());
 
   const handleClose = () => navigate(-1);
 
   return (
     <div className="min-w-0 w-full max-w-full space-y-4 px-4">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-heading font-bold text-t1">Добавить долг</h1>
-        <button
-          type="button"
-          onClick={handleClose}
-          aria-label="Закрыть"
-          className="rounded-full p-1.5 text-t3 hover:bg-surface2 transition"
-        >
-          ×
-        </button>
+        <h1 className="text-heading font-bold text-t1">Добавление долга</h1>
+        <button type="button" onClick={handleClose} aria-label="Закрыть" className="rounded-full p-1.5 text-t3 hover:bg-surface2 transition">×</button>
       </div>
-      <p className="mt-1 text-sm text-t3">
-        График платежей будет построен автоматически по выбранному типу
-      </p>
-      {Object.keys(errors).length > 0 && (
-        <p className="mt-3 rounded-control border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger-fg">
-          Проверьте выделенные поля — форма не отправится, пока они не заполнены верно.
-        </p>
-      )}
 
-      <form
-        onSubmit={handleSubmit((values) =>
-          mutation.mutate({
-            ...values,
-            earlyRepayments: earlyRepayments
-              .filter((er) => er.amount && er.date)
-               .map((er) => ({ amount: Number(er.amount), date: er.date })),
-          }),
-        )}
-        className="mt-5 space-y-4 touch-manipulation"
-      >
-        {/* === ОБЩИЕ ПОЛЯ (всегда видны) === */}
+      <form onSubmit={handleSubmit((values) => mutation.mutate({ ...values, earlyRepayments: earlyRepayments.filter((er) => er.amount && er.date).map((er) => ({ amount: Number(er.amount), date: er.date })) }))} className="mt-5 space-y-4 touch-manipulation">
         <label className="block">
           <span className="text-sm text-t2">Название <span className="text-danger-fg">*</span></span>
           <input placeholder="Например, Альфа-Банк" {...register('name')} className={inputClass} />
           {errors.name && <p className="mt-1 text-xs text-danger-fg">{errors.name.message}</p>}
         </label>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {hasName && (
           <label className="block">
-            <span className="text-sm text-t2">Тип продукта</span>
+            <span className="text-sm text-t2">Тип долга</span>
             <select {...register('type')} className={inputClass}>
               <option value="CONSUMER">Потребительский кредит</option>
               <option value="CREDIT_CARD">Кредитная карта</option>
               <option value="MORTGAGE">Ипотека</option>
               <option value="INSTALLMENT">Рассрочка / Сплит</option>
               <option value="MICROLOAN">Займ (МФО)</option>
-              <option value="LOAN">Заем (частный)</option>
+              <option value="LOAN">Займ (частный)</option>
             </select>
           </label>
-
-          <label className="block">
-            <span className="text-sm text-t2">Сумма долга, ₽ <span className="text-danger-fg">*</span></span>
-            <input type="number" step="0.01" inputMode="decimal" placeholder="150 000.00" {...register('principal')} className={inputClass} />
-            {errors.principal && (
-              <p className="mt-1 text-xs text-danger-fg">{errors.principal.message}</p>
-            )}
-          </label>
-        </div>
-
-        {/* === СПЕЦИФИЧНЫЕ ПОЛЯ ПО ТИПУ === */}
-        {type === 'CREDIT_CARD' && (
-          <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <label className="block">
-                <span className="text-sm text-t2">Ставка, % годовых <span className="text-danger-fg">*</span></span>
-                <input type="number" step="0.01" inputMode="decimal" placeholder="19.9" {...register('annualRate')} className={inputClass} />
-                {errors.annualRate && (
-                  <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>
-                )}
-              </label>
-
-              <label className="block">
-                <span className="text-sm text-t2">День платежа</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={31}
-                  inputMode="numeric"
-                  placeholder="напр. 20"
-                  {...register('paymentDay')}
-                  className={inputClass}
-                />
-                {errors.paymentDay && (
-                  <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>
-                )}
-              </label>
-
-              <label className="block">
-                <span className="text-sm text-t2">Сумма для продления грейса, ₽</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="43 000"
-                  {...register('graceReplenishSum')}
-                  className={inputClass}
-                />
-                {errors.graceReplenishSum && (
-                  <p className="mt-1 text-xs text-danger-fg">{errors.graceReplenishSum.message}</p>
-                )}
-              </label>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className="text-sm text-t2">Льготный период до</span>
-                <input type="date" {...register('gracePeriodEnds')} className={inputClass} />
-              </label>
-
-              <label className="block">
-                <span className="text-sm text-t2">День пополнения</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={31}
-                  {...register('graceReplenishDay')}
-                  className={inputClass}
-                />
-              </label>
-            </div>
-
-            <div className="space-y-3 rounded-card border border-line bg-surface2/40 p-4">
-              <label className="flex items-start gap-2 text-sm text-t2">
-                <input
-                  type="checkbox"
-                  {...register('frozen')}
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-success"
-                />
-                <span>Цикл заморозки («снежинка»)</span>
-              </label>
-
-              {frozen && (
-                <label className="block">
-                  <span className="text-sm text-t2">Период заморозки, дней</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={365}
-                    {...register('freezeCycleDays')}
-                    className={inputClass}
-                  />
-                  {errors.freezeCycleDays && (
-                    <p className="mt-1 text-xs text-danger-fg">{errors.freezeCycleDays.message}</p>
-                  )}
-                </label>
-              )}
-            </div>
-
-            <p className="mt-2 text-xs text-t3">
-              Тип платежа автоматически: <b>Минимальный платёж</b>. Срок и дата выдачи не нужны — карта revolving.
-            </p>
-          </>
         )}
 
-        {(type === 'CONSUMER' || type === 'MORTGAGE') && (
-          <section className={`space-y-4 rounded-card border border-line bg-surface2/40 p-4 ${sectionClass}`}>
-            <h3 className="text-sm font-medium text-t2">
-              Параметры {type === 'CONSUMER' ? 'потребительского кредита' : 'ипотеки'}
-            </h3>
+        {hasName && hasPrincipal && (
+          <label className="block">
+            <span className="text-sm text-t2">Остаток долга, ₽ <span className="text-danger-fg">*</span></span>
+            <MoneyInput register={register} name="principal" placeholder="150 000" />
+            {errors.principal && <p className="mt-1 text-xs text-danger-fg">{errors.principal.message}</p>}
+          </label>
+        )}
 
+        {type === 'CREDIT_CARD' && hasName && hasPrincipal && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <label className="block">
+              <span className="text-sm text-t2">Ставка, % годовых <span className="text-danger-fg">*</span></span>
+              <input type="number" step="0.01" inputMode="decimal" placeholder="19.9" {...register('annualRate')} className={inputClass} />
+              {errors.annualRate && <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>}
+            </label>
+            <label className="block">
+              <span className="text-sm text-t2">День платежа</span>
+              <input type="number" min={1} max={31} inputMode="numeric" placeholder="напр. 20" {...register('paymentDay')} className={inputClass} />
+              {errors.paymentDay && <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>}
+            </label>
+            <label className="block">
+              <span className="text-sm text-t2">Сумма для продления грейса, ₽</span>
+              <MoneyInput register={register} name="graceReplenishSum" placeholder="43 000" />
+              {errors.graceReplenishSum && <p className="mt-1 text-xs text-danger-fg">{errors.graceReplenishSum.message}</p>}
+            </label>
+          </div>
+        )}
+
+        {(type === 'CONSUMER' || type === 'MORTGAGE') && hasName && hasPrincipal && (
+          <section className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
+            <h3 className="text-sm font-medium text-t2">Параметры {type === 'CONSUMER' ? 'потребительского кредита' : 'ипотеки'}</h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
                 <span className="text-sm text-t2">Тип платежа</span>
@@ -430,321 +333,179 @@ export function AddCreditPage() {
                   <option value="DIFFERENTIAL">Дифференцированный</option>
                 </select>
               </label>
-
               <label className="block">
                 <span className="text-sm text-t2">Ставка, % годовых</span>
                 <input type="number" step="0.01" {...register('annualRate')} className={inputClass} />
-                {errors.annualRate && (
-                  <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>
-                )}
+                {errors.annualRate && <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>}
               </label>
-
               <label className="block">
-                <span className="text-sm text-t2">Дата выдачи <span className="text-t3">(необязательно)</span></span>
+                <span className="text-sm text-t2">Дата выдачи</span>
                 <input type="date" {...register('startDate')} className={inputClass} />
-                {errors.startDate && (
-                  <p className="mt-1 text-xs text-danger-fg">{errors.startDate.message}</p>
-                )}
+                {errors.startDate && <p className="mt-1 text-xs text-danger-fg">{errors.startDate.message}</p>}
                 <p className="mt-1 text-xs text-t3">Если не указана — берётся дата создания записи.</p>
               </label>
             </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="block">
                 <span className="text-sm text-t2">Срок, месяцев</span>
                 <input type="number" {...register('termMonths')} className={inputClass} />
-                {errors.termMonths && (
-                  <p className="mt-1 text-xs text-danger-fg">{errors.termMonths.message}</p>
-                )}
+                {errors.termMonths && <p className="mt-1 text-xs text-danger-fg">{errors.termMonths.message}</p>}
               </label>
-
               <label className="block">
                 <span className="text-sm text-t2">День платежа</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={31}
-                  inputMode="numeric"
-                  placeholder="напр. 20"
-                  {...register('paymentDay')}
-                  className={inputClass}
-                />
-                {errors.paymentDay && (
-                  <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>
-                )}
+                <input type="number" min={1} max={31} inputMode="numeric" placeholder="напр. 20" {...register('paymentDay')} className={inputClass} />
+                {errors.paymentDay && <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>}
               </label>
-
-
             </div>
           </section>
         )}
 
-        {type === 'INSTALLMENT' && (
-          <section className={`space-y-4 rounded-card border border-line bg-surface2/40 p-4 ${sectionClass}`}>
+        {type === 'INSTALLMENT' && hasName && hasPrincipal && (
+          <section className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
             <h3 className="text-sm font-medium text-t2">Параметры рассрочки / сплита</h3>
-
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
                 <span className="text-sm text-t2">Срок, дней <span className="text-danger-fg">*</span></span>
                 <input type="number" inputMode="numeric" min="1" placeholder="напр. 30" {...register('termDays')} className={inputClass} />
-                {errors.termDays && (
-                  <p className="mt-1 text-xs text-danger-fg">{errors.termDays.message}</p>
-                )}
+                {errors.termDays && <p className="mt-1 text-xs text-danger-fg">{errors.termDays.message}</p>}
               </label>
-
               <label className="block">
                 <span className="text-sm text-t2">День платежа</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={31}
-                  inputMode="numeric"
-                  placeholder="напр. 20"
-                  {...register('paymentDay')}
-                  className={inputClass}
-                />
-                {errors.paymentDay && (
-                  <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>
-                )}
+                <input type="number" min={1} max={31} inputMode="numeric" placeholder="напр. 20" {...register('paymentDay')} className={inputClass} />
+                {errors.paymentDay && <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>}
               </label>
-
               <label className="block">
                 <span className="text-sm text-t2">Ставка, % годовых</span>
                 <input type="number" step="0.01" {...register('annualRate')} className={inputClass} />
-                {errors.annualRate && (
-                  <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>
-                )}
+                {errors.annualRate && <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>}
                 <span className="mt-1 block text-xs text-t3">0% — без процентов, либо укажите свою ставку</span>
               </label>
             </div>
           </section>
         )}
 
-        {/* === ОПЦИОННЫЙ БЛОК: «рассрочка оформлена раньше» (для INSTALLMENT) === */}
-        {type === 'INSTALLMENT' && markPast && (
-          <div className={`space-y-3 rounded-card border border-line bg-surface2/40 p-4 ${sectionClass}`}>
-            <label className="flex items-start gap-2 text-sm text-t2">
-              <input
-                type="checkbox"
-                {...register('markPastAsPaid')}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-success"
-              />
-              <span>
-                Рассрочка оформлена раньше — платежи, срок которых уже прошёл, считать внесёнными
-                <span className="mt-0.5 block text-xs text-t3">
-                  Укажите дату выдачи, чтобы прошедшие платежи отметились оплаченными
-                </span>
-              </span>
-            </label>
-
-            {markPast && (
-              <label className="block">
-                <span className="text-sm text-t2">Дата выдачи</span>
-                <input
-                  type="date"
-                  {...register('startDate')}
-                  className={inputClass}
-                />
-                {errors.startDate && (
-                  <p className="mt-1 text-xs text-danger-fg">{errors.startDate.message}</p>
-                )}
-              </label>
-            )}
-
-            {markPast && (
-              <label className="block">
-                <span className="text-sm text-t2">
-                  Остаток долга сейчас, ₽ <span className="text-xs text-t3">необязательно</span>
-                </span>
-                <input
-                  type="number"
-                  step="0.01"
-                  inputMode="decimal"
-                  placeholder="оставьте пустым — посчитаю сам"
-                  {...register('outstanding')}
-                  className={inputClass}
-                />
-                <span className="mt-1 block text-xs text-t3">
-                  Если знаете точный остаток из приложения банка — введите его, и он заменит расчёт.
-                </span>
-                {errors.outstanding && (
-                  <p className="mt-1 text-xs text-danger-fg">{errors.outstanding.message}</p>
-                )}
-              </label>
-            )}
-          </div>
-        )}
-
-        {type === 'MICROLOAN' && (
-          <section className={`space-y-4 rounded-card border border-line bg-surface2/40 p-4 ${sectionClass}`}>
+        {type === 'MICROLOAN' && hasName && hasPrincipal && (
+          <section className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
             <h3 className="text-sm font-medium text-t2">Параметры займа (МФО)</h3>
-
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
                 <span className="text-sm text-t2">Ставка, % годовых</span>
                 <input type="number" step="0.01" {...register('annualRate')} className={inputClass} />
-                {errors.annualRate && (
-                  <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>
-                )}
+                {errors.annualRate && <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>}
               </label>
-
               <label className="block">
                 <span className="text-sm text-t2">Срок, дней</span>
-                <input
-                  type="number"
-                  {...register('termDays')}
-                  placeholder="напр. 30"
-                  className={inputClass}
-                />
-                {errors.termDays && (
-                  <p className="mt-1 text-xs text-danger-fg">{errors.termDays.message}</p>
-                )}
+                <input type="number" {...register('termDays')} placeholder="напр. 30" className={inputClass} />
+                {errors.termDays && <p className="mt-1 text-xs text-danger-fg">{errors.termDays.message}</p>}
               </label>
-
               <label className="block">
                 <span className="text-sm text-t2">День платежа</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={31}
-                  inputMode="numeric"
-                  placeholder="напр. 20"
-                  {...register('paymentDay')}
-                  className={inputClass}
-                />
-                {errors.paymentDay && (
-                  <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>
-                )}
+                <input type="number" min={1} max={31} inputMode="numeric" placeholder="напр. 20" {...register('paymentDay')} className={inputClass} />
+                {errors.paymentDay && <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>}
               </label>
             </div>
-
-            <p className="mt-2 text-xs text-t3">
-              Один баллонный платёж в конце срока. Дата выдачи не нужна — займ краткосрочный.
-            </p>
+            <p className="mt-2 text-xs text-t3">Один balloon-платёж в конце срока. Дата выдачи не нужна — займ краткосрочный.</p>
           </section>
         )}
 
-        {type === 'LOAN' && (
-          <p className="mt-2 text-xs text-t3">
-            Частный заём без графика — только название и сумма. Ставка 0%.
-          </p>
+        {type === 'LOAN' && hasName && hasPrincipal && (
+          <div className="space-y-4">
+            <label className="block">
+              <span className="text-sm text-t2">Дата выдачи</span>
+              <input type="date" {...register('startDate')} className={inputClass} />
+              {errors.startDate && <p className="mt-1 text-xs text-danger-fg">{errors.startDate.message}</p>}
+            </label>
+            <p className="mt-2 text-xs text-t3">Частный займ без графика — только название и сумма. Ставка 0%.</p>
+          </div>
         )}
 
-        {/* === ОПЦИОННЫЙ БЛОК: «кредит оформлен раньше» (только для CONSUMER/MORTGAGE) === */}
-        {(type === 'CONSUMER' || type === 'MORTGAGE') && (
-          <div className={`space-y-3 rounded-card border border-line bg-surface2/40 p-4 ${sectionClass}`}>
+        {type === 'CREDIT_CARD' && hasName && hasPrincipal && (
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-sm text-t2">Льготный период до</span>
+                <input type="date" {...register('gracePeriodEnds')} className={inputClass} />
+              </label>
+              <label className="block">
+                <span className="text-sm text-t2">День пополнения</span>
+                <input type="number" min={1} max={31} {...register('graceReplenishDay')} className={inputClass} />
+              </label>
+            </div>
+            <p className="mt-2 text-xs text-t3">Тип платежа автоматический: <b>минимальный платёж</b>. Срок и дата выдачи не нужны — карта revolving.</p>
+          </>
+        )}
+
+        {(type === 'CONSUMER' || type === 'MORTGAGE') && markPast && hasName && hasPrincipal && (
+          <div className="space-y-3 rounded-card border border-line bg-surface2/40 p-4">
             <label className="flex items-start gap-2 text-sm text-t2">
-              <input
-                type="checkbox"
-                {...register('markPastAsPaid')}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-success"
-              />
+              <input type="checkbox" {...register('markPastAsPaid')} className="mt-0.5 h-4 w-4 shrink-0 accent-success" />
               <span>
-                Кредит оформлен раньше — платежи, срок которых уже прошёл, считать внесёнными
-                <span className="mt-0.5 block text-xs text-t3">
-                  {startInPast
-                    ? 'Дата выдачи в прошлом: график будет построен целиком, прошедшие платежи отметятся оплаченными, а остаток долга уменьшится на их «тело».'
-                    : 'Укажите прошедшую дату выдачи, чтобы это сработало.'}
-                </span>
+                Кредит оформлен раньше — платежи, срок которых уже прошёл, считаем внесёнными
+                <span className="mt-0.5 block text-xs text-t3">{startInPast ? 'Дата выдачи в прошлом: график будет построен целиком, прошедшие платежи отметятся оплаченными, а остаток долга уменьшится на «тело».' : 'Укажите прошедшую дату выдачи, чтобы это сработало.'}</span>
               </span>
             </label>
-
             {markPast && (
               <label className="block">
-                <span className="text-sm text-t2">
-                  Остаток долга сейчас, ₽ <span className="text-xs text-t3">необязательно</span>
-                </span>
-                <input
-                  type="number"
-                  step="0.01"
-                  inputMode="decimal"
-                  placeholder="оставьте пустым — посчитаю сам"
-                  {...register('outstanding')}
-                  className={inputClass}
-                />
-                <span className="mt-1 block text-xs text-t3">
-                  Если знаете точный остаток из приложения банка — введите его, и он заменит расчёт.
-                </span>
-                {errors.outstanding && (
-                  <p className="mt-1 text-xs text-danger-fg">{errors.outstanding.message}</p>
-                )}
+                <span className="text-sm text-t2">Остаток долга сейчас, ₽ <span className="text-xs text-t3">необязательно</span></span>
+                <MoneyInput register={register} name="outstanding" placeholder="оставьте пустым — посчитаем сами" />
+                {errors.outstanding && <p className="mt-1 text-xs text-danger-fg">{errors.outstanding.message}</p>}
               </label>
             )}
           </div>
         )}
 
-        <details className="rounded-card border border-line bg-surface p-4">
-          <summary className="cursor-pointer text-sm font-medium text-t1">
-            История досрочных погашений (опционально)
-          </summary>
-          <div className="mt-3 space-y-3">
-            {earlyRepayments.map((er, idx) => (
-              <div key={idx} className="flex gap-2">
-                <input
-                  type="number"
-                  placeholder="Сумма, ₽"
-                  value={er.amount}
-                  onChange={(e) => {
-                    const updated = [...earlyRepayments];
-                    updated[idx] = { ...updated[idx], amount: e.target.value };
-                    setEarlyRepayments(updated);
-                  }}
-                  className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-t1"
-                />
-                <input
-                  type="date"
-                  value={er.date}
-                  onChange={(e) => {
-                    const updated = [...earlyRepayments];
-                    updated[idx] = { ...updated[idx], date: e.target.value };
-                    setEarlyRepayments(updated);
-                  }}
-                  className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-t1"
-                />
-                <button
-                  type="button"
-                  onClick={() => setEarlyRepayments(earlyRepayments.filter((_, i) => i !== idx))}
-                  className="rounded-control border border-danger/40 px-3 text-danger-fg"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => setEarlyRepayments([...earlyRepayments, { amount: '', date: '' }])}
-              className="w-full rounded-control border border-line px-3 py-2 text-sm text-t2"
-            >
-              + Добавить досрочку
-            </button>
+        {type === 'CREDIT_CARD' && frozen && hasName && hasPrincipal && (
+          <div className="space-y-3 rounded-card border border-line bg-surface2/40 p-4">
+            <label className="block">
+              <span className="text-sm text-t2">Период заморозки, дней</span>
+              <input type="number" min={1} max={365} {...register('freezeCycleDays')} className={inputClass} />
+              {errors.freezeCycleDays && <p className="mt-1 text-xs text-danger-fg">{errors.freezeCycleDays.message}</p>}
+            </label>
           </div>
-        </details>
+        )}
+
+        {hasName && hasPrincipal && type === 'CREDIT_CARD' && (
+          <label className="flex items-start gap-2 text-sm text-t2">
+            <input type="checkbox" {...register('frozen')} className="mt-0.5 h-4 w-4 shrink-0 accent-success" />
+            <span>Цикл заморозки («снежинка»)</span>
+          </label>
+        )}
+
+        {hasName && hasPrincipal && (
+          <details className="rounded-card border border-line bg-surface p-4">
+            <summary className="cursor-pointer text-sm font-medium text-t1">История досрочных погашений (опционально)</summary>
+            <div className="mt-3 space-y-3">
+              {earlyRepayments.map((er, idx) => (
+                <div key={idx} className="flex gap-2">
+                  <input type="number" placeholder="Сумма, ₽" value={er.amount} onChange={(e) => { const updated = [...earlyRepayments]; updated[idx] = { ...updated[idx], amount: e.target.value }; setEarlyRepayments(updated); }} className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-t1" />
+                  <input type="date" value={er.date} onChange={(e) => { const updated = [...earlyRepayments]; updated[idx] = { ...updated[idx], date: e.target.value }; setEarlyRepayments(updated); }} className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-t1" />
+                  <button type="button" onClick={() => setEarlyRepayments(earlyRepayments.filter((_, i) => i !== idx))} className="rounded-control border border-danger/40 px-3 text-danger-fg">×</button>
+                </div>
+              ))}
+              <button type="button" onClick={() => setEarlyRepayments([...earlyRepayments, { amount: '', date: '' }])} className="w-full rounded-control border border-line px-3 py-2 text-sm text-t2">+ Добавить досрочку</button>
+            </div>
+          </details>
+        )}
+
+        {hasName && hasPrincipal && principal && Number(principal) > 0 && (
+          <div className="rounded-card border border-line bg-surface p-4">
+            <h3 className="text-sm font-medium text-t1">Предпросмотр</h3>
+            <p className="mt-2 text-sm text-t2">Сумма долга: <b className="text-t1">{formatMoney(Number(principal))}</b></p>
+            <p className="mt-1 text-sm text-t2">Тип: <b className="text-t1">{type}</b></p>
+            <p className="mt-1 text-xs text-t3">Точный график построится на сервере после сохранения.</p>
+          </div>
+        )}
 
         {error && <p className="text-sm text-danger-fg">{error}</p>}
 
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={isSubmitting || mutation.isPending}
-            className="inline-flex w-full items-center justify-center gap-2 whitespace-normal rounded-control bg-primary px-4 py-2.5 font-medium text-bg disabled:opacity-70"
-          >
-            {mutation.isPending ? (
-              <>
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-bg/40 border-t-bg" />
-                …
-              </>
-            ) : (
-              'Сохранить'
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="rounded-control border border-line px-4 py-2.5 text-t2 transition hover:border-t3"
-          >
-            Отмена
-          </button>
-        </div>
+        {(hasName && hasPrincipal) && (
+          <div className="flex gap-3">
+            <button type="submit" disabled={isSubmitting || mutation.isPending} className="inline-flex w-full items-center justify-center gap-2 whitespace-normal rounded-control bg-primary px-4 py-2.5 font-medium text-bg disabled:opacity-70">
+              {mutation.isPending ? (<><span className="h-4 w-4 animate-spin rounded-full border-2 border-bg/40 border-t-bg" />…</>) : ('Сохранить')}
+            </button>
+            <button type="button" onClick={() => navigate(-1)} className="rounded-control border border-line px-4 py-2.5 text-t2 transition hover:border-t3">Отмена</button>
+          </div>
+        )}
       </form>
     </div>
   );

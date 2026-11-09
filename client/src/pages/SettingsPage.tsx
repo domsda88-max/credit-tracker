@@ -6,7 +6,6 @@ import { ReminderSettings } from '../components/ReminderSettings';
 import { MotivationSettings } from '../components/MotivationSettings';
 import { IncomeSettings } from '../components/IncomeSettings';
 import { useThemeStore } from '../store/theme';
-import { SegmentedControl } from '../components/SegmentedControl';
 import { DataExport } from '../components/DataExport';
 import { ImportPaymentsBottomSheet } from '../components/ImportPaymentsBottomSheet';
 import { useAuthStore } from '../store/auth';
@@ -98,26 +97,7 @@ export function SettingsPage() {
         </Accordion>
       </section>
 
-      <section className="space-y-3">
-        <SrOnly>Оформление</SrOnly>
-        <div className="rounded-card border border-line bg-surface p-4">
-          <p className="font-medium text-t1">Тема оформления</p>
-          <p className="mt-0.5 text-xs text-t3">Светлая или тёмная</p>
-          <div className="mt-3">
-            <SegmentedControl
-              value={themeMode}
-              options={[
-                { value: 'dark', label: 'Тёмная' },
-                { value: 'light', label: 'Светлая' },
-              ]}
-              onChange={(v) => setThemeMode(v as 'dark' | 'light')}
-              ariaLabel="Тема оформления"
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className="space-y-3">
+       <section className="space-y-3">
         <SrOnly>Данные</SrOnly>
         <Accordion title="Экспорт данных" subtitle="Скачать CSV / JSON">
           <DataExport />
