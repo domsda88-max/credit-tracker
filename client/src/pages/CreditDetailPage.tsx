@@ -13,6 +13,8 @@ import { SkeletonCard } from '../components/Skeleton';
 import { BalanceChart } from '../components/BalanceChart';
 import { EditCreditForm } from '../components/EditCreditForm';
 import { useToast } from '../components/useToast';
+import { useGamification } from '../hooks/useGamification';
+import { BadgeUnlocked } from '../components/BadgeUnlocked';
 import type { EarlyPreview, EarlyRepaymentPayload, PaymentEvent } from '../types';
 import { maxPrepaymentDate } from '../utils/date';
 import {
@@ -45,11 +47,13 @@ export function CreditDetailPage() {
   const { id = '' } = useParams();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { addBadge, incrementStreak, recordPayment, recordEarlyRepayment, hasBadge } = useGamification();
   const [error, setError] = useState<string | null>(null);
   const [showAllPaid, setShowAllPaid] = useState(false);
   const [editing, setEditing] = useState(false);
   /** id платежа, для которого открыта форма фактической оплаты (сумма/дата). */
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [showingBadge, setShowingBadge] = useState<string | null>(null);
 
   const { data: credit, isPending, error: loadError } = useQuery({
     queryKey: ['credit', id],
@@ -116,6 +120,12 @@ export function CreditDetailPage() {
       setPayingId(null);
       await invalidate();
       toast.show('Платёж отмечен');
+      recordPayment();
+      incrementStreak();
+      if (!hasBadge('payment_on_time')) {
+        addBadge('payment_on_time');
+        setShowingBadge('payment_on_time');
+      }
     },
     onError: (err) => setError(extractErrorMessage(err)),
   });
@@ -134,6 +144,11 @@ export function CreditDetailPage() {
       await invalidate();
       toast.show('Досрочное погашение внесено');
       navigator.vibrate?.([30, 40, 30]);
+      recordEarlyRepayment();
+      if (!hasBadge('early_repayment')) {
+        addBadge('early_repayment');
+        setShowingBadge('early_repayment');
+      }
     },
     onError: (err) => setError(extractErrorMessage(err)),
   });
@@ -591,6 +606,7 @@ export function CreditDetailPage() {
           </div>
         </section>
       )}
+      {showingBadge && <BadgeUnlocked badgeId={showingBadge} onClose={() => setShowingBadge(null)} />}
       </div>
     </div>
   );

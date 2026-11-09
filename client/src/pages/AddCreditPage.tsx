@@ -8,6 +8,8 @@ import { extractErrorMessage } from '../api/client';
 import type { CreateCreditPayload } from '../types';
 import { creditsApi } from '../api/credits';
 import { formatMoney } from '../utils/format';
+import { useGamification } from '../hooks/useGamification';
+import { BadgeUnlocked } from '../components/BadgeUnlocked';
 
 const optionalNumber = (min: number, max: number) =>
   z
@@ -147,9 +149,11 @@ function MoneyInput({ register, name, placeholder }: { register: ReturnType<type
 export function AddCreditPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { addBadge, hasBadge } = useGamification();
   const [error, setError] = useState<string | null>(null);
   const [earlyRepayments, setEarlyRepayments] = useState<Array<{ amount: string; date: string }>>([]);
   const prevTypeRef = useRef<FormValues['type'] | null>(null);
+  const [showingBadge, setShowingBadge] = useState<string | null>(null);
 
   const {
     register,
@@ -274,6 +278,10 @@ export function AddCreditPage() {
       });
     },
     onSuccess: async (credit) => {
+      if (!hasBadge('first_credit')) {
+        addBadge('first_credit');
+        setShowingBadge('first_credit');
+      }
       await queryClient.invalidateQueries({ queryKey: ['credits'] });
       navigate(`/credits/${credit.id}`);
     },
@@ -579,6 +587,7 @@ export function AddCreditPage() {
           </div>
         )}
       </form>
+      {showingBadge && <BadgeUnlocked badgeId={showingBadge} onClose={() => setShowingBadge(null)} />}
     </div>
   );
 }

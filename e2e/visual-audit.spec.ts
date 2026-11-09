@@ -48,10 +48,12 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
     await expect(page.locator('header')).toHaveCount(0);
     await expect(page.getByText('Credit Tracker', { exact: true })).toHaveCount(0);
     await expect(page.locator('.tabbar')).toHaveCount(0);
-    await expect(page.locator('button[aria-label="Добавить долг"]')).toHaveCount(0);
 
-    // Speed Dial кнопка видна на Главной
-    await expect(page.locator('button[aria-label="Меню навигации"]')).toBeVisible();
+    // Горизонтальная навигация: три кнопки видны на главной
+    await expect(page.getByRole('button', { name: 'Главная' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Добавить долг' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Настройки' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Главная' })).toHaveAttribute('aria-current', 'page');
 
     const layout = await page.evaluate(() => {
       const main = document.querySelector('main');
@@ -93,14 +95,15 @@ test('debt card title is a single ellipsised line', async ({ page }) => {
   expect(metrics.scrollWidth).toBeGreaterThanOrEqual(metrics.clientWidth);
 });
 
-test('speed dial: open state screenshot (light)', async ({ page }) => {
+test('navigation: horizontal bar screenshot (light)', async ({ page }) => {
   await seedApp(page, 'light');
   await mockApi(page);
   await openApp(page, '/');
 
-  await page.locator('button[aria-label="Меню навигации"]').click();
-  await expect(page.locator('button[aria-label="Главная"]')).toBeVisible();
-  await screenshot(page, 'dashboard-speed-dial-open');
+  await expect(page.getByRole('button', { name: 'Главная' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Добавить долг' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Настройки' })).toBeVisible();
+  await screenshot(page, 'dashboard-nav-bar-light');
 });
 
 test('motivation slots keep minutes and day 61 is not 100%', async ({ page }) => {
@@ -169,12 +172,12 @@ test('skeleton only on the first cold load', async ({ page }) => {
   await expect(page.locator('.debt-card').first()).toBeVisible({ timeout: 15_000 });
   expect(await page.locator('.skeleton').count()).toBe(0);
 
-  await page.locator('button[aria-label="Меню навигации"]').click();
-  await page.locator('button[aria-label="Настройки"]').click();
-  await expect(page.getByRole('heading', { name: 'Настройки' })).toBeVisible();
+  await page.getByRole('button', { name: 'Настройки' }).click();
+  await expect(page).toHaveURL('/settings');
+  await expect(page.getByRole('button', { name: 'Push-уведомления' })).toBeVisible();
 
-  await page.locator('button[aria-label="Меню навигации"]').click();
-  await page.locator('button[aria-label="Главная"]').click();
+  await page.getByRole('button', { name: 'Главная' }).click();
+  await expect(page).toHaveURL('/');
   await expect(page.locator('.debt-card').first()).toBeVisible();
   expect(await page.locator('.skeleton').count()).toBe(0);
 });
@@ -368,7 +371,7 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
 
     await screenshot(page, `splash-${theme}`);
 
-    await expect(page.locator('button[aria-label="Меню навигации"]')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: 'Главная' })).toBeVisible({ timeout: 15_000 });
     await expect(splash).toHaveCount(0);
   });
 }

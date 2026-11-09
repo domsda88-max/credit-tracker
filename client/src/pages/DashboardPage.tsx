@@ -7,6 +7,7 @@ import { MoneyFlow } from '../components/MoneyFlow';
 import { GraceReplenishBlock } from '../components/GraceReplenishBlock';
 import { OverdueAlert } from '../components/OverdueAlert';
 import { UpcomingPayments } from '../components/UpcomingPayments';
+import { PayoffStrategy } from '../components/PayoffStrategy';
 
 /** Экран загрузки: скелетоны карточек вместо спиннера. */
 function LoadingScreen() {
@@ -54,6 +55,8 @@ export function DashboardPage() {
       <GraceReplenishBlock />
 
       <UpcomingPayments credits={list} />
+
+      <PayoffStrategy credits={list} />
 
       {/* === МОИ ДОЛГИ: карточки активных долгов === */}
       <section className="space-y-3">

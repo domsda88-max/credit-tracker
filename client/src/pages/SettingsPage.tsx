@@ -8,6 +8,7 @@ import { IncomeSettings } from '../components/IncomeSettings';
 import { useThemeStore } from '../store/theme';
 import { DataExport } from '../components/DataExport';
 import { ImportPaymentsBottomSheet } from '../components/ImportPaymentsBottomSheet';
+import { TipsSection } from '../components/TipsSection';
 import { useAuthStore } from '../store/auth';
 
 function Accordion({ title, subtitle, defaultOpen = false, children }: {
@@ -119,7 +120,7 @@ export function SettingsPage() {
         </Accordion>
       </section>
 
-      <section className="space-y-3">
+       <section className="space-y-3">
         <SrOnly>Аккаунт</SrOnly>
         <div className="rounded-card border border-line bg-surface p-4">
           <p className="text-xs text-t3">Вы вошли как</p>
@@ -127,6 +128,8 @@ export function SettingsPage() {
           <button type="button" onClick={handleLogout} className="mt-3 w-full rounded-control border border-danger/60 bg-transparent px-4 py-2.5 text-sm font-medium text-danger-fg transition hover:bg-danger/10">Выйти из аккаунта</button>
         </div>
       </section>
+
+      <TipsSection />
 
       <ImportPaymentsBottomSheet isOpen={importOpen} onClose={() => setImportOpen(false)} />
     </div>

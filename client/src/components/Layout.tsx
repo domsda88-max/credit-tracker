@@ -1,8 +1,31 @@
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { FloatingNav } from './FloatingNav';
 import { OfflineBanner } from './OfflineBanner';
+import { useOfflineQueue, getOfflineActions } from '../hooks/useOfflineQueue';
+import { Onboarding, useOnboarding } from './Onboarding';
 
 export function Layout() {
+  const { syncAll } = useOfflineQueue();
+  const [offlineCount, setOfflineCount] = useState(0);
+  const showOnboarding = useOnboarding();
+
+  useEffect(() => {
+    const updateCount = async () => {
+      try {
+        const actions = await getOfflineActions();
+        setOfflineCount(actions.length);
+      } catch {
+        setOfflineCount(0);
+      }
+    };
+    updateCount();
+  }, [syncAll]);
+
+  if (showOnboarding) {
+    return <Onboarding />;
+  }
+
   return (
     <>
       <OfflineBanner />
@@ -19,7 +42,7 @@ export function Layout() {
           }}
         />
 
-        <FloatingNav />
+        <FloatingNav offlineCount={offlineCount} />
       </div>
     </>
   );

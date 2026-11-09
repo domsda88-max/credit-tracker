@@ -40,7 +40,6 @@ const TYPE_ICON: Record<CreditType, typeof CreditCard> = {
   CONSUMER: Banknote,
 };
 
-/** Акцент срочности для плашки ближайшего платежа. */
 const TONE = {
   danger: { border: 'border-l-danger', text: 'text-danger-fg', dot: 'bg-danger' },
   warning: { border: 'border-l-warning', text: 'text-warning-fg', dot: 'bg-warning' },
@@ -49,7 +48,6 @@ const TONE = {
 
 interface Props {
   credit: CreditListItem;
-  /** Задержка stagger-анимации появления, мс. */
   index?: number;
 }
 
@@ -61,7 +59,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [earlyOpen, setEarlyOpen] = useState(false);
   const [earlyAmount, setEarlyAmount] = useState('');
-  const [earlyDate, setEarlyDate] = useState(new Date().toISOString().slice(0,10));
+  const [earlyDate, setEarlyDate] = useState(new Date().toISOString().slice(0, 10));
   const [earlyPending, setEarlyPending] = useState(false);
   const [earlyError, setEarlyError] = useState<string | null>(null);
   const percent = debtPaidPercent(credit.principal, credit.outstanding);
@@ -69,7 +67,6 @@ export function CreditRow({ credit, index = 0 }: Props) {
   const next = credit.nextPayment;
   const Icon = TYPE_ICON[credit.type] ?? Banknote;
 
-  // Анимация заполнения прогресс-бара при появлении (0 → значение, 600ms).
   const [barWidth, setBarWidth] = useState(0);
   useEffect(() => {
     const t = window.setTimeout(() => setBarWidth(percent), 40);
@@ -133,8 +130,6 @@ export function CreditRow({ credit, index = 0 }: Props) {
     }
   };
 
-  // Карта в цикле заморозки: минимального платежа нет, есть только сумма
-  // обновления беспроцентного периода (её пропускать нельзя).
   const freezeCycle = credit.frozen && credit.type === 'CREDIT_CARD';
   const cycleDay = credit.graceReplenishDay ?? credit.paymentDay;
   const cycleSum = credit.graceReplenishSum ? Number(credit.graceReplenishSum) : null;
@@ -162,7 +157,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
 
   const showPayButton = !!next && !isClosed && !freezeCycle && (() => {
     const diff = daysUntil(next.dueDate);
-    return diff <= 3; // overdue (negative) or within 3 days
+    return diff <= 3;
   })();
 
   const payButtonColor = !next
@@ -285,10 +280,10 @@ export function CreditRow({ credit, index = 0 }: Props) {
             e.stopPropagation();
             setOpen(true);
           }}
-          className="absolute right-1.5 top-1.5 flex h-10 w-10 items-center justify-center rounded-full text-t3 transition-colors active:bg-surface2"
+          className="absolute right-1.5 top-1.5 flex h-11 w-11 items-center justify-center rounded-full text-t3 transition-colors active:bg-surface2"
           aria-label="Меню действий"
         >
-          <MoreVertical size={20} />
+          <MoreVertical size={22} />
         </button>
       </div>
 
@@ -300,26 +295,26 @@ export function CreditRow({ credit, index = 0 }: Props) {
               setOpen(false);
               navigate(`/credits/${credit.id}`);
             }}
-            className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-t1 transition-colors active:bg-surface2"
+            className="flex w-full items-center gap-3 rounded-control px-3 py-3 text-left text-t1 transition-colors active:bg-surface2"
           >
-            <Pencil size={18} className="text-t2" />
+            <Pencil size={20} className="text-t2" />
             <span>Редактировать</span>
           </button>
           <button
             type="button"
             onClick={handleFreezeClick}
-            className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-t1 transition-colors active:bg-surface2"
+            className="flex w-full items-center gap-3 rounded-control px-3 py-3 text-left text-t1 transition-colors active:bg-surface2"
           >
-            <Snowflake size={18} className="text-primary-fg" />
+            <Snowflake size={20} className="text-primary-fg" />
             <span>{credit.frozen ? 'Грейс слетел' : 'Грейс активен'}</span>
           </button>
           {freezeCycle && (
             <button
               type="button"
               onClick={renewCycle}
-              className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-primary-fg transition-colors active:bg-primary/10"
+              className="flex w-full items-center gap-3 rounded-control px-3 py-3 text-left text-primary-fg transition-colors active:bg-primary/10"
             >
-              <CheckCircle2 size={18} />
+              <CheckCircle2 size={20} />
               <span>Я обновил период (внёс сумму)</span>
             </button>
           )}
@@ -330,18 +325,18 @@ export function CreditRow({ credit, index = 0 }: Props) {
                 setOpen(false);
                 setEarlyOpen(true);
               }}
-              className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-t1 transition-colors active:bg-surface2"
+              className="flex w-full items-center gap-3 rounded-control px-3 py-3 text-left text-t1 transition-colors active:bg-surface2"
             >
-              <TrendingDown size={18} className="text-success-fg" />
+              <TrendingDown size={20} className="text-success-fg" />
               <span>Досрочное погашение</span>
             </button>
           )}
           <button
             type="button"
             onClick={remove}
-            className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-danger-fg transition-colors active:bg-danger/10"
+            className="flex w-full items-center gap-3 rounded-control px-3 py-3 text-left text-danger-fg transition-colors active:bg-danger/10"
           >
-            <Trash2 size={18} />
+            <Trash2 size={20} />
             <span>Удалить</span>
           </button>
           {error && <p className="px-3 pt-1 text-caption text-danger-fg">{error}</p>}
@@ -392,7 +387,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
               className="mt-1 w-full max-w-full box-border rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none focus:border-primary"
             />
           </label>
-           <p className="text-xs text-t3">�����: ���������� �����</p>
+           <p className="text-xs text-t3">Минимальная дата — дата выдачи, максимальная — через год.</p>
           {earlyError && <p className="text-sm text-danger-fg">{earlyError}</p>}
           <button
             type="submit"
@@ -406,4 +401,3 @@ export function CreditRow({ credit, index = 0 }: Props) {
     </>
   );
 }
-

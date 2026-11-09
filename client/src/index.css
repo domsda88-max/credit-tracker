@@ -210,9 +210,9 @@ input[type='range'] {
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 
-/* Единственный источник правды для отступа контента */
+/* Единственный источник правды для отступа контента (нижняя навигация 56px + 12px отступ) */
 .page {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
   padding-top: env(safe-area-inset-top, 0px);
 }
 

@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
-import { NetworkFirst } from 'workbox-strategies';
+import { NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { registerRoute } from 'workbox-routing';
 
 declare let self: ServiceWorkerGlobalScope;
@@ -18,6 +18,23 @@ cleanupOutdatedCaches();
 registerRoute(
   ({ request }) => request.mode === 'navigate',
   new NetworkFirst({ cacheName: 'pages', networkTimeoutSeconds: 3 }),
+);
+
+// API-запросы — stale-while-revalidate: отдаём кэш мгновенно, обновляем в фоне.
+// Это критично для офлайн-режима: пользователь видит последние загруженные данные
+// даже без сети, а при появлении сети данные синхронизируются.
+registerRoute(
+  ({ request }) => request.url.startsWith(self.location.origin) && request.url.includes('/api/'),
+  new StaleWhileRevalidate({
+    cacheName: 'api-cache',
+    plugins: [],
+  }),
+);
+
+// Ассеты (иконки, картинки) — кэшируем по мере использования.
+registerRoute(
+  ({ request }) => request.destination === 'image',
+  new StaleWhileRevalidate({ cacheName: 'images-cache' }),
 );
 
 interface PushData {

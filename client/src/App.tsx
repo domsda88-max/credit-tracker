@@ -1,19 +1,27 @@
-import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import ScrollToTop from './components/ScrollToTop';import { SkeletonList } from './components/Skeleton';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { trackScreen } from './hooks/useAnalytics';
 
 const AddCreditPage = lazy(() => import('./pages/AddCreditPage').then((m) => ({ default: m.AddCreditPage })));
 const CsvImportPage = lazy(() => import('./pages/CsvImportPage').then((m) => ({ default: m.CsvImportPage })));
 const CreditDetailPage = lazy(() => import('./pages/CreditDetailPage').then((m) => ({ default: m.CreditDetailPage })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const FreedomPage = lazy(() => import('./pages/FreedomPage').then((m) => ({ default: m.FreedomPage })));
+const AchievementsPage = lazy(() => import('./pages/AchievementsPage').then((m) => ({ default: m.AchievementsPage })));
 
 export function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    trackScreen(location.pathname);
+  }, [location.pathname]);
   return (
     <ErrorBoundary>
       <ScrollToTop />
@@ -32,6 +40,8 @@ export function App() {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/credits/new" element={<AddCreditPage />} />
             <Route path="/credits/:id" element={<CreditDetailPage />} />
+            <Route path="/stats" element={<FreedomPage />} />
+            <Route path="/achievements" element={<AchievementsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/import" element={<CsvImportPage />} />
           </Route>
