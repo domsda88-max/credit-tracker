@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useGamification } from '../hooks/useGamification';
 import { BADGES } from '../hooks/useGamification';
 
 interface Props {
@@ -11,15 +10,16 @@ export function BadgeUnlocked({ badgeId, onClose }: Props) {
   const [visible, setVisible] = useState(true);
   const badge = BADGES[badgeId as keyof typeof BADGES];
 
-  if (!badge || !visible) return null;
-
   useEffect(() => {
+    if (!badge || !visible) return;
     const t = window.setTimeout(() => {
       setVisible(false);
       onClose?.();
     }, 5000);
     return () => window.clearTimeout(t);
-  }, [onClose]);
+  }, [badge, visible, onClose]);
+
+  if (!badge || !visible) return null;
 
   const colorMap: Record<string, string> = {
     primary: 'border-primary bg-primary/10 text-primary-fg',

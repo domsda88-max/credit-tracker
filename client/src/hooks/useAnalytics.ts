@@ -74,9 +74,8 @@ export function useAnalytics() {
   return { track, getEvents, exportEvents };
 }
 
-export function trackScreen(screen: string): void {
+export function trackScreen(track: (event: AnalyticsEvent) => void, screen: string): void {
   if (typeof window === 'undefined') return;
-  const { track } = useAnalytics();
   track({ event: 'screen_view', screen });
 }
 

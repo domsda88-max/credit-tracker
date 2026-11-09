@@ -6,7 +6,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import ScrollToTop from './components/ScrollToTop';import { SkeletonList } from './components/Skeleton';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
-import { trackScreen } from './hooks/useAnalytics';
+import { trackScreen, useAnalytics } from './hooks/useAnalytics';
 
 const AddCreditPage = lazy(() => import('./pages/AddCreditPage').then((m) => ({ default: m.AddCreditPage })));
 const CsvImportPage = lazy(() => import('./pages/CsvImportPage').then((m) => ({ default: m.CsvImportPage })));
@@ -18,10 +18,11 @@ const AchievementsPage = lazy(() => import('./pages/AchievementsPage').then((m) 
 
 export function App() {
   const location = useLocation();
+  const { track } = useAnalytics();
 
   useEffect(() => {
-    trackScreen(location.pathname);
-  }, [location.pathname]);
+    trackScreen(track, location.pathname);
+  }, [track, location.pathname]);
   return (
     <ErrorBoundary>
       <ScrollToTop />

@@ -3,7 +3,8 @@ import { Outlet } from 'react-router-dom';
 import { FloatingNav } from './FloatingNav';
 import { OfflineBanner } from './OfflineBanner';
 import { useOfflineQueue, getOfflineActions } from '../hooks/useOfflineQueue';
-import { Onboarding, useOnboarding } from './Onboarding';
+import { Onboarding } from './Onboarding';
+import { useOnboarding } from '../hooks/useOnboarding';
 
 export function Layout() {
   const { syncAll } = useOfflineQueue();

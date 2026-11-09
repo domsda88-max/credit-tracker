@@ -1,5 +1,4 @@
 import { useEffect, useCallback, useRef } from 'react';
-import { useAuthStore } from '../store/auth';
 import { extractErrorMessage } from '../api/client';
 
 /** Типы действий, которые можно отложить для офлайн-синхронизации. */
@@ -79,7 +78,6 @@ async function removeAction(id: string): Promise<void> {
 }
 
 export function useOfflineQueue() {
-  const token = useAuthStore((s) => s.token);
   const syncingRef = useRef(false);
 
   const syncAll = useCallback(async () => {
@@ -100,7 +98,7 @@ export function useOfflineQueue() {
     } finally {
       syncingRef.current = false;
     }
-  }, [token]);
+  }, []);
 
   const enqueue = useCallback(async (action: Omit<OfflineAction, 'id' | 'createdAt' | 'retries'>) => {
     await addAction({
@@ -123,7 +121,6 @@ export function useOfflineQueue() {
 }
 
 async function executeAction(action: OfflineAction): Promise<void> {
-  const { api } = await import('../api/client');
   const { creditsApi } = await import('../api/credits');
   const { paymentsApi } = await import('../api/payments');
 

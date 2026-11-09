@@ -1,5 +1,4 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useCallback } from 'react';
 
 const HOME_SVG = (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -63,8 +62,6 @@ export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
     if (path === '/achievements') return pathname.startsWith('/achievements');
     return pathname === path;
   };
-
-  const handleSettings = useCallback(() => navigate('/settings'), [navigate]);
 
   return (
     <nav

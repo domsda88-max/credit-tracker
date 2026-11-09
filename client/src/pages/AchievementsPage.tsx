@@ -1,20 +1,7 @@
 import { useGamification } from '../hooks/useGamification';
-import { BadgeUnlocked } from '../components/BadgeUnlocked';
-import { formatMoney } from '../utils/format';
 
 export function AchievementsPage() {
-  const {
-    state,
-    badges,
-    unlockedBadges,
-    lockedBadges,
-    currentLevel,
-    addBadge,
-    incrementStreak,
-    recordPayment,
-    recordEarlyRepayment,
-    hasBadge,
-  } = useGamification();
+  const { state, badges, unlockedBadges, lockedBadges, currentLevel } = useGamification();
 
   const progress = Math.min(100, Math.round((state.badges.length / Object.keys(badges).length) * 100));
 
