@@ -342,24 +342,32 @@ export function AddCreditPage() {
         )}
 
         {hasName && hasPrincipal && type === 'CREDIT_CARD' && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <label className="block">
-              <span className="text-sm text-t2">Ставка, % годовых <span className="text-danger-fg">*</span></span>
-              <input type="number" step="0.01" inputMode="decimal" placeholder="19.9" {...register('annualRate')} className={inputClass} />
-              {errors.annualRate && <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>}
-            </label>
-            <label className="block">
-              <span className="text-sm text-t2">День платежа</span>
-              <input type="number" min={1} max={31} inputMode="numeric" placeholder="напр. 20" {...register('paymentDay')} className={inputClass} />
-              {errors.paymentDay && <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>}
-            </label>
-            <label className="block">
-              <span className="text-sm text-t2">Сумма для продления грейса, ₽</span>
-              <MoneyInput register={register} name="graceReplenishSum" placeholder="43 000" />
-              {errors.graceReplenishSum && <p className="mt-1 text-xs text-danger-fg">{errors.graceReplenishSum.message}</p>}
-              <span className="mt-1 block text-xs text-t3">Для продления льготного периода (опционально)</span>
-            </label>
-          </div>
+          <section className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
+            <h3 className="text-sm font-medium text-t2">
+              Параметры карты
+              {hasRate && hasPayDay && <span className="ml-2 text-xs text-success-fg">✓</span>}
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <label className="block">
+                <span className="text-sm text-t2">Ставка, % годовых <span className="text-danger-fg">*</span></span>
+                <input type="number" step="0.01" inputMode="decimal" placeholder="19.9" {...register('annualRate')} className={inputClass} />
+                {errors.annualRate && <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>}
+                <span className="mt-1 block text-xs text-t3">Ставка по Revolving, напр. 19.9%</span>
+              </label>
+              <label className="block">
+                <span className="text-sm text-t2">День платежа</span>
+                <input type="number" min={1} max={31} inputMode="numeric" placeholder="напр. 20" {...register('paymentDay')} className={inputClass} />
+                {errors.paymentDay && <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>}
+                <span className="mt-1 block text-xs text-t3">Число месяца для min. платежа</span>
+              </label>
+              <label className="block">
+                <span className="text-sm text-t2">Сумма для продления грейса, ₽</span>
+                <MoneyInput register={register} name="graceReplenishSum" placeholder="43 000" />
+                {errors.graceReplenishSum && <p className="mt-1 text-xs text-danger-fg">{errors.graceReplenishSum.message}</p>}
+                <span className="mt-1 block text-xs text-t3">Для продления льготного периода (опционально)</span>
+              </label>
+            </div>
+          </section>
         )}
 
         {(type === 'CONSUMER' || type === 'MORTGAGE') && hasName && hasPrincipal && (
@@ -408,17 +416,22 @@ export function AddCreditPage() {
 
         {type === 'INSTALLMENT' && hasName && hasPrincipal && (
           <section className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
-            <h3 className="text-sm font-medium text-t2">Параметры рассрочки / сплита</h3>
+            <h3 className="text-sm font-medium text-t2">
+              Параметры рассрочки / сплита
+              {(hasTerm || hasPayDay) && <span className="ml-2 text-xs text-success-fg">✓</span>}
+            </h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
                 <span className="text-sm text-t2">Срок, дней <span className="text-danger-fg">*</span></span>
                 <input type="number" inputMode="numeric" min="1" placeholder="напр. 30" {...register('termDays')} className={inputClass} />
                 {errors.termDays && <p className="mt-1 text-xs text-danger-fg">{errors.termDays.message}</p>}
+                <span className="mt-1 block text-xs text-t3">Полный срок рассрочки, напр. 90</span>
               </label>
               <label className="block">
                 <span className="text-sm text-t2">День платежа</span>
                 <input type="number" min={1} max={31} inputMode="numeric" placeholder="напр. 20" {...register('paymentDay')} className={inputClass} />
                 {errors.paymentDay && <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>}
+                <span className="mt-1 block text-xs text-t3">Число месяца для платежа</span>
               </label>
               <label className="block">
                 <span className="text-sm text-t2">Ставка, % годовых</span>
@@ -441,16 +454,19 @@ export function AddCreditPage() {
                 <span className="text-sm text-t2">Ставка, % годовых</span>
                 <input type="number" step="0.01" {...register('annualRate')} className={inputClass} />
                 {errors.annualRate && <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>}
+                <span className="mt-1 block text-xs text-t3">Годовая ставка МФО, напр. 292%</span>
               </label>
               <label className="block">
                 <span className="text-sm text-t2">Срок, дней</span>
                 <input type="number" {...register('termDays')} placeholder="напр. 30" className={inputClass} />
                 {errors.termDays && <p className="mt-1 text-xs text-danger-fg">{errors.termDays.message}</p>}
+                <span className="mt-1 block text-xs text-t3">До 365 дней</span>
               </label>
               <label className="block">
                 <span className="text-sm text-t2">День платежа</span>
                 <input type="number" min={1} max={31} inputMode="numeric" placeholder="напр. 20" {...register('paymentDay')} className={inputClass} />
                 {errors.paymentDay && <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>}
+                <span className="mt-1 block text-xs text-t3">Число месяца для платежа</span>
               </label>
             </div>
             <p className="mt-2 text-xs text-t3">Один balloon-платёж в конце срока. Дата выдачи не нужна — займ краткосрочный.</p>
