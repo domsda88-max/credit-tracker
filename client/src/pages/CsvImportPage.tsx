@@ -37,8 +37,8 @@ export function CsvImportPage() {
   };
 
   return (
-    <div>
-      <header className="mb-4">
+    <div className="page-stack">
+      <header>
         <h1 className="text-heading font-semibold text-t1">Импорт транзакций (CSV)</h1>
         <p className="mt-1 text-sm text-t3">
           Классический формат: дата, сумма, заметка. Поддерживаем разделители `,` и `;`, даты
@@ -46,7 +46,7 @@ export function CsvImportPage() {
         </p>
       </header>
 
-      <section className="card p-4">
+      <section className="card card-pad">
         <div className="flex flex-col gap-3">
           <input
             type="file"
@@ -81,7 +81,7 @@ export function CsvImportPage() {
       </section>
 
       {parsed && (
-        <section className="card mt-4 p-4">
+        <section className="card card-pad">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="text-heading font-semibold text-t1">Предпросмотр</h2>
             <p className="text-caption text-t3">

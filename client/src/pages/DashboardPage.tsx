@@ -12,7 +12,7 @@ import { PayoffStrategy } from '../components/PayoffStrategy';
 /** Экран загрузки: скелетоны карточек вместо спиннера. */
 function LoadingScreen() {
   return (
-    <div className="space-y-4">
+    <div className="page-stack">
       {[0, 1, 2].map((i) => (
         <div key={i} className="skeleton h-24 rounded-card" />
       ))}
@@ -47,7 +47,7 @@ export function DashboardPage() {
   const closed = list.filter((c) => c.status === 'CLOSED');
 
   return (
-    <div className="space-y-4 animate-fade-in page--dashboard">
+    <div className="page-stack animate-fade-in">
       <OverdueAlert credits={list} />
 
       <DebtOverview />
@@ -73,7 +73,7 @@ export function DashboardPage() {
       </section>
 
       {closed.length > 0 && (
-        <section className="space-y-2 pt-1 border-t border-line pt-4">
+        <section className="space-y-2 border-t border-line pt-4">
           <h2 className="section-title">Закрытые</h2>
           {closed.map((credit) => (
             <CreditRow key={credit.id} credit={credit} />

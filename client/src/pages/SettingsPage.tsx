@@ -44,11 +44,6 @@ function Accordion({ title, subtitle, defaultOpen = false, children }: {
   );
 }
 
-/** Sr-only визуально скрытый заголовок для скринридеров. */
-function SrOnly({ children }: { children: React.ReactNode }) {
-  return <h2 className="sr-only">{children}</h2>;
-}
-
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -59,10 +54,10 @@ export function SettingsPage() {
   const handleLogout = () => { logout(); navigate('/login', { replace: true }); };
 
   return (
-    <div className="w-full max-w-full space-y-5 overflow-x-hidden touch-manipulation">
+    <div className="w-full max-w-full page-stack overflow-x-hidden touch-manipulation">
       <section className="space-y-3">
-        <SrOnly>Тема</SrOnly>
-        <div className="flex items-center gap-4 rounded-card border border-line bg-surface px-5 py-4">
+        <h2 className="section-title">Тема</h2>
+        <div className="flex items-center gap-4 card card-pad">
           {(['light','warm','dark'] as const).map((m) => (
             <button
               key={m}
@@ -79,14 +74,14 @@ export function SettingsPage() {
       </section>
 
       <section className="space-y-3">
-        <SrOnly>Деньги</SrOnly>
+        <h2 className="section-title">Деньги</h2>
         <Accordion title="Доход в месяц" subtitle="Покажем, сколько остаётся после обязательных платежей">
           <IncomeSettings />
         </Accordion>
       </section>
 
       <section className="space-y-3">
-        <SrOnly>Уведомления</SrOnly>
+        <h2 className="section-title">Уведомления</h2>
         <Accordion title="Push-уведомления" subtitle="Сводка платежей в выбранное время + напоминания о сроках">
           <PushSettings />
         </Accordion>
@@ -99,7 +94,7 @@ export function SettingsPage() {
       </section>
 
        <section className="space-y-3">
-        <SrOnly>Данные</SrOnly>
+        <h2 className="section-title">Данные</h2>
         <Accordion title="Экспорт данных" subtitle="Скачать CSV / JSON">
           <DataExport />
         </Accordion>
@@ -121,8 +116,8 @@ export function SettingsPage() {
       </section>
 
        <section className="space-y-3">
-        <SrOnly>Аккаунт</SrOnly>
-        <div className="rounded-card border border-line bg-surface p-4">
+        <h2 className="section-title">Аккаунт</h2>
+        <div className="card card-pad">
           <p className="text-xs text-t3">Вы вошли как</p>
           <p className="mt-0.5 text-sm text-t1 break-all">{user?.email}</p>
           <button type="button" onClick={handleLogout} className="mt-3 w-full rounded-control border border-danger/60 bg-transparent px-4 py-2.5 text-sm font-medium text-danger-fg transition hover:bg-danger/10">Выйти из аккаунта</button>

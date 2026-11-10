@@ -153,7 +153,7 @@ export function CreditDetailPage() {
     onError: (err) => setError(extractErrorMessage(err)),
   });
 
-  if (isPending && !credit) return <div className="space-y-4"><SkeletonCard /><SkeletonCard /></div>;
+  if (isPending && !credit) return <div className="page-stack"><SkeletonCard /><SkeletonCard /></div>;
   if (loadError || !credit) {
     return (
       <div>
@@ -183,7 +183,7 @@ export function CreditDetailPage() {
   const virtualizeRows = visible.length > 30;
   return (
     <div className="min-h-0 w-full overflow-x-hidden [-webkit-overflow-scrolling:touch]">
-      <div className="space-y-4">
+      <div className="page-stack">
       <Link to="/" className="inline-block text-sm text-t3 hover:text-t2">
         ← Дашборд
       </Link>

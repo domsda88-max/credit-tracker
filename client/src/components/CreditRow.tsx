@@ -161,12 +161,12 @@ export function CreditRow({ credit, index = 0 }: Props) {
   })();
 
   const payButtonColor = !next
-    ? 'bg-primary hover:bg-primary/90'
+    ? 'bg-primary text-bg hover:bg-primary/90'
     : daysUntil(next.dueDate) < 0
-      ? 'bg-danger hover:bg-danger/90'
+      ? 'bg-danger text-bg hover:bg-danger/90'
       : daysUntil(next.dueDate) === 0
-        ? 'bg-warning hover:bg-warning/90'
-        : 'bg-primary hover:bg-primary/90';
+        ? 'border border-warning/40 bg-warning/15 text-warning-fg hover:bg-warning/25'
+        : 'bg-primary text-bg hover:bg-primary/90';
 
   return (
     <>
@@ -243,7 +243,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
                     e.stopPropagation();
                     payMutation.mutate();
                   }}
-                  className={`mt-2 w-full rounded-control px-3 py-2 text-sm font-medium text-bg transition disabled:opacity-50 ${payButtonColor}`}
+                  className={`mt-2 w-full rounded-control px-3 py-2 text-sm font-medium transition disabled:opacity-50 ${payButtonColor}`}
                 >
                   {payMutation.isPending ? '…' : 'Оплатить'}
                 </button>

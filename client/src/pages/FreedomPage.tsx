@@ -54,7 +54,7 @@ export function FreedomPage() {
 
   if (!summary || summary.activeCount === 0) {
     return (
-      <section className="card animate-fade-up p-6 flex flex-col items-center justify-center min-h-[400px]">
+      <section className="card card-pad animate-fade-up flex flex-col items-center justify-center min-h-[400px]">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-surface2 mb-4">
           <Target size={24} className="text-primary-fg" />
         </div>
@@ -67,8 +67,8 @@ export function FreedomPage() {
   }
 
   return (
-    <section className="space-y-6 animate-fade-up">
-      <header className="card p-6">
+    <section className="page-stack animate-fade-up">
+      <header className="card card-pad">
         <div className="flex items-baseline justify-between gap-3">
           <div>
             <p className="section-title">Моя свобода от долгов</p>
@@ -144,10 +144,10 @@ export function FreedomPage() {
       </header>
 
       {summary.debtFreeDate && (
-        <section className="card p-6 border border-success/20 bg-success/5">
+        <section className="card card-pad border border-success/20 bg-success/5">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-chip bg-primary/15 text-primary-fg">
+              <span className="flex h-10 w-10 items-center justify-center rounded-control bg-primary/15 text-primary-fg">
                 <Clock size={18} />
               </span>
               <div>
@@ -164,7 +164,7 @@ export function FreedomPage() {
         </section>
       )}
 
-      <section className="card p-6">
+      <section className="card card-pad">
         <div className="mb-4 flex items-center justify-between gap-2">
           <h2 className="text-heading font-semibold text-t1">Ваши активные долги</h2>
           <span className="text-micro text-t3">{activeDebts.length} кредит(ов)</span>
@@ -175,7 +175,7 @@ export function FreedomPage() {
             return (
               <div key={c.id} className="flex items-center justify-between gap-4 p-3 rounded-control border border-line bg-surface">
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary/12 text-primary-fg">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-primary/12 text-primary-fg">
                     <Zap size={18} />
                   </div>
                   <div className="min-w-0">
@@ -199,9 +199,9 @@ export function FreedomPage() {
         </div>
       </section>
 
-      <section className="card p-6 border border-warning/20 bg-warning/5">
+      <section className="card card-pad border border-warning/20 bg-warning/5">
         <div className="flex items-center gap-2.5 mb-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-chip bg-warning/15 text-warning-fg">
+          <span className="flex h-10 w-10 items-center justify-center rounded-control bg-warning/15 text-warning-fg">
             <TrendingDown size={18} />
           </span>
           <h2 className="text-heading font-semibold text-t1">Что влияет на срок</h2>

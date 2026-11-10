@@ -24,7 +24,7 @@ export function MoneyFlow() {
   const hasIncome = income !== null;
 
   return (
-    <section className="card animate-fade-up p-4">
+    <section className="card card-pad animate-fade-up">
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 section-title">
           <Wallet size={14} />

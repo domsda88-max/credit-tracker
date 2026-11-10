@@ -27,7 +27,7 @@ const TIPS = [
 export function TipsSection() {
   const [open, setOpen] = useState(false);
   return (
-    <section className="card p-5 border border-primary/30 bg-primary/5">
+    <section className="card card-pad border border-primary/30 bg-primary/5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Lightbulb size={20} className="text-warning-fg" />
@@ -46,7 +46,7 @@ export function TipsSection() {
       <div className="space-y-3" style={{ maxHeight: open ? 500 : 0, overflow: 'hidden', transition: 'max-height 300ms ease' }}>
         {TIPS.map((tip, i) => (
           <div key={i} className="flex items-start gap-3 p-3 rounded-control border border-line bg-surface">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-surface2">{tip.icon}</div>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-surface2">{tip.icon}</div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-t1">{tip.title}</p>
               <p className="mt-0.5 text-xs text-t3 leading-relaxed">{tip.text}</p>

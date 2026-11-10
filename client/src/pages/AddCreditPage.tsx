@@ -301,13 +301,13 @@ export function AddCreditPage() {
   const handleClose = () => navigate(-1);
 
   return (
-    <div className="min-w-0 w-full max-w-full space-y-4">
+    <div className="min-w-0 w-full max-w-full page-stack">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-heading font-bold text-t1">Добавление долга</h1>
         <button type="button" onClick={handleClose} aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center rounded-full text-t3 transition hover:bg-surface2">×</button>
       </div>
 
-      <form onSubmit={handleSubmit((values) => mutation.mutate({ ...values, earlyRepayments: earlyRepayments.filter((er) => er.amount && er.date).map((er) => ({ amount: Number(er.amount), date: er.date })) }))} className="mt-5 space-y-4 touch-manipulation">
+      <form onSubmit={handleSubmit((values) => mutation.mutate({ ...values, earlyRepayments: earlyRepayments.filter((er) => er.amount && er.date).map((er) => ({ amount: Number(er.amount), date: er.date })) }))} className="mt-5 page-stack touch-manipulation">
         <label className="block">
           <span className="text-sm text-t2">Название <span className="text-danger-fg">*</span></span>
           <input placeholder="Например, Альфа-Банк" {...register('name')} className={inputClass} />

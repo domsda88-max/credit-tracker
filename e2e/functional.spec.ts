@@ -28,8 +28,7 @@ test('FloatingNav: Скрытие на форме — навигация исч�
   await page.getByRole('button', { name: 'Добавить долг' }).click();
 
   await expect(page).toHaveURL(/\/credits\/new$/);
-  const nav = await page.evaluate(() => document.querySelector('nav[aria-label="Основная навигация"]'));
-  expect(nav).toBeNull();
+  await expect(page.locator('nav[aria-label="Основная навигация"]')).toHaveCount(0);
 });
 
 test('FloatingNav: Возврат с формы — навигация появляется, без ошибок React', async ({ page }) => {

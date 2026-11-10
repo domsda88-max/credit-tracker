@@ -124,6 +124,16 @@ a,
     @apply text-caption font-semibold uppercase tracking-[0.04em] text-t3;
   }
 
+  /* Вертикальный ритм страницы: один шаг между блоками на всех экранах */
+  .page-stack {
+    @apply space-y-4;
+  }
+
+  /* Единый внутренний отступ карточек */
+  .card-pad {
+    @apply p-5;
+  }
+
   /* Поле ввода */
   .field {
     @apply mt-1 w-full rounded-control border border-line bg-surface2 px-3 py-2.5 text-base text-t1 outline-none transition-colors duration-200 placeholder:text-t3 focus:border-primary;

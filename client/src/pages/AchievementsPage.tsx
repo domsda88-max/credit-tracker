@@ -6,8 +6,8 @@ export function AchievementsPage() {
   const progress = Math.min(100, Math.round((state.badges.length / Object.keys(badges).length) * 100));
 
   return (
-    <section className="space-y-6 animate-fade-up">
-      <header className="card p-6 border border-primary/30 bg-primary/5">
+    <section className="page-stack animate-fade-up">
+      <header className="card card-pad border border-primary/30 bg-primary/5">
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-surface">
             <span className="text-3xl">{currentLevel.icon}</span>
@@ -30,7 +30,7 @@ export function AchievementsPage() {
         </div>
       </header>
 
-      <section className="card p-6">
+      <section className="card card-pad">
         <div className="mb-6 flex items-center justify-between gap-2">
           <h2 className="text-heading font-semibold text-t1">Ваши достижения</h2>
           <span className="tabular text-sm font-semibold text-t1">{state.badges.length}</span>
@@ -77,7 +77,7 @@ export function AchievementsPage() {
         )}
       </section>
 
-      <section className="card p-6 border border-warning/20 bg-warning/5">
+      <section className="card card-pad border border-warning/20 bg-warning/5">
         <div className="mb-4 flex items-center justify-between gap-2">
           <h3 className="text-heading font-semibold text-t1">Статистика активности</h3>
         </div>
@@ -101,7 +101,7 @@ export function AchievementsPage() {
         </div>
       </section>
 
-      <section className="card p-6 border border-primary/30 bg-primary/5">
+      <section className="card card-pad border border-primary/30 bg-primary/5">
         <h3 className="text-micro uppercase tracking-[0.04em] text-t3 mb-4">Как получать достижения</h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="p-3 rounded-control border border-line bg-surface/50">
