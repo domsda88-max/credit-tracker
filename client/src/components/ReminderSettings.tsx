@@ -1,4 +1,4 @@
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Check } from 'lucide-react';
 import { useState } from 'react';import { extractErrorMessage } from '../api/client';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/auth';
@@ -149,13 +149,13 @@ export function ReminderSettings() {
                 key={opt.value}
                 type="button"
                 onClick={() => toggleDay(opt.value)}
-                className={`rounded-control border px-3 py-1.5 text-xs transition ${
+                className={`inline-flex items-center gap-1 rounded-control border px-3 py-1.5 text-xs transition ${
                   active
                     ? 'border-primary bg-primary/15 text-primary-fg'
                     : 'border-line bg-surface text-t2 hover:border-t3'
                 }`}
               >
-                {active ? '✓ ' : ''}
+                {active && <Check size={14} aria-hidden="true" />}
                 {opt.label}
               </button>
             );

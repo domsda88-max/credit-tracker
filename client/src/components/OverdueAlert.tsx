@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { TriangleAlert } from 'lucide-react';
 import type { CreditListItem } from '../types';
 import { describeDueDate, formatDate, formatMoney } from '../utils/format';
 
@@ -28,8 +29,9 @@ export function OverdueAlert({ credits }: Props) {
 
   return (
     <section className="rounded-card border border-danger/40 bg-danger/10 p-4">
-      <p className="font-semibold text-danger-fg">
-        ⚠️ Просрочено платежей: {overdue.length} · {formatMoney(total)}
+      <p className="flex items-center gap-1.5 font-semibold text-danger-fg">
+        <TriangleAlert size={16} className="shrink-0" aria-hidden="true" />
+        Просрочено платежей: {overdue.length} · {formatMoney(total)}
       </p>
       <div className="mt-2 space-y-1">
         {overdue.map((c) => (
@@ -39,7 +41,7 @@ export function OverdueAlert({ credits }: Props) {
             className="flex items-center justify-between gap-3 text-sm"
           >
             <span className="truncate text-t1">{c.name}</span>
-            <span className="shrink-0 text-xs text-danger-fg/80">
+            <span className="shrink-0 text-xs text-danger-fg">
               {formatDate(c.nextPayment!.dueDate)} · {describeDueDate(c.nextPayment!.dueDate)}
             </span>
           </Link>

@@ -14,6 +14,10 @@
   --c-success: 23 185 130;
   --c-warning: 234 179 8;
   --c-danger: 239 68 68;
+  /* Плотные заливки кнопок: держат AA (>=4.5:1) с текстом text-bg */
+  --c-success-strong: 13 107 74;
+  --c-warning-strong: 146 64 14;
+  --c-danger-strong: 185 28 28;
   --c-line: 201 220 242;
 
   --color-bg: rgb(var(--c-bg));
@@ -65,6 +69,10 @@
   --c-success: 23 185 130;
   --c-warning: 234 179 8;
   --c-danger: 239 68 68;
+  /* Плотные заливки кнопок: держат AA (>=4.5:1) с текстом text-bg */
+  --c-success-strong: 13 107 74;
+  --c-warning-strong: 146 64 14;
+  --c-danger-strong: 185 28 28;
   --c-line: 209 204 193;
 
   --color-chart: #3598F3;
@@ -99,6 +107,10 @@
   --c-success: 32 213 176;
   --c-warning: 234 179 8;
   --c-danger: 239 68 68;
+  /* В тёмной теме тёмный text-bg уже даёт AA на базовых цветах */
+  --c-success-strong: 32 213 176;
+  --c-warning-strong: 234 179 8;
+  --c-danger-strong: 239 68 68;
   --c-line: 38 59 85;
 
   --color-chart: #3598F3;

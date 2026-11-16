@@ -154,19 +154,8 @@ a,
     @apply border border-line bg-surface2 text-t1;
   }
   .btn-danger {
-    @apply bg-danger/10 text-danger;
+    @apply bg-danger/10 text-danger-fg;
   }
-}
-
-/* Бейдж на таб-баре (число платежей месяца) */
-.badge {
-  @apply absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-bg transition-colors;
-}
-.badge--overdue {
-  @apply bg-danger;
-}
-.badge--neutral {
-  @apply bg-primary;
 }
 
 /* Нажатие на карточку/кнопку — плавное уменьшение (premium feel) */

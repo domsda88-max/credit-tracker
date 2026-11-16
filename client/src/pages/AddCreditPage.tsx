@@ -1,5 +1,16 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  Banknote,
+  ChevronDown,
+  CreditCard,
+  Handshake,
+  House,
+  ReceiptText,
+  X,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -8,8 +19,6 @@ import { extractErrorMessage } from '../api/client';
 import type { CreateCreditPayload } from '../types';
 import { creditsApi } from '../api/credits';
 import { formatMoney } from '../utils/format';
-import { useGamification } from '../hooks/useGamification';
-import { BadgeUnlocked } from '../components/BadgeUnlocked';
 
 const optionalNumber = (min: number, max: number) =>
   z
@@ -112,14 +121,23 @@ type MutationValues = FormValues & { earlyRepayments: NonNullable<CreateCreditPa
 const inputClass =
   'mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none transition focus:border-primary';
 
-const typePassport: Record<FormValues['type'], { title: string; desc: string; req: string[]; icons: string }> = {
-  CONSUMER: { title: 'Потребительский кредит', desc: 'Стандартный кредит с фиксированным сроком и ставкой. График строится сервером.', req: ['Ставка %', 'Дата выдачи', 'Срок мес.', 'День платежа'], icons: '🏦' },
-  CREDIT_CARD: { title: 'Кредитная карта', desc: 'Revolving-лимит. Не нужны срок и дата выдачи — только ставка и день платежа.', req: ['Ставка %', 'День платежа'], icons: '💳' },
-  MORTGAGE: { title: 'Ипотека', desc: 'Долгосрочный кредит на недвижимость. Требует дату выдачи и срок.', req: ['Ставка %', 'Дата выдачи', 'Срок мес.', 'День платежа'], icons: '🏠' },
-  INSTALLMENT: { title: 'Рассрочка / Сплит', desc: 'Короткая рассрочка в днях. Ставка может быть 0%.', req: ['Срок дней', 'День платежа'], icons: '🧾' },
-  MICROLOAN: { title: 'Займ (МФО)', desc: 'Краткосрочный balloon-займ — один платёж в конце срока.', req: ['Ставка %', 'Срок дней', 'День платежа'], icons: '⚡' },
-  LOAN: { title: 'Займ (частный)', desc: 'Долг человеку без графика и ставки. Только название, сумма и дата выдачи.', req: ['Дата выдачи'], icons: '🤝' },
+const typePassport: Record<FormValues['type'], { title: string; desc: string; req: string[]; icon: LucideIcon }> = {
+  CONSUMER: { title: 'Потребительский кредит', desc: 'Фиксированный срок и ставка. График строит сервер.', req: ['Ставка %', 'Дата выдачи', 'Срок, мес.', 'День платежа'], icon: Banknote },
+  CREDIT_CARD: { title: 'Кредитная карта', desc: 'Возобновляемый лимит. Нужны только ставка и день платежа.', req: ['Ставка %', 'День платежа'], icon: CreditCard },
+  MORTGAGE: { title: 'Ипотека', desc: 'Долгосрочный кредит на недвижимость. Нужны дата выдачи и срок.', req: ['Ставка %', 'Дата выдачи', 'Срок, мес.', 'День платежа'], icon: House },
+  INSTALLMENT: { title: 'Рассрочка / Сплит', desc: 'Короткая рассрочка в днях. Ставка может быть 0%.', req: ['Срок, дней', 'День платежа'], icon: ReceiptText },
+  MICROLOAN: { title: 'Займ (МФО)', desc: 'Краткосрочный займ — один платёж в конце срока.', req: ['Ставка %', 'Срок, дней', 'День платежа'], icon: Zap },
+  LOAN: { title: 'Займ (частный)', desc: 'Долг человеку без графика и ставки.', req: ['Дата выдачи'], icon: Handshake },
 };
+
+const TYPE_ORDER: FormValues['type'][] = [
+  'CONSUMER',
+  'CREDIT_CARD',
+  'MORTGAGE',
+  'INSTALLMENT',
+  'MICROLOAN',
+  'LOAN',
+];
 
 function annuityMonthly(principal: number, annualRate: number, termMonths: number) {
   if (!principal || !termMonths) return 0;
@@ -149,11 +167,9 @@ function MoneyInput({ register, name, placeholder }: { register: ReturnType<type
 export function AddCreditPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { addBadge, hasBadge } = useGamification();
   const [error, setError] = useState<string | null>(null);
   const [earlyRepayments, setEarlyRepayments] = useState<Array<{ amount: string; date: string }>>([]);
   const prevTypeRef = useRef<FormValues['type'] | null>(null);
-  const [showingBadge, setShowingBadge] = useState<string | null>(null);
 
   const {
     register,
@@ -176,12 +192,9 @@ export function AddCreditPage() {
   const frozen = watch('frozen');
   const markPast = watch('markPastAsPaid');
   const startDate = watch('startDate');
-  const name = watch('name');
   const principal = watch('principal');
   const annualRate = watch('annualRate');
   const termMonths = watch('termMonths');
-  const termDays = watch('termDays');
-  const paymentDay = watch('paymentDay');
 
   const startInPast = Boolean(startDate) && new Date(startDate ?? '') < new Date();
 
@@ -278,24 +291,14 @@ export function AddCreditPage() {
       });
     },
     onSuccess: async (credit) => {
-      if (!hasBadge('first_credit')) {
-        addBadge('first_credit');
-        setShowingBadge('first_credit');
-      }
       await queryClient.invalidateQueries({ queryKey: ['credits'] });
       navigate(`/credits/${credit.id}`);
     },
     onError: (err) => setError(extractErrorMessage(err)),
   });
 
-  const hasName = Boolean(name && String(name).trim());
-  const hasPrincipal = principal !== undefined && Number(principal) > 0;
-  const hasType = !!(type && String(type).trim());
-  const hasStartDate = !!(startDate && String(startDate).trim());
-  const hasRate = annualRate !== undefined && Number.isFinite(Number(annualRate));
-  const hasTerm = !!((termMonths && Number(termMonths) > 0) || (termDays && Number(termDays) > 0));
-  const hasPayDay = !!(paymentDay && Number(paymentDay) >= 1 && Number(paymentDay) <= 31);
   const pass = typePassport[type];
+  const PassIcon = pass.icon;
   const monthly = type === 'CONSUMER' || type === 'MORTGAGE' ? annuityMonthly(Number(principal || 0), Number(annualRate || 0), Number(termMonths || 0)) : 0;
 
   const handleClose = () => navigate(-1);
@@ -303,68 +306,104 @@ export function AddCreditPage() {
   return (
     <div className="min-w-0 w-full max-w-full page-stack">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-heading font-bold text-t1">Добавление долга</h1>
-        <button type="button" onClick={handleClose} aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center rounded-full text-t3 transition hover:bg-surface2">×</button>
+        <h1 className="text-heading font-bold text-t1">Новый долг</h1>
+        <button type="button" onClick={handleClose} aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center rounded-full text-t3 transition hover:bg-surface2">
+          <X size={20} />
+        </button>
       </div>
 
-      <form onSubmit={handleSubmit((values) => mutation.mutate({ ...values, earlyRepayments: earlyRepayments.filter((er) => er.amount && er.date).map((er) => ({ amount: Number(er.amount), date: er.date })) }))} className="mt-5 page-stack touch-manipulation">
-        <label className="block">
-          <span className="text-sm text-t2">Название <span className="text-danger-fg">*</span></span>
-          <input placeholder="Например, Альфа-Банк" {...register('name')} className={inputClass} />
-          {errors.name && <p className="mt-1 text-xs text-danger-fg">{errors.name.message}</p>}
-        </label>
-
-        {hasName && (
-          <div className="rounded-card border border-line bg-surface p-4">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-lg">{pass.icons}</span>
-              <div>
-                <p className="font-semibold text-t1">{pass.title}</p>
-                <p className="mt-0.5 text-xs text-t3">{pass.desc}</p>
-              </div>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {pass.req.map((r) => (
-                <span key={r} className="rounded-full border border-line bg-surface2/60 px-2 py-0.5 text-[11px] text-t2">{r}</span>
-              ))}
-            </div>
-            <label className="block mt-4">
-              <span className="text-sm text-t2">Тип долга</span>
-              <select {...register('type')} className={inputClass}>
-                <option value="CONSUMER">Потребительский кредит</option>
-                <option value="CREDIT_CARD">Кредитная карта</option>
-                <option value="MORTGAGE">Ипотека</option>
-                <option value="INSTALLMENT">Рассрочка / Сплит</option>
-                <option value="MICROLOAN">Займ (МФО)</option>
-                <option value="LOAN">Займ (частный)</option>
-              </select>
-            </label>
-          </div>
+      <form
+        onSubmit={handleSubmit((values) =>
+          mutation.mutate({
+            ...values,
+            earlyRepayments: earlyRepayments
+              .filter((er) => er.amount && er.date)
+              .map((er) => ({ amount: Number(er.amount), date: er.date })),
+          }),
         )}
+        className="page-stack touch-manipulation"
+      >
+        {/* Шаг 1. Тип долга — определяет, какие поля нужны дальше. */}
+        <section className="card card-pad">
+          <p className="section-title mb-3">Тип долга</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {TYPE_ORDER.map((t) => {
+              const item = typePassport[t];
+              const ItemIcon = item.icon;
+              const selected = type === t;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setValue('type', t, { shouldValidate: false })}
+                  className={`flex flex-col items-start gap-2 rounded-control border p-3 text-left transition ${
+                    selected
+                      ? 'border-primary bg-primary/10'
+                      : 'border-line bg-surface hover:border-primary/40'
+                  }`}
+                >
+                  <span
+                    className={`flex h-9 w-9 items-center justify-center rounded-chip ${
+                      selected ? 'bg-primary/15 text-primary-fg' : 'bg-surface2 text-t3'
+                    }`}
+                  >
+                    <ItemIcon size={18} aria-hidden="true" />
+                  </span>
+                  <span className={`text-xs font-medium leading-tight ${selected ? 'text-t1' : 'text-t2'}`}>
+                    {item.title}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
-        {hasName && hasType && (
+        {/* Шаг 2. Основное — есть у любого долга. */}
+        <section className="card card-pad space-y-4">
+          <p className="section-title">Основное</p>
           <label className="block">
-            <span className="text-sm text-t2">Остаток долга, ₽ <span className="text-danger-fg">*</span></span>
+            <span className="text-sm text-t2">Название <span className="text-danger-fg">*</span></span>
+            <input placeholder="Например, Альфа-Банк" {...register('name')} className={inputClass} />
+            {errors.name && <p className="mt-1 text-xs text-danger-fg">{errors.name.message}</p>}
+          </label>
+          <label className="block">
+            <span className="text-sm text-t2">Сумма долга, ₽ <span className="text-danger-fg">*</span></span>
             <MoneyInput register={register} name="principal" placeholder="150 000" />
             {errors.principal && <p className="mt-1 text-xs text-danger-fg">{errors.principal.message}</p>}
           </label>
-        )}
+        </section>
 
-        {hasName && hasType && hasPrincipal && type === 'CREDIT_CARD' && (
-          <section className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
-            <h3 className="text-sm font-medium text-t2">
-              Параметры карты
-              {hasRate && hasPayDay && <span className="ml-2 text-xs text-success-fg">✓</span>}
-            </h3>
+        {/* Шаг 3. Параметры выбранного типа. */}
+        <section className="card card-pad space-y-4">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-primary/12 text-primary-fg">
+              <PassIcon size={20} aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold text-t1">{pass.title}</h2>
+              <p className="mt-0.5 text-xs text-t3">{pass.desc}</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {pass.req.map((r) => (
+              <span key={r} className="rounded-full border border-line bg-surface2/60 px-2 py-0.5 text-[11px] text-t2">
+                {r}
+              </span>
+            ))}
+          </div>
+
+          {type === 'CREDIT_CARD' && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
                 <span className="text-sm text-t2">Ставка, % годовых <span className="text-danger-fg">*</span></span>
                 <input type="number" step="0.01" inputMode="decimal" placeholder="19.9" {...register('annualRate')} className={inputClass} />
                 {errors.annualRate && <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>}
-                <span className="mt-1 block text-xs text-t3">Ставка по Revolving, напр. 19.9%</span>
+                <span className="mt-1 block text-xs text-t3">Ставка по Revolving, напр. 19,9</span>
               </label>
               <label className="block">
-                <span className="text-sm text-t2">День платежа</span>
+                <span className="text-sm text-t2">День платежа <span className="text-danger-fg">*</span></span>
                 <input type="number" min={1} max={31} inputMode="numeric" placeholder="напр. 20" {...register('paymentDay')} className={inputClass} />
                 {errors.paymentDay && <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>}
                 <span className="mt-1 block text-xs text-t3">Число месяца для min. платежа</span>
@@ -373,221 +412,252 @@ export function AddCreditPage() {
                 <span className="text-sm text-t2">Сумма для продления грейса, ₽</span>
                 <MoneyInput register={register} name="graceReplenishSum" placeholder="43 000" />
                 {errors.graceReplenishSum && <p className="mt-1 text-xs text-danger-fg">{errors.graceReplenishSum.message}</p>}
-                <span className="mt-1 block text-xs text-t3">Для продления льготного периода (опционально)</span>
+                <span className="mt-1 block text-xs text-t3">Опционально</span>
               </label>
             </div>
-          </section>
-        )}
+          )}
 
-        {(type === 'CONSUMER' || type === 'MORTGAGE') && hasName && hasType && hasPrincipal && (
-          <section className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
-            <h3 className="text-sm font-medium text-t2">
-              Параметры {type === 'CONSUMER' ? 'потребительского кредита' : 'ипотеки'}
-              {hasRate && hasStartDate && hasTerm && hasPayDay && <span className="ml-2 text-xs text-success-fg">✓</span>}
-            </h3>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <label className="block">
-                <span className="text-sm text-t2">Тип платежа</span>
-                <select {...register('paymentType')} className={inputClass}>
-                  <option value="ANNUITY">Аннуитетный</option>
-                  <option value="DIFFERENTIAL">Дифференцированный</option>
-                </select>
-                <span className="mt-1 block text-xs text-t3">Аннуитет — равные платежи, Дифф. — убывающие</span>
-              </label>
-              <label className="block">
-                <span className="text-sm text-t2">Ставка, % годовых</span>
-                <input type="number" step="0.01" {...register('annualRate')} className={inputClass} />
-                {errors.annualRate && <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>}
-                <span className="mt-1 block text-xs text-t3">Годовая ставка, напр. 19.9</span>
-              </label>
-              <label className="block">
-                <span className="text-sm text-t2">Дата выдачи</span>
-                <input type="date" {...register('startDate')} className={inputClass} />
-                {errors.startDate && <p className="mt-1 text-xs text-danger-fg">{errors.startDate.message}</p>}
-                <p className="mt-1 text-xs text-t3">Если не указана — берётся дата создания записи.</p>
-              </label>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className="text-sm text-t2">Срок, месяцев</span>
-                <input type="number" {...register('termMonths')} className={inputClass} />
-                {errors.termMonths && <p className="mt-1 text-xs text-danger-fg">{errors.termMonths.message}</p>}
-              </label>
-              <label className="block">
-                <span className="text-sm text-t2">День платежа</span>
-                <input type="number" min={1} max={31} inputMode="numeric" placeholder="напр. 20" {...register('paymentDay')} className={inputClass} />
-                {errors.paymentDay && <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>}
-              </label>
-            </div>
-            {monthly > 0 && <p className="text-sm text-t2">≈ Ежемесячно <b className="text-t1">{formatMoney(monthly)}</b></p>}
-          </section>
-        )}
+          {(type === 'CONSUMER' || type === 'MORTGAGE') && (
+            <>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <label className="block">
+                  <span className="text-sm text-t2">Тип платежа</span>
+                  <select {...register('paymentType')} className={inputClass}>
+                    <option value="ANNUITY">Аннуитетный</option>
+                    <option value="DIFFERENTIAL">Дифференцированный</option>
+                  </select>
+                  <span className="mt-1 block text-xs text-t3">Аннуитет — равные платежи, дифф. — убывающие</span>
+                </label>
+                <label className="block">
+                  <span className="text-sm text-t2">Ставка, % годовых <span className="text-danger-fg">*</span></span>
+                  <input type="number" step="0.01" placeholder="19.9" {...register('annualRate')} className={inputClass} />
+                  {errors.annualRate && <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>}
+                </label>
+                <label className="block">
+                  <span className="text-sm text-t2">Дата выдачи <span className="text-danger-fg">*</span></span>
+                  <input type="date" {...register('startDate')} className={inputClass} />
+                  {errors.startDate && <p className="mt-1 text-xs text-danger-fg">{errors.startDate.message}</p>}
+                </label>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="text-sm text-t2">Срок, месяцев <span className="text-danger-fg">*</span></span>
+                  <input type="number" placeholder="напр. 36" {...register('termMonths')} className={inputClass} />
+                  {errors.termMonths && <p className="mt-1 text-xs text-danger-fg">{errors.termMonths.message}</p>}
+                </label>
+                <label className="block">
+                  <span className="text-sm text-t2">День платежа <span className="text-danger-fg">*</span></span>
+                  <input type="number" min={1} max={31} inputMode="numeric" placeholder="напр. 20" {...register('paymentDay')} className={inputClass} />
+                  {errors.paymentDay && <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>}
+                </label>
+              </div>
+              {monthly > 0 && (
+                <p className="text-sm text-t2">≈ Ежемесячно <b className="tabular text-t1">{formatMoney(monthly)}</b></p>
+              )}
+            </>
+          )}
 
-        {type === 'INSTALLMENT' && hasName && hasType && hasPrincipal && (
-          <section className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
-            <h3 className="text-sm font-medium text-t2">
-              Параметры рассрочки / сплита
-              {(hasTerm || hasPayDay) && <span className="ml-2 text-xs text-success-fg">✓</span>}
-            </h3>
+          {type === 'INSTALLMENT' && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
                 <span className="text-sm text-t2">Срок, дней <span className="text-danger-fg">*</span></span>
-                <input type="number" inputMode="numeric" min="1" placeholder="напр. 30" {...register('termDays')} className={inputClass} />
+                <input type="number" inputMode="numeric" min="1" placeholder="напр. 90" {...register('termDays')} className={inputClass} />
                 {errors.termDays && <p className="mt-1 text-xs text-danger-fg">{errors.termDays.message}</p>}
-                <span className="mt-1 block text-xs text-t3">Полный срок рассрочки, напр. 90</span>
               </label>
               <label className="block">
-                <span className="text-sm text-t2">День платежа</span>
+                <span className="text-sm text-t2">День платежа <span className="text-danger-fg">*</span></span>
                 <input type="number" min={1} max={31} inputMode="numeric" placeholder="напр. 20" {...register('paymentDay')} className={inputClass} />
                 {errors.paymentDay && <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>}
-                <span className="mt-1 block text-xs text-t3">Число месяца для платежа</span>
               </label>
               <label className="block">
                 <span className="text-sm text-t2">Ставка, % годовых</span>
-                <input type="number" step="0.01" {...register('annualRate')} className={inputClass} />
+                <input type="number" step="0.01" placeholder="0" {...register('annualRate')} className={inputClass} />
                 {errors.annualRate && <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>}
-                <span className="mt-1 block text-xs text-t3">0% — без процентов, либо укажите свою ставку</span>
+                <span className="mt-1 block text-xs text-t3">0% — без процентов</span>
               </label>
             </div>
-          </section>
-        )}
+          )}
 
-        {type === 'MICROLOAN' && hasName && hasType && hasPrincipal && (
-          <section className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
-            <h3 className="text-sm font-medium text-t2">
-              Параметры займа (МФО)
-              {hasRate && hasTerm && hasPayDay && <span className="ml-2 text-xs text-success-fg">✓</span>}
-            </h3>
+          {type === 'MICROLOAN' && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
-                <span className="text-sm text-t2">Ставка, % годовых</span>
-                <input type="number" step="0.01" {...register('annualRate')} className={inputClass} />
+                <span className="text-sm text-t2">Ставка, % годовых <span className="text-danger-fg">*</span></span>
+                <input type="number" step="0.01" placeholder="напр. 292" {...register('annualRate')} className={inputClass} />
                 {errors.annualRate && <p className="mt-1 text-xs text-danger-fg">{errors.annualRate.message}</p>}
-                <span className="mt-1 block text-xs text-t3">Годовая ставка МФО, напр. 292%</span>
               </label>
               <label className="block">
-                <span className="text-sm text-t2">Срок, дней</span>
-                <input type="number" {...register('termDays')} placeholder="напр. 30" className={inputClass} />
+                <span className="text-sm text-t2">Срок, дней <span className="text-danger-fg">*</span></span>
+                <input type="number" placeholder="напр. 30" {...register('termDays')} className={inputClass} />
                 {errors.termDays && <p className="mt-1 text-xs text-danger-fg">{errors.termDays.message}</p>}
                 <span className="mt-1 block text-xs text-t3">До 365 дней</span>
               </label>
               <label className="block">
-                <span className="text-sm text-t2">День платежа</span>
+                <span className="text-sm text-t2">День платежа <span className="text-danger-fg">*</span></span>
                 <input type="number" min={1} max={31} inputMode="numeric" placeholder="напр. 20" {...register('paymentDay')} className={inputClass} />
                 {errors.paymentDay && <p className="mt-1 text-xs text-danger-fg">{errors.paymentDay.message}</p>}
-                <span className="mt-1 block text-xs text-t3">Число месяца для платежа</span>
               </label>
             </div>
-            <p className="mt-2 text-xs text-t3">Один balloon-платёж в конце срока. Дата выдачи не нужна — займ краткосрочный.</p>
-          </section>
-        )}
+          )}
 
-        {type === 'LOAN' && hasName && hasType && hasPrincipal && (
-          <div className="space-y-4 rounded-card border border-line bg-surface2/40 p-4">
-            <h3 className="text-sm font-medium text-t2">
-              Частный займ
-              {hasStartDate && <span className="ml-2 text-xs text-success-fg">✓</span>}
-            </h3>
+          {type === 'LOAN' && (
             <label className="block">
-              <span className="text-sm text-t2">Дата выдачи</span>
+              <span className="text-sm text-t2">Дата выдачи <span className="text-danger-fg">*</span></span>
               <input type="date" {...register('startDate')} className={inputClass} />
               {errors.startDate && <p className="mt-1 text-xs text-danger-fg">{errors.startDate.message}</p>}
               <span className="mt-1 block text-xs text-t3">Обязательно для корректного учёта срока займа</span>
             </label>
-            <p className="mt-2 text-xs text-t3">Частный займ без графика — только название и сумма. Ставка 0%.</p>
-          </div>
-        )}
+          )}
+        </section>
 
-        {type === 'CREDIT_CARD' && hasName && hasType && hasPrincipal && (
-          <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className="text-sm text-t2">Льготный период до</span>
-                <input type="date" {...register('gracePeriodEnds')} className={inputClass} />
-              </label>
-              <label className="block">
-                <span className="text-sm text-t2">День пополнения</span>
-                <input type="number" min={1} max={31} {...register('graceReplenishDay')} className={inputClass} />
-              </label>
-            </div>
-            <p className="mt-2 text-xs text-t3">Тип платежа автоматический: <b>минимальный платёж</b>. Срок и дата выдачи не нужны — карта revolving.</p>
-          </>
-        )}
+        {/* Шаг 4. Необязательные детали — спрятаны, чтобы не перегружать экран. */}
+        <details className="card card-pad group">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-medium text-t1 [&::-webkit-details-marker]:hidden">
+            Дополнительно
+            <span className="flex items-center gap-2 text-xs text-t3">
+              необязательно
+              <ChevronDown size={16} className="transition-transform group-open:rotate-180" aria-hidden="true" />
+            </span>
+          </summary>
 
-        {(type === 'CONSUMER' || type === 'MORTGAGE') && markPast && hasName && hasType && hasPrincipal && (
-          <div className="space-y-3 rounded-card border border-line bg-surface2/40 p-4">
-            <label className="flex items-start gap-2 text-sm text-t2">
-              <input type="checkbox" {...register('markPastAsPaid')} className="mt-0.5 h-4 w-4 shrink-0 accent-success" />
-              <span>
-                Кредит оформлен раньше — платежи, срок которых уже прошёл, считаем внесёнными
-                <span className="mt-0.5 block text-xs text-t3">{startInPast ? 'Дата выдачи в прошлом: график будет построен целиком, прошедшие платежи отметятся оплаченными, а остаток долга уменьшится на «тело».' : 'Укажите прошедшую дату выдачи, чтобы это сработало.'}</span>
-              </span>
-            </label>
-            {markPast && (
-              <label className="block">
-                <span className="text-sm text-t2">Остаток долга сейчас, ₽ <span className="text-xs text-t3">необязательно</span></span>
-                <MoneyInput register={register} name="outstanding" placeholder="оставьте пустым — посчитаем сами" />
-                {errors.outstanding && <p className="mt-1 text-xs text-danger-fg">{errors.outstanding.message}</p>}
-              </label>
+          <div className="mt-4 space-y-4">
+            {type === 'CREDIT_CARD' && (
+              <>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="text-sm text-t2">Льготный период до</span>
+                    <input type="date" {...register('gracePeriodEnds')} className={inputClass} />
+                  </label>
+                  <label className="block">
+                    <span className="text-sm text-t2">День пополнения</span>
+                    <input type="number" min={1} max={31} {...register('graceReplenishDay')} className={inputClass} />
+                    {errors.graceReplenishDay && <p className="mt-1 text-xs text-danger-fg">{errors.graceReplenishDay.message}</p>}
+                  </label>
+                </div>
+                <label className="flex items-start gap-2 text-sm text-t2">
+                  <input type="checkbox" {...register('frozen')} className="mt-0.5 h-4 w-4 shrink-0 accent-success" />
+                  <span>Цикл заморозки — проценты не начисляются, платёж не обязателен</span>
+                </label>
+                {frozen && (
+                  <label className="block">
+                    <span className="text-sm text-t2">Период заморозки, дней</span>
+                    <input type="number" min={1} max={365} {...register('freezeCycleDays')} className={inputClass} />
+                    {errors.freezeCycleDays && <p className="mt-1 text-xs text-danger-fg">{errors.freezeCycleDays.message}</p>}
+                  </label>
+                )}
+              </>
             )}
-          </div>
-        )}
 
-        {type === 'CREDIT_CARD' && frozen && hasName && hasType && hasPrincipal && (
-          <div className="space-y-3 rounded-card border border-line bg-surface2/40 p-4">
-            <label className="block">
-              <span className="text-sm text-t2">Период заморозки, дней</span>
-              <input type="number" min={1} max={365} {...register('freezeCycleDays')} className={inputClass} />
-              {errors.freezeCycleDays && <p className="mt-1 text-xs text-danger-fg">{errors.freezeCycleDays.message}</p>}
-            </label>
-          </div>
-        )}
+            {(type === 'CONSUMER' || type === 'MORTGAGE') && (
+              <div className="space-y-3">
+                <label className="flex items-start gap-2 text-sm text-t2">
+                  <input type="checkbox" {...register('markPastAsPaid')} className="mt-0.5 h-4 w-4 shrink-0 accent-success" />
+                  <span>
+                    Кредит оформлен раньше — прошедшие платежи считаем внесёнными
+                    <span className="mt-0.5 block text-xs text-t3">
+                      {startInPast
+                        ? 'Дата выдачи в прошлом: график построится целиком, прошедшие платежи отметятся оплаченными, а остаток долга уменьшится на «тело».'
+                        : 'Укажите прошедшую дату выдачи, чтобы это сработало.'}
+                    </span>
+                  </span>
+                </label>
+                {markPast && (
+                  <label className="block">
+                    <span className="text-sm text-t2">Остаток долга сейчас, ₽ <span className="text-xs text-t3">необязательно</span></span>
+                    <MoneyInput register={register} name="outstanding" placeholder="оставьте пустым — посчитаем сами" />
+                    {errors.outstanding && <p className="mt-1 text-xs text-danger-fg">{errors.outstanding.message}</p>}
+                  </label>
+                )}
+              </div>
+            )}
 
-        {hasName && hasType && hasPrincipal && type === 'CREDIT_CARD' && (
-          <label className="flex items-start gap-2 text-sm text-t2">
-            <input type="checkbox" {...register('frozen')} className="mt-0.5 h-4 w-4 shrink-0 accent-success" />
-            <span>Цикл заморозки («снежинка»)</span>
-          </label>
-        )}
-
-        {hasName && hasType && hasPrincipal && (
-          <details className="rounded-card border border-line bg-surface p-4">
-            <summary className="cursor-pointer text-sm font-medium text-t1">История досрочных погашений (опционально)</summary>
-            <div className="mt-3 space-y-3">
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-t2">История досрочных погашений</p>
               {earlyRepayments.map((er, idx) => (
                 <div key={idx} className="flex gap-2">
-                  <input type="number" placeholder="Сумма, ₽" value={er.amount} onChange={(e) => { const updated = [...earlyRepayments]; updated[idx] = { ...updated[idx], amount: e.target.value }; setEarlyRepayments(updated); }} className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-t1" />
-                  <input type="date" value={er.date} onChange={(e) => { const updated = [...earlyRepayments]; updated[idx] = { ...updated[idx], date: e.target.value }; setEarlyRepayments(updated); }} className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-t1" />
-                  <button type="button" onClick={() => setEarlyRepayments(earlyRepayments.filter((_, i) => i !== idx))} className="rounded-control border border-danger/40 px-3 text-danger-fg">×</button>
+                  <input
+                    type="number"
+                    placeholder="Сумма, ₽"
+                    value={er.amount}
+                    onChange={(e) => {
+                      const updated = [...earlyRepayments];
+                      updated[idx] = { ...updated[idx], amount: e.target.value };
+                      setEarlyRepayments(updated);
+                    }}
+                    className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-t1"
+                  />
+                  <input
+                    type="date"
+                    value={er.date}
+                    onChange={(e) => {
+                      const updated = [...earlyRepayments];
+                      updated[idx] = { ...updated[idx], date: e.target.value };
+                      setEarlyRepayments(updated);
+                    }}
+                    className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-t1"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Удалить досрочное погашение"
+                    onClick={() => setEarlyRepayments(earlyRepayments.filter((_, i) => i !== idx))}
+                    className="flex w-11 shrink-0 items-center justify-center rounded-control border border-danger/40 text-danger-fg"
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
               ))}
-              <button type="button" onClick={() => setEarlyRepayments([...earlyRepayments, { amount: '', date: '' }])} className="w-full rounded-control border border-line px-3 py-2 text-sm text-t2">+ Добавить досрочку</button>
+              <button
+                type="button"
+                onClick={() => setEarlyRepayments([...earlyRepayments, { amount: '', date: '' }])}
+                className="w-full rounded-control border border-line px-3 py-2 text-sm text-t2"
+              >
+                + Добавить досрочку
+              </button>
             </div>
-          </details>
-        )}
-
-        {hasName && hasType && hasPrincipal && principal && Number(principal) > 0 && (
-          <div className="rounded-card border border-line bg-surface p-4">
-            <h3 className="text-sm font-medium text-t1">Предпросмотр</h3>
-            <p className="mt-2 text-sm text-t2">Сумма долга: <b className="text-t1">{formatMoney(Number(principal))}</b></p>
-            <p className="mt-1 text-sm text-t2">Тип: <b className="text-t1">{pass.title}</b></p>
-            {monthly > 0 && <p className="mt-1 text-sm text-t2">≈ Ежемесячно <b className="text-t1">{formatMoney(monthly)}</b></p>}
-            <p className="mt-1 text-xs text-t3">Точный график построится на сервере после сохранения.</p>
           </div>
+        </details>
+
+        {/* Шаг 5. Предпросмотр и сохранение. */}
+        {principal !== undefined && Number(principal) > 0 && (
+          <section className="card card-pad">
+            <p className="section-title">Предпросмотр</p>
+            <div className="mt-3 space-y-1 text-sm">
+              <p className="flex items-center justify-between gap-3">
+                <span className="text-t2">Сумма долга</span>
+                <b className="tabular text-t1">{formatMoney(Number(principal))}</b>
+              </p>
+              <p className="flex items-center justify-between gap-3">
+                <span className="text-t2">Тип</span>
+                <b className="text-t1">{pass.title}</b>
+              </p>
+              {monthly > 0 && (
+                <p className="flex items-center justify-between gap-3">
+                  <span className="text-t2">≈ Ежемесячно</span>
+                  <b className="tabular text-t1">{formatMoney(monthly)}</b>
+                </p>
+              )}
+            </div>
+            <p className="mt-2 text-xs text-t3">Точный график построится на сервере после сохранения.</p>
+          </section>
         )}
 
         {error && <p className="text-sm text-danger-fg">{error}</p>}
 
-        {(hasName && hasType && hasPrincipal) && (
-          <div className="flex gap-3">
-            <button type="submit" disabled={isSubmitting || mutation.isPending} className="inline-flex w-full items-center justify-center gap-2 whitespace-normal rounded-control bg-primary px-4 py-2.5 font-medium text-bg disabled:opacity-70">
-              {mutation.isPending ? (<><span className="h-4 w-4 animate-spin rounded-full border-2 border-bg/40 border-t-bg" />…</>) : ('Сохранить')}
-            </button>
-            <button type="button" onClick={() => navigate(-1)} className="rounded-control border border-line px-4 py-2.5 text-t2 transition hover:border-t3">Отмена</button>
-          </div>
-        )}
+        <div className="flex gap-3">
+          <button type="submit" disabled={isSubmitting || mutation.isPending} className="btn btn-primary w-full">
+            {mutation.isPending ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-bg/40 border-t-bg" />
+                …
+              </>
+            ) : (
+              'Сохранить'
+            )}
+          </button>
+          <button type="button" onClick={() => navigate(-1)} className="btn btn-secondary">
+            Отмена
+          </button>
+        </div>
       </form>
-      {showingBadge && <BadgeUnlocked badgeId={showingBadge} onClose={() => setShowingBadge(null)} />}
     </div>
   );
 }

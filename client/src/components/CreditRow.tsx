@@ -163,7 +163,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
   const payButtonColor = !next
     ? 'bg-primary text-bg hover:bg-primary/90'
     : daysUntil(next.dueDate) < 0
-      ? 'bg-danger text-bg hover:bg-danger/90'
+      ? 'bg-danger-strong text-bg hover:bg-danger-strong/90'
       : daysUntil(next.dueDate) === 0
         ? 'border border-warning/40 bg-warning/15 text-warning-fg hover:bg-warning/25'
         : 'bg-primary text-bg hover:bg-primary/90';
@@ -392,7 +392,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
           <button
             type="submit"
             disabled={earlyPending}
-            className="w-full rounded-control bg-success px-4 py-2.5 font-medium text-bg disabled:opacity-50"
+            className="w-full rounded-control bg-success-strong px-4 py-2.5 font-medium text-bg transition hover:bg-success-strong/90 disabled:opacity-50"
           >
             {earlyPending ? '…' : 'Внести'}
           </button>

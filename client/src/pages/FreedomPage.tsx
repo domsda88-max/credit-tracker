@@ -1,8 +1,9 @@
 import { Target, Clock, Zap, TrendingDown, FileText } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { creditsApi } from '../api/credits';
 import { debtPaidPercent, formatDate, formatMoney, formatMoneyShort } from '../utils/format';
+import { simulateAccelerator } from '../utils/finance/accelerator';
 import type { CreditListItem } from '../types';
 import { CREDIT_TYPE_LABELS } from '../utils/format';
 
@@ -20,6 +21,20 @@ function monthsLabel(months: number): string {
   if (restMonths > 0) parts.push(`${restMonths} мес.`);
   if (days > 0 && years === 0) parts.push(`${days} дн.`);
   return parts.join(' ') || '0 дн.';
+}
+
+function untilLabel(iso: string): string {
+  const target = new Date(iso);
+  const now = new Date();
+  let months =
+    (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth());
+  if (months < 0) months = 0;
+  const years = Math.floor(months / 12);
+  const rest = months % 12;
+  const parts: string[] = [];
+  if (years > 0) parts.push(`${years} ${years === 1 ? 'год' : years < 5 ? 'года' : 'лет'}`);
+  if (rest > 0) parts.push(`${rest} мес.`);
+  return parts.length ? `через ${parts.join(' ')}` : 'меньше месяца';
 }
 
 export function FreedomPage() {
@@ -51,6 +66,38 @@ export function FreedomPage() {
     const now = new Date();
     return Math.max(0, (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth()));
   }, [summary?.debtFreeDate]);
+
+  // Интерактивный ускоритель: сколько сэкономишь, если вносить больше каждый месяц.
+  const [extra, setExtra] = useState(1000);
+  const lastAccel = useRef<ReturnType<typeof simulateAccelerator>>(null);
+  const accelerator = useMemo(() => {
+    if (!credits) return lastAccel.current;
+    const active = (credits as CreditListItem[]).filter((c) => c.status === 'ACTIVE');
+    const debts = active
+      .map((c) => {
+        const balance = Math.max(0, Number(c.outstanding));
+        if (balance <= 0) return null;
+        const next = c.nextPayment;
+        const isFreezeCycle = c.frozen && c.freezeCycleDays !== null;
+        const minPayment = isFreezeCycle
+          ? 0
+          : next
+            ? Number(next.amount)
+            : Math.max(balance * 0.03, 0);
+        return {
+          id: c.id,
+          name: c.name,
+          annualRate: isFreezeCycle ? 0 : Number(c.annualRate),
+          balance,
+          minPayment,
+        };
+      })
+      .filter((d): d is NonNullable<typeof d> => d !== null);
+    const extraPerMonth = extra >= 1000 ? extra : 0;
+    const res = simulateAccelerator({ extraPerMonth, baselineMonths, debts });
+    if (res) lastAccel.current = res;
+    return res ?? lastAccel.current;
+  }, [credits, extra, baselineMonths]);
 
   if (!summary || summary.activeCount === 0) {
     return (
@@ -164,6 +211,66 @@ export function FreedomPage() {
         </section>
       )}
 
+      {activeDebts.length > 0 && (
+        <section className="card card-pad border border-success/20 bg-success/[0.04]">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-10 w-10 items-center justify-center rounded-control bg-success/15 text-success-fg">
+              <Zap size={18} />
+            </span>
+            <div>
+              <h2 className="text-heading font-semibold text-t1">Ускорь свободу</h2>
+              <p className="text-xs text-t3">Дополнительный платёж в самый дорогой долг</p>
+            </div>
+          </div>
+
+          <p className="mt-4 text-caption leading-relaxed text-t1">
+            {extra >= 1000 && accelerator && accelerator.savedMonths > 0 ? (
+              <>
+                Если вносить{' '}
+                <span className="tabular font-semibold text-t1">{formatMoney(extra)}</span>{' '}
+                дополнительно в самый дорогой долг (
+                <span className="font-medium text-t1">{accelerator.targetName}</span>):
+                <br />
+                освободишься{' '}
+                <span className="font-semibold text-success-fg">
+                  через {monthsLabel(accelerator.acceleratedMonths)}
+                </span>{' '}
+                вместо {monthsLabel(accelerator.baselineMonths)}
+              </>
+            ) : (
+              <>
+                Без досрочных платежей ты освободишься через{' '}
+                <span className="font-semibold text-t1">{monthsLabel(baselineMonths)}</span>.
+              </>
+            )}
+          </p>
+
+          <p className="mt-1 text-micro text-t3">
+            {accelerator && accelerator.savedMonths > 0
+              ? `Экономия: ${monthsLabel(accelerator.savedMonths)}`
+              : '\u00A0'}
+          </p>
+
+          <div className="mt-3">
+            <input
+              type="range"
+              min={1000}
+              max={100000}
+              step={1000}
+              value={extra}
+              onChange={(e) => setExtra(Number(e.target.value))}
+              aria-label="Дополнительный платёж в месяц"
+              className="w-full"
+            />
+            <div className="mt-1 flex justify-between text-micro text-t3">
+              <span className="tabular">1 000 ₽</span>
+              <span className="tabular">{formatMoney(extra)}</span>
+              <span className="tabular">100 000 ₽</span>
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="card card-pad">
         <div className="mb-4 flex items-center justify-between gap-2">
           <h2 className="text-heading font-semibold text-t1">Ваши активные долги</h2>
@@ -222,21 +329,14 @@ export function FreedomPage() {
             </p>
           </div>
         </div>
+        {summary.paidLast12Months > 0 && (
+          <p className="mt-3 border-t border-line pt-3 text-micro text-t3">
+            За последние 12 месяцев внесено{' '}
+            <span className="tabular font-medium text-t2">{formatMoney(summary.paidLast12Months)}</span>
+            {summary.paymentsLast12Months > 0 && <> · {summary.paymentsLast12Months} платежей</>}
+          </p>
+        )}
       </section>
     </section>
   );
-}
-
-function untilLabel(iso: string): string {
-  const target = new Date(iso);
-  const now = new Date();
-  let months =
-    (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth());
-  if (months < 0) months = 0;
-  const years = Math.floor(months / 12);
-  const rest = months % 12;
-  const parts: string[] = [];
-  if (years > 0) parts.push(`${years} ${years === 1 ? 'год' : years < 5 ? 'года' : 'лет'}`);
-  if (rest > 0) parts.push(`${rest} мес.`);
-  return parts.length ? `через ${parts.join(' ')}` : 'меньше месяца';
 }

@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, CheckCircle2, Pencil, Trash2 } from 'lucide-react';
+import { Check, CheckCircle2, PartyPopper, Pencil, Snowflake, Trash2 } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useParams } from 'react-router-dom';
@@ -13,8 +13,6 @@ import { SkeletonCard } from '../components/Skeleton';
 import { BalanceChart } from '../components/BalanceChart';
 import { EditCreditForm } from '../components/EditCreditForm';
 import { useToast } from '../components/useToast';
-import { useGamification } from '../hooks/useGamification';
-import { BadgeUnlocked } from '../components/BadgeUnlocked';
 import type { EarlyPreview, EarlyRepaymentPayload, PaymentEvent } from '../types';
 import { maxPrepaymentDate } from '../utils/date';
 import {
@@ -47,13 +45,11 @@ export function CreditDetailPage() {
   const { id = '' } = useParams();
   const queryClient = useQueryClient();
   const toast = useToast();
-  const { addBadge, incrementStreak, recordPayment, recordEarlyRepayment, hasBadge } = useGamification();
   const [error, setError] = useState<string | null>(null);
   const [showAllPaid, setShowAllPaid] = useState(false);
   const [editing, setEditing] = useState(false);
   /** id платежа, для которого открыта форма фактической оплаты (сумма/дата). */
   const [payingId, setPayingId] = useState<string | null>(null);
-  const [showingBadge, setShowingBadge] = useState<string | null>(null);
 
   const { data: credit, isPending, error: loadError } = useQuery({
     queryKey: ['credit', id],
@@ -120,12 +116,6 @@ export function CreditDetailPage() {
       setPayingId(null);
       await invalidate();
       toast.show('Платёж отмечен');
-      recordPayment();
-      incrementStreak();
-      if (!hasBadge('payment_on_time')) {
-        addBadge('payment_on_time');
-        setShowingBadge('payment_on_time');
-      }
     },
     onError: (err) => setError(extractErrorMessage(err)),
   });
@@ -144,11 +134,6 @@ export function CreditDetailPage() {
       await invalidate();
       toast.show('Досрочное погашение внесено');
       navigator.vibrate?.([30, 40, 30]);
-      recordEarlyRepayment();
-      if (!hasBadge('early_repayment')) {
-        addBadge('early_repayment');
-        setShowingBadge('early_repayment');
-      }
     },
     onError: (err) => setError(extractErrorMessage(err)),
   });
@@ -193,7 +178,9 @@ export function CreditDetailPage() {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="truncate text-xl font-semibold text-t1">{credit.name}</h1>
-              {credit.frozen && <span title="Цикл заморозки">🧊</span>}
+              {credit.frozen && (
+                <Snowflake size={18} className="shrink-0 text-primary-fg" aria-label="Цикл заморозки" />
+              )}
               {credit.status === 'CLOSED' && <CheckCircle2 size={18} className="text-success-fg" aria-label="Закрыт" />}
             </div>
             <p className="mt-1 text-xs text-t3">
@@ -292,9 +279,12 @@ export function CreditDetailPage() {
         </div>
 
         {credit.frozen && credit.nextFreezeCheckAt && (
-          <p className="mt-3 rounded-control bg-primary/10 px-3 py-2 text-xs text-primary-fg">
-            🧊 Цикл заморозки до {formatDate(credit.nextFreezeCheckAt)}
-            {credit.freezeCycleDays ? ` (каждые ${credit.freezeCycleDays} дн.)` : ''}
+          <p className="mt-3 flex items-center gap-1.5 rounded-control bg-primary/10 px-3 py-2 text-xs text-primary-fg">
+            <Snowflake size={14} className="shrink-0" aria-hidden="true" />
+            <span>
+              Цикл заморозки до {formatDate(credit.nextFreezeCheckAt)}
+              {credit.freezeCycleDays ? ` (каждые ${credit.freezeCycleDays} дн.)` : ''}
+            </span>
           </p>
         )}
       </header>
@@ -367,7 +357,7 @@ export function CreditDetailPage() {
               <button
                 type="submit"
                 disabled={preview?.coversInterest === false}
-                className="rounded-control bg-success px-4 py-2.5 font-medium text-bg transition hover:bg-success/90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-control bg-success-strong px-4 py-2.5 font-medium text-bg transition hover:bg-success-strong/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Внести
               </button>
@@ -379,7 +369,7 @@ export function CreditDetailPage() {
               <p className="font-medium text-danger-fg">
                 Минимум к погашению: <span className="tabular">{formatMoney(preview.minAmount)}</span>
               </p>
-              <p className="mt-1 text-xs text-danger-fg/80">
+              <p className="mt-1 text-xs text-danger-fg">
                 Сумма должна покрыть начисленные проценты за {preview.days} дн.
               </p>
             </div>
@@ -387,14 +377,17 @@ export function CreditDetailPage() {
 
           {preview && preview.coversInterest && (
             <div className="mt-3 rounded-control border border-success/30 bg-success/10 px-4 py-3 text-sm">
-              <p className="text-xs text-success-fg/70">
+              <p className="text-xs text-success-fg">
                 Проценты за период: {formatMoney(preview.accruedInterest)} · в тело: {formatMoney(preview.principalPart)}
               </p>
               {preview.isFull ? (
-                <p className="font-medium text-success-fg">
-                  🎉 Полное закрытие кредита: сэкономите{' '}
-                  <span className="tabular">{formatMoney(preview.interestSaved)}</span> процентов
-                  {' '}и <span className="font-semibold">{preview.monthSaved} мес.</span>
+                <p className="flex items-center gap-1.5 font-medium text-success-fg">
+                  <PartyPopper size={16} className="shrink-0" aria-hidden="true" />
+                  <span>
+                    Полное закрытие кредита: сэкономите{' '}
+                    <span className="tabular">{formatMoney(preview.interestSaved)}</span> процентов
+                    {' '}и <span className="font-semibold">{preview.monthSaved} мес.</span>
+                  </span>
                 </p>
               ) : (
                 <>
@@ -405,7 +398,7 @@ export function CreditDetailPage() {
                       <> и <span className="font-semibold">{preview.monthSaved} мес.</span> срока</>
                     )}
                   </p>
-                  <p className="mt-1 text-xs text-success-fg/70">
+                  <p className="mt-1 text-xs text-success-fg">
                     {watchMode === 'REDUCE_TERM' ? (
                       <>Останется платежей: {preview.monthsAfter} · платёж {formatMoney(preview.paymentAfter)}</>
                     ) : (
@@ -606,7 +599,6 @@ export function CreditDetailPage() {
           </div>
         </section>
       )}
-      {showingBadge && <BadgeUnlocked badgeId={showingBadge} onClose={() => setShowingBadge(null)} />}
       </div>
     </div>
   );
