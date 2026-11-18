@@ -17,11 +17,11 @@ function Accordion({ title, subtitle, defaultOpen = false, children }: {
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="overflow-hidden rounded-card border border-line bg-surface">
+    <div className="overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-surface2"
+        className="tap flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-left transition-colors hover:bg-surface2 active:scale-[0.97]"
         aria-expanded={open}
       >
         <div>
@@ -36,7 +36,7 @@ function Accordion({ title, subtitle, defaultOpen = false, children }: {
       <div
         className={`overflow-hidden transition-[max-height] duration-200 ease-out ${open ? 'max-h-[2000px]' : 'max-h-0'}`}
       >
-        <div className="border-t border-line p-4">{children}</div>
+        <div className="px-4 pb-4 pt-1">{children}</div>
       </div>
     </div>
   );
@@ -53,19 +53,19 @@ export function SettingsPage() {
   return (
     <div className="w-full max-w-full space-y-5 overflow-x-hidden pb-24 safe-area-bottom touch-manipulation">
       <header className="px-1">
-        <h1 className="text-title font-bold text-t1">Настройки</h1>
+        <h1 className="screen-title">Настройки</h1>
         <p className="mt-1 text-caption text-t3">Деньги, уведомления, оформление и данные</p>
       </header>
 
-      <section className="space-y-2">
-        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Деньги</h2>
+      <section className="card divide-y divide-line p-0">
+        <h2 className="px-4 pt-4 text-xs uppercase tracking-widest text-t3">Деньги</h2>
         <Accordion title="Доход в месяц" subtitle="Покажем, сколько остаётся после обязательных платежей" defaultOpen>
           <IncomeSettings />
         </Accordion>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Уведомления</h2>
+      <section className="card divide-y divide-line p-0">
+        <h2 className="px-4 pt-4 text-xs uppercase tracking-widest text-t3">Уведомления</h2>
         <Accordion title="Push-уведомления" subtitle="Сводка платежей в выбранное время + напоминания о сроках">
           <PushSettings />
         </Accordion>
@@ -77,19 +77,19 @@ export function SettingsPage() {
         </Accordion>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Оформление</h2>
-        <div className="rounded-card border border-line bg-surface p-4">
+      <section className="card divide-y divide-line p-0">
+        <h2 className="px-4 pt-4 text-xs uppercase tracking-widest text-t3">Оформление</h2>
+        <div className="p-4">
           <p className="font-medium text-t1">Тема оформления</p>
           <p className="mt-0.5 text-xs text-t3">Светлая или тёмная</p>
           <div className="mt-3 grid grid-cols-2 gap-2 w-full">
             <button
               type="button"
               onClick={() => setThemeMode('dark')}
-              className={`rounded-control border px-3 py-2.5 text-sm font-medium transition ${
+              className={`tap rounded-full px-3 py-2.5 text-sm font-bold transition-transform active:scale-[0.97] ${
                 themeMode === 'dark'
-                  ? 'border-primary bg-primary text-white'
-                  : 'border-line text-t2 hover:border-primary/50'
+                  ? 'bg-primary text-bg shadow-lg shadow-primary/20'
+                  : 'border border-line bg-surface2 text-t2'
               }`}
             >
               🌙 Тёмная
@@ -97,10 +97,10 @@ export function SettingsPage() {
             <button
               type="button"
               onClick={() => setThemeMode('light')}
-              className={`rounded-control border px-3 py-2.5 text-sm font-medium transition ${
+              className={`tap rounded-full px-3 py-2.5 text-sm font-bold transition-transform active:scale-[0.97] ${
                 themeMode === 'light'
-                  ? 'border-primary bg-primary text-white'
-                  : 'border-line text-t2 hover:border-primary/50'
+                  ? 'bg-primary text-bg shadow-lg shadow-primary/20'
+                  : 'border border-line bg-surface2 text-t2'
               }`}
             >
               ☀️ Светлая
@@ -109,19 +109,19 @@ export function SettingsPage() {
         </div>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Данные</h2>
+      <section className="card divide-y divide-line p-0">
+        <h2 className="px-4 pt-4 text-xs uppercase tracking-widest text-t3">Данные</h2>
         <Accordion title="Экспорт данных" subtitle="Скачать CSV / JSON">
           <DataExport />
         </Accordion>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-t3">Аккаунт</h2>
-        <div className="rounded-card border border-line bg-surface p-4">
+      <section className="card divide-y divide-line p-0">
+        <h2 className="px-4 pt-4 text-xs uppercase tracking-widest text-t3">Аккаунт</h2>
+        <div className="p-4">
           <p className="text-xs text-t3">Вы вошли как</p>
           <p className="mt-0.5 text-sm text-t1 break-all">{user?.email}</p>
-          <button type="button" onClick={handleLogout} className="mt-3 w-full rounded-control border border-danger/40 bg-danger/10 px-4 py-2.5 text-sm font-medium text-danger transition hover:bg-danger/20">Выйти из аккаунта</button>
+          <button type="button" onClick={handleLogout} className="btn btn-primary mt-3 w-full !bg-critical !shadow-critical/25">Выйти из аккаунта</button>
         </div>
       </section>
     </div>

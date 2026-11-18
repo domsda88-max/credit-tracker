@@ -45,7 +45,7 @@ const TYPE_ICON: Record<CreditType, typeof CreditCard> = {
 /** Акцент срочности для плашки ближайшего платежа. */
 const TONE = {
   danger: { border: 'border-l-danger', text: 'text-danger', dot: 'bg-danger' },
-  warning: { border: 'border-l-warning', text: 'text-warning', dot: 'bg-warning' },
+  warm: { border: 'border-l-warm', text: 'text-warm', dot: 'bg-warm' },
   muted: { border: 'border-l-line', text: 'text-t2', dot: 'bg-t3' },
 } as const;
 
@@ -183,11 +183,9 @@ export function CreditRow({ credit, index = 0 }: Props) {
   })();
 
   const payButtonColor =
-    next && daysUntil(next.dueDate) < 0
-      ? 'bg-danger hover:bg-danger/90'
-      : daysUntil(next!.dueDate) === 0
-      ? 'bg-warning hover:bg-warning/90'
-      : 'bg-primary hover:bg-primary/90';
+    next && daysUntil(next.dueDate) <= 0
+      ? 'btn-critical'
+      : 'btn-primary';
 
   return (
     <>
@@ -210,7 +208,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
                   {isClosed && (
                     <CheckCircle2
                       size={15}
-                      className="shrink-0 text-success"
+                      className="shrink-0 text-primary"
                       aria-label="Закрыт"
                     />
                   )}
@@ -222,7 +220,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
             </div>
 
             <div className="shrink-0 text-right">
-              <p className="tabular text-heading font-bold text-t1">
+              <p className="tabular-nums text-heading font-bold text-t1">
                 {formatMoneyShort(credit.outstanding)}
               </p>
               <p className="text-micro text-t3">остаток</p>
@@ -233,8 +231,8 @@ export function CreditRow({ credit, index = 0 }: Props) {
             <div
               className={`h-full rounded-full transition-[width] duration-[600ms] ease-app ${
                 isClosed
-                  ? 'bg-success'
-                  : 'bg-gradient-to-r from-primary to-success'
+                  ? 'bg-primary'
+                  : 'bg-gradient-to-r from-primary to-warm'
               }`}
               style={{ width: `${barWidth}%` }}
             />
@@ -250,7 +248,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
                   Ближайший платёж
                 </span>
                 <span className="text-right">
-                  <span className="tabular font-semibold text-t1">{formatMoneyShort(next.amount)}</span>
+                  <span className="tabular-nums font-semibold text-t1">{formatMoneyShort(next.amount)}</span>
                   <span className={`ml-2 text-caption ${tone.text}`}>
                     {formatDateShort(next.dueDate)} · {describeDueDate(next.dueDate)}
                   </span>
@@ -264,7 +262,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
                     e.stopPropagation();
                     payMutation.mutate();
                   }}
-                  className={`w-full rounded-control px-3 py-2 text-sm font-medium text-white transition ${payButtonColor}`}
+                  className={`btn ${payButtonColor} w-full !min-h-[40px] px-3 py-2 text-sm`} data-act="pay"
                 >
                   Оплатить
                 </button>
@@ -280,7 +278,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
               </span>
               <span className="text-right">
                 {cycleSum !== null ? (
-                  <span className="tabular font-semibold text-t2">{formatMoneyShort(cycleSum)}</span>
+                  <span className="tabular-nums font-semibold text-t2">{formatMoneyShort(cycleSum)}</span>
                 ) : (
                   <span className="text-caption text-t3">сумма не задана</span>
                 )}
@@ -348,7 +346,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
               }}
               className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-t1 transition-colors active:bg-surface2"
             >
-              <TrendingDown size={18} className="text-success" />
+              <TrendingDown size={18} className="text-primary" />
               <span>Досрочное погашение</span>
             </button>
           )}
@@ -425,7 +423,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
             </div>
           </div>
           {earlyPreview && (
-            <div className="rounded-control border border-success/30 bg-success/10 px-3 py-2 text-xs text-success">
+            <div className="rounded-control bg-primary/10 px-3 py-2 text-xs text-primary">
               <p>
                 Из {formatMoney(earlyAmountNum)}: проценты {formatMoney(earlyPreview.accruedInterest)} · тело{' '}
                 {formatMoney(earlyPreview.principalPart)}
@@ -433,7 +431,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
               {earlyPreview.isFull ? (
                 <p className="mt-1">🎉 Полное закрытие кредита</p>
               ) : (
-                <p className="mt-1 text-success/80">
+                <p className="mt-1 text-primary/80">
                   Экономия ≈ {formatMoney(earlyPreview.interestSaved)}
                   {earlyPreview.monthSaved > 0 && ` и ${earlyPreview.monthSaved} мес.`}
                   {earlyMode === 'REDUCE_TERM'
@@ -447,7 +445,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
           <button
             type="submit"
             disabled={earlyAmountNum <= 0}
-            className="w-full rounded-control bg-success px-4 py-2.5 font-medium text-white disabled:opacity-50"
+            className="btn btn-critical w-full px-4 py-2.5 disabled:opacity-50"
           >
             Внести
           </button>

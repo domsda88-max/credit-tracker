@@ -13,6 +13,8 @@ export default {
         success: 'rgb(var(--c-success) / <alpha-value>)',
         warning: 'rgb(var(--c-warning) / <alpha-value>)',
         danger: 'rgb(var(--c-danger) / <alpha-value>)',
+        warm: 'rgb(var(--c-warm) / <alpha-value>)',
+        critical: 'rgb(var(--c-critical) / <alpha-value>)',
         bg: 'rgb(var(--c-bg) / <alpha-value>)',
         surface: 'rgb(var(--c-surface) / <alpha-value>)',
         surface2: 'rgb(var(--c-surface2) / <alpha-value>)',
@@ -23,12 +25,10 @@ export default {
       },
       fontFamily: {
         sans: [
-          'Inter',
+          'system-ui',
           '-apple-system',
           'BlinkMacSystemFont',
-          '"SF Pro Text"',
-          'Roboto',
-          'system-ui',
+          '"SF Pro Display"',
           'sans-serif',
         ],
       },

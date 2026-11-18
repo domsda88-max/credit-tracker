@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useState } from 'react';
 
-type ToastKind = 'success' | 'error' | 'info';
+type ToastKind = 'primary' | 'error' | 'info';
 interface Toast {
   id: number;
   message: string;
@@ -18,7 +18,7 @@ let counter = 0;
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const show = useCallback((message: string, kind: ToastKind = 'success') => {
+  const show = useCallback((message: string, kind: ToastKind = 'primary') => {
     const id = ++counter;
     setToasts((prev) => [...prev, { id, message, kind }]);
     window.setTimeout(() => {
@@ -33,15 +33,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto w-full max-w-sm rounded-card border px-4 py-3 text-sm shadow-lg backdrop-blur ${
-              t.kind === 'success'
-                ? 'border-success/30 bg-success/15 text-success'
+            className={`animate-fade-up pointer-events-auto w-full max-w-sm rounded-2xl border border-line bg-surface/95 px-4 py-3 text-sm shadow-lg backdrop-blur-xl ${
+              t.kind === 'primary'
+                ? '!border-primary/30 !bg-primary/15 text-primary'
                 : t.kind === 'error'
-                  ? 'border-rose-500/30 bg-rose-500/15 text-rose-200'
-                  : 'border-primary/30 bg-primary/15 text-sky-200'
+                  ? '!border-critical/30 !bg-critical/15 text-critical'
+                  : 'text-t1'
             }`}
           >
-            {t.kind === 'success' ? '✅ ' : t.kind === 'error' ? '⚠️ ' : 'ℹ️ '}
+            {t.kind === 'primary' ? '✅ ' : t.kind === 'error' ? '⚠️ ' : 'ℹ️ '}
             {t.message}
           </div>
         ))}

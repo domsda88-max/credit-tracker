@@ -162,7 +162,7 @@ export function CreditDetailPage() {
         ← Дашборд
       </Link>
 
-      <header className="rounded-card border border-line bg-gradient-to-br from-primary/10 via-transparent to-success/5 p-4">
+      <header className="card animate-fade-up p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -196,15 +196,15 @@ export function CreditDetailPage() {
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div>
             <p className="text-xs text-t3">Остаток долга</p>
-            <p className="tabular text-lg font-semibold text-t1">{formatMoney(credit.outstanding)}</p>
+            <p className="tabular-nums text-lg font-semibold text-t1">{formatMoney(credit.outstanding)}</p>
           </div>
           <div>
             <p className="text-xs text-t3">Первоначально</p>
-            <p className="tabular text-lg font-semibold text-t1">{formatMoney(credit.principal)}</p>
+            <p className="tabular-nums text-lg font-semibold text-t1">{formatMoney(credit.principal)}</p>
           </div>
           <div>
             <p className="text-xs text-t3">Выплачено</p>
-            <p className="tabular text-lg font-semibold text-success">{formatMoney(credit.totalPaid)}</p>
+            <p className="tabular-nums text-lg font-semibold text-primary">{formatMoney(credit.totalPaid)}</p>
           </div>
           {credit.type !== 'LOAN' ? (
             <div>
@@ -235,7 +235,7 @@ export function CreditDetailPage() {
                 setError(extractErrorMessage(err));
               }
             }}
-            className="rounded-lg border border-danger/40 px-3 py-2 text-sm text-danger transition hover:bg-danger/10"
+            className="btn btn-secondary px-3 py-2 text-sm !text-critical active:scale-[0.97]"
           >
             Удалить кредит
           </button>
@@ -243,7 +243,7 @@ export function CreditDetailPage() {
 
         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-surface2">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-primary to-success"
+            className="h-full rounded-full bg-gradient-to-r from-primary to-warm"
             style={{ width: `${percent}%` }}
           />
         </div>
@@ -251,16 +251,16 @@ export function CreditDetailPage() {
           <p className="text-xs text-t2">
             Долг погашен на <span className="font-medium text-t1">{percent}%</span>
             {' — '}
-            <span className="tabular text-t2">{formatMoney(principalPaid)}</span> из{' '}
-            <span className="tabular text-t2">{formatMoney(credit.principal)}</span>
+            <span className="tabular-nums text-t2">{formatMoney(principalPaid)}</span> из{' '}
+            <span className="tabular-nums text-t2">{formatMoney(credit.principal)}</span>
           </p>
           <p className="text-xs text-t3">
-            Всего выплачено <span className="tabular text-t2">{formatMoney(credit.totalPaid)}</span>
+            Всего выплачено <span className="tabular-nums text-t2">{formatMoney(credit.totalPaid)}</span>
             {' '}(тело {formatMoney(principalPaid)} + проценты {formatMoney(interestPaid)})
           </p>
           <p className="text-xs text-t3">
-            Остаток долга <span className="tabular text-t2">{formatMoney(credit.outstanding)}</span>
-            {' '}(<span className="tabular">{100 - percent}%</span> от первоначальной суммы)
+            Остаток долга <span className="tabular-nums text-t2">{formatMoney(credit.outstanding)}</span>
+            {' '}(<span className="tabular-nums">{100 - percent}%</span> от первоначальной суммы)
           </p>
         </div>
 
@@ -283,7 +283,7 @@ export function CreditDetailPage() {
       )}
 
       {credit.status === 'ACTIVE' && credit.type !== 'LOAN' && (
-        <section className="rounded-card border border-line bg-surface p-4">
+        <section className="card p-4">
             <h2 className="font-medium text-t1">Досрочное погашение</h2>
           <p className="mt-0.5 text-xs text-t3">
             График пересчитается автоматически: {credit.prepaymentMode === 'REDUCE_TERM' ? 'сократится срок' : 'уменьшится платёж'}
@@ -329,7 +329,7 @@ export function CreditDetailPage() {
               <button
                 type="submit"
                 disabled={earlyMutation.isPending}
-                className="rounded-control bg-success px-4 py-2.5 font-medium text-white transition hover:bg-emerald-400 disabled:opacity-50"
+                className="btn btn-critical px-4 py-2.5 disabled:opacity-50"
               >
                 {earlyMutation.isPending ? 'Пересчитываю…' : 'Внести'}
               </button>
@@ -337,23 +337,23 @@ export function CreditDetailPage() {
           </form>
 
           {preview && (
-            <div className="mt-3 rounded-control border border-success/30 bg-success/10 px-4 py-3 text-sm">
+            <div className="mt-3 rounded-control bg-surface2/60 px-4 py-3 text-sm">
               {preview.isFull ? (
-                <p className="font-medium text-success">
+                <p className="font-medium text-primary">
                   🎉 Полное закрытие кредита: сэкономите{' '}
-                  <span className="tabular">{formatMoney(preview.interestSaved)}</span> процентов
+                  <span className="tabular-nums">{formatMoney(preview.interestSaved)}</span> процентов
                   {' '}и <span className="font-semibold">{preview.monthSaved} мес.</span>
                 </p>
               ) : (
                 <>
-                  <p className="font-medium text-success">
-                    Экономия: <span className="tabular">{formatMoney(preview.interestSaved)}</span>{' '}
+                  <p className="font-medium text-primary">
+                    Экономия: <span className="tabular-nums">{formatMoney(preview.interestSaved)}</span>{' '}
                     процентов
                     {preview.monthSaved > 0 && (
                       <> и <span className="font-semibold">{preview.monthSaved} мес.</span> срока</>
                     )}
                   </p>
-                  <p className="mt-1 text-xs text-success/70">
+                  <p className="mt-1 text-xs text-primary/70">
                     {watchMode === 'REDUCE_TERM' ? (
                       <>Останется платежей: {preview.monthsAfter} · платёж {formatMoney(preview.paymentAfter)}</>
                     ) : (
@@ -370,7 +370,7 @@ export function CreditDetailPage() {
       {error && <p className="text-sm text-danger">{error}</p>}
 
       {credit.type !== 'LOAN' && (
-      <section className="rounded-card border border-line bg-surface p-4">
+      <section className="card p-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="min-w-0 whitespace-nowrap text-sm font-medium text-t1">
             График платежей{' '}
@@ -408,7 +408,7 @@ export function CreditDetailPage() {
                   </div>
 
                   <div className="flex shrink-0 items-center gap-3">
-                    <span className="tabular text-sm font-medium text-t1">
+                    <span className="tabular-nums text-sm font-medium text-t1">
                       {formatMoney(item.amount)}
                     </span>
                     {item.status === 'PAID' ? (
@@ -436,7 +436,7 @@ export function CreditDetailPage() {
                             }
                           }}
                           disabled={cancelingId === item.id}
-                          className="rounded-lg border border-danger/40 px-2 py-1 text-[11px] font-medium text-danger transition hover:bg-danger/10 disabled:opacity-50"
+                          className="btn btn-secondary !min-h-0 px-2 py-1 text-[11px] !text-critical disabled:opacity-50"
                         >
                           {cancelingId === item.id ? 'Отменяю…' : 'Отменить'}
                         </button>
@@ -445,7 +445,7 @@ export function CreditDetailPage() {
                       <button
                         type="button"
                         onClick={() => setPayingId(expanded ? null : item.id)}
-                        className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition hover:bg-primary/90"
+                        className="btn btn-primary rounded-full !px-3 !py-1.5 !text-xs"
                       >
                         {expanded ? 'Отмена' : 'Я оплатил'}
                       </button>
@@ -502,7 +502,7 @@ export function CreditDetailPage() {
                     <button
                       type="submit"
                       disabled={payMutation.isPending}
-                      className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition hover:bg-primary/90 disabled:opacity-50"
+                      className="mt-2 btn btn-primary rounded-full !px-3 !py-1.5 !text-xs disabled:opacity-50"
                     >
                       {payMutation.isPending ? 'Записываю…' : 'Подтвердить оплату'}
                     </button>
@@ -516,7 +516,7 @@ export function CreditDetailPage() {
       )}
 
       {credit.events.length > 0 && (
-        <section className="rounded-card border border-line bg-surface p-4">
+        <section className="card p-4">
             <h2 className="font-medium text-t1">История платежей</h2>
           <div className="mt-3 space-y-2">
             {credit.events.map((event) => (
@@ -524,7 +524,7 @@ export function CreditDetailPage() {
                 <span className="text-t2">
                   {formatDate(event.paidAt)} · {EVENT_LABELS[event.kind]}
                 </span>
-                <span className="tabular text-t1">{formatMoney(event.amount)}</span>
+                <span className="tabular-nums text-t1">{formatMoney(event.amount)}</span>
               </div>
             ))}
           </div>

@@ -59,7 +59,7 @@ export function MotivationSettings() {
   const interval = perDay > 0 ? Math.round(24 / perDay) : 24;
 
   return (
-    <div className="rounded-card border border-line bg-surface p-4">
+    <div className="card p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="font-medium text-t1">Ежедневная мотивация</p>
@@ -119,17 +119,17 @@ export function MotivationSettings() {
             type="button"
             onClick={() => void save()}
             disabled={saving}
-            className="w-full rounded-control bg-primary px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="btn btn-primary w-full px-3 py-2 text-sm disabled:opacity-50"
           >
             {saving ? 'Сохраняю…' : 'Сохранить'}
           </button>
           <div className="flex items-center justify-between text-caption">
             <span className="text-t3">Прогресс цикла</span>
-            <span className="tabular text-t2">день {user.motivationDay ?? 1} из 30</span>
+            <span className="tabular-nums text-t2">день {user.motivationDay ?? 1} из 30</span>
           </div>
           <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface2">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-primary to-success"
+              className="h-full rounded-full bg-gradient-to-r from-primary to-primary"
               style={{ width: `${((user.motivationDay ?? 1) / 30) * 100}%` }}
             />
           </div>

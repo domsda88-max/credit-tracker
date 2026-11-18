@@ -370,12 +370,12 @@ export function AddCreditPage() {
               </label>
             </div>
 
-            <div className="space-y-3 rounded-card border border-success/30 bg-success/5 p-4">
+            <div className="space-y-3 rounded-control bg-surface2/60 p-4">
               <label className="flex items-start gap-2 text-sm text-t2">
                 <input
                   type="checkbox"
                   {...register('frozen')}
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-success"
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
                 />
                 <span>Цикл заморозки («снежинка»)</span>
               </label>
@@ -514,12 +514,12 @@ export function AddCreditPage() {
 
         {/* === ОПЦИОННЫЙ БЛОК: «рассрочка оформлена раньше» (для INSTALLMENT) === */}
         {type === 'INSTALLMENT' && markPast && (
-          <div className={`space-y-3 rounded-card border border-success/30 bg-success/5 p-4 ${sectionClass}`}>
+          <div className={`space-y-3 rounded-control bg-surface2/60 p-4 ${sectionClass}`}>
             <label className="flex items-start gap-2 text-sm text-t2">
               <input
                 type="checkbox"
                 {...register('markPastAsPaid')}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-success"
+                className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
               />
               <span>
                 Рассрочка оформлена раньше — платежи, срок которых уже прошёл, считать внесёнными
@@ -568,8 +568,8 @@ export function AddCreditPage() {
         )}
 
         {type === 'MICROLOAN' && (
-          <section className={`space-y-4 rounded-card border border-warning/30 bg-warning/5 p-4 ${sectionClass}`}>
-            <h3 className="text-sm font-medium text-warning">Параметры займа (МФО)</h3>
+          <section className={`space-y-4 rounded-control bg-surface2/60 p-4 ${sectionClass}`}>
+            <h3 className="text-sm font-medium text-warm">Параметры займа (МФО)</h3>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <label className="block">
@@ -624,12 +624,12 @@ export function AddCreditPage() {
 
         {/* === ОПЦИОННЫЙ БЛОК: «кредит оформлен раньше» (только для CONSUMER/MORTGAGE) === */}
         {(type === 'CONSUMER' || type === 'MORTGAGE') && (
-          <div className={`space-y-3 rounded-card border border-success/30 bg-success/5 p-4 ${sectionClass}`}>
+          <div className={`space-y-3 rounded-control bg-surface2/60 p-4 ${sectionClass}`}>
             <label className="flex items-start gap-2 text-sm text-t2">
               <input
                 type="checkbox"
                 {...register('markPastAsPaid')}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-success"
+                className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
               />
               <span>
                 Кредит оформлен раньше — платежи, срок которых уже прошёл, считать внесёнными
@@ -671,7 +671,7 @@ export function AddCreditPage() {
           <button
             type="submit"
             disabled={isSubmitting || mutation.isPending}
-            className="inline-flex items-center justify-center gap-2 min-w-[150px] whitespace-nowrap rounded-control bg-primary px-4 py-2.5 font-medium text-white disabled:opacity-70"
+            className="btn btn-primary min-w-[150px] whitespace-nowrap disabled:opacity-70"
           >
             {mutation.isPending ? (
               <>
@@ -685,7 +685,7 @@ export function AddCreditPage() {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="rounded-control border border-line px-4 py-2.5 text-t2 transition hover:border-slate-500"
+            className="rounded-control border border-line px-4 py-2.5 text-t2 transition hover:border-t3"
           >
             Отмена
           </button>

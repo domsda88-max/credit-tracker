@@ -73,7 +73,7 @@ export function UpcomingPayments({ credits }: Props) {
     return (
       <section className="space-y-3">
         <p className="section-title">Ближайшие платежи</p>
-        <div className="rounded-card border border-line bg-surface p-4 text-center text-caption text-t3">
+        <div className="card p-4 text-center text-caption text-t3">
           Нет платежей в этом месяце
         </div>
       </section>
@@ -92,7 +92,7 @@ export function UpcomingPayments({ credits }: Props) {
       >
         <span className="section-title">Ближайшие платежи</span>
         <span className="flex items-center gap-2">
-          <span className="tabular text-caption text-t3">
+          <span className="tabular-nums text-caption text-t3">
             {items.length} · {formatMoney(total)}
           </span>
           <span className={`text-t3 transition-transform ${collapsed ? '' : 'rotate-180'}`} aria-hidden="true">
@@ -102,11 +102,11 @@ export function UpcomingPayments({ credits }: Props) {
       </button>
 
       {!collapsed && (
-        <div className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
+        <div className="divide-y divide-line overflow-hidden rounded-card bg-surface">
           {items.map((item) => {
             const tone = urgencyTone(daysUntil(item.dueDate));
             const toneClass =
-              tone === 'danger' ? 'text-danger' : tone === 'warning' ? 'text-warning' : 'text-t2';
+              tone === 'danger' ? 'text-danger' : tone === 'warm' ? 'text-warm' : 'text-t2';
             return (
               <Link
                 key={item.creditId}
@@ -119,7 +119,7 @@ export function UpcomingPayments({ credits }: Props) {
                     {formatDateShort(item.dueDate)} · {describeDueDate(item.dueDate)}
                   </p>
                 </div>
-                <span className={`tabular shrink-0 text-body font-semibold ${toneClass}`}>
+                <span className={`tabular-nums shrink-0 text-body font-semibold ${toneClass}`}>
                   {formatMoney(item.amount)}
                 </span>
               </Link>
