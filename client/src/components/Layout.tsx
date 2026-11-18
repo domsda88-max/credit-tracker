@@ -24,7 +24,7 @@ export function Layout() {
     <div className="mx-auto flex h-full w-full max-w-3xl flex-col overflow-hidden px-4 sm:px-6">
       <header className="flex shrink-0 items-center justify-between gap-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary/15 text-heading font-bold text-primary">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-heading font-bold text-primary">
             ₽
           </div>
           <div className="min-w-0">
@@ -39,39 +39,41 @@ export function Layout() {
       </header>
 
       {/* Единственная прокручиваемая область приложения */}
-      <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain pb-[calc(100px+env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch]">
+      <main className="animate-fade-in min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain pb-[calc(100px+env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch]">
         <Outlet />
       </main>
 
-      <nav className="flex shrink-0 items-stretch justify-around border-t border-line bg-surface/80 backdrop-blur-xl pb-[calc(env(safe-area-inset-bottom)+20px)] pt-1.5">
-        {NAV.map(({ to, label, icon: Icon, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              [
-                'flex flex-1 flex-col items-center gap-1 rounded-control px-2 py-1 text-micro font-medium transition-colors duration-200',
-                isActive ? 'text-primary' : 'text-t3',
-              ].join(' ')
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <Icon
-                  size={24}
-                  strokeWidth={isActive ? 2.4 : 2}
-                  className="transition-all duration-[350ms] ease-app"
-                  style={{
-                    transform: isActive ? 'scale(1.1)' : 'scale(1)',
-                    opacity: isActive ? 1 : 0.7,
-                  }}
-                />
-                {label}
-              </>
-            )}
-          </NavLink>
-        ))}
+      <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-3xl px-4 pb-[max(14px,env(safe-area-inset-bottom))]">
+        <div className="pointer-events-auto flex items-stretch justify-around rounded-full border border-line bg-surface/90 px-2 py-1.5 shadow-lg shadow-black/25 backdrop-blur-xl">
+          {NAV.map(({ to, label, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                [
+                  'flex flex-1 items-center justify-center gap-2 rounded-full px-3 py-2.5 text-micro font-semibold transition-all duration-200 active:scale-[0.97]',
+                  isActive ? 'bg-primary/15 text-primary' : 'text-t3',
+                ].join(' ')
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon
+                    size={22}
+                    strokeWidth={isActive ? 2.4 : 2}
+                    className="transition-all duration-[350ms] ease-app"
+                    style={{
+                      transform: isActive ? 'scale(1.1)' : 'scale(1)',
+                      opacity: isActive ? 1 : 0.7,
+                    }}
+                  />
+                  <span className={isActive ? '' : 'hidden'}>{label}</span>
+                </>
+              )}
+            </NavLink>
+          ))}
+        </div>
       </nav>
     </div>
   );

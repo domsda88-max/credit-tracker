@@ -22,7 +22,7 @@ export function PushSettings() {
   };
 
   return (
-    <div className="rounded-card border border-line bg-surface p-4">
+    <div className="card p-4">
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="font-medium text-t1">Push-уведомления</p>
@@ -35,7 +35,7 @@ export function PushSettings() {
           <button
             type="button"
             onClick={() => void unsubscribe()}
-            className="shrink-0 rounded-lg border border-line px-3 py-2 text-sm text-t2 transition hover:border-rose-500/50 hover:text-danger"
+            className="shrink-0 rounded-full border border-line px-3 py-2 text-sm text-t2 transition-colors hover:border-critical/50 hover:text-critical active:scale-[0.97]"
           >
             Выключить
           </button>
@@ -44,7 +44,7 @@ export function PushSettings() {
             type="button"
             onClick={() => void subscribe()}
             disabled={status === 'loading' || status === 'unsupported'}
-            className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white transition hover:bg-primary/90 disabled:opacity-50 sm:w-auto sm:max-w-xs"
+            className="btn btn-primary w-full px-3 py-2 text-sm disabled:opacity-50 sm:w-auto sm:max-w-xs"
           >
             {status === 'loading' ? 'Включаю…' : 'Включить'}
           </button>
@@ -66,7 +66,7 @@ export function PushSettings() {
       {status === 'error' && error && <p className="mt-2 text-xs text-danger">{error}</p>}
       {status === 'subscribed' && (
         <div className="mt-3 flex items-center justify-between gap-3">
-          <p className="text-xs text-success">Уведомления включены ✅</p>
+          <p className="text-xs text-primary">Уведомления включены ✅</p>
           <button
             type="button"
             onClick={() => void sendTest()}

@@ -16,35 +16,42 @@
 :root {
   color-scheme: dark;
 
-  --c-primary: 59 130 246; /* #3B82F6 */
-  --c-success: 52 211 153; /* #34D399 */
-  --c-warning: 251 191 36; /* #FBBF24 */
-  --c-danger: 248 113 113; /* #F87171 */
-  --c-bg: 2 6 23; /* #020617 */
-  --c-surface: 15 23 42; /* #0F172A */
-  --c-surface2: 30 41 59; /* #1E293B */
-  --c-t1: 248 250 252; /* #F8FAFC */
-  --c-t2: 148 163 184; /* #94A3B8 */
-  --c-t3: 100 116 139; /* #64748B */
-  --c-line: 30 41 59; /* #1E293B */
+  /* ═══ Премиальная финтех-палитра (iOS + Telegram) ═══ */
+  --c-bg: 11 19 43; /* #0B132B — фон приложения */
+  --c-surface: 28 37 65; /* #1C2541 — фон карточек */
+  --c-surface2: 58 80 107; /* #3A506B — инпуты, hover */
+  --c-primary: 91 192 222; /* #5BC0DE — главный акцент, кнопки, ссылки */
+  --c-warm: 244 214 176; /* #F4D6B0 — доход, свободные деньги */
+  --c-critical: 217 119 6; /* #D97706 — просрочка, CTA «Оплатить» */
+  --c-success: 91 192 222; /* совпадает с primary */
+  --c-warning: 244 214 176; /* совпадает с warm */
+  --c-danger: 217 119 6; /* совпадает с critical */
+  --c-t1: 255 255 255; /* #FFFFFF — главный текст */
+  --c-t2: 160 174 192; /* #A0AEC0 — вторичный текст */
+  --c-t3: 113 128 150; /* #718096 — tertiary, подписи */
+  --c-line: 255 255 255; /* rgba(255,255,255,0.1) — разделители */
+  --line-alpha: 0.1;
 
-  --shadow-card: none;
+  --shadow-card: 0 1px 3px rgb(0 0 0 / 0.2);
 }
 
 [data-theme='light'] {
   color-scheme: light;
 
-  --c-primary: 37 99 235; /* #2563EB */
-  --c-success: 16 185 129; /* #10B981 */
-  --c-warning: 245 158 11; /* #F59E0B */
-  --c-danger: 239 68 68; /* #EF4444 */
-  --c-bg: 248 250 252; /* #F8FAFC */
+  --c-bg: 246 248 251;
   --c-surface: 255 255 255; /* #FFFFFF */
-  --c-surface2: 241 245 249; /* #F1F5F9 */
-  --c-t1: 15 23 42; /* #0F172A */
-  --c-t2: 100 116 139; /* #64748B */
-  --c-t3: 148 163 184; /* #94A3B8 */
-  --c-line: 226 232 240; /* #E2E8F0 */
+  --c-surface2: 237 241 247;
+  --c-primary: 34 150 187; /* затемнённый #5BC0DE для контраста */
+  --c-warm: 180 132 74;
+  --c-critical: 180 94 6;
+  --c-success: 34 150 187;
+  --c-warning: 180 132 74;
+  --c-danger: 180 94 6;
+  --c-t1: 11 19 43; /* #0B132B */
+  --c-t2: 90 103 125;
+  --c-t3: 133 145 163;
+  --c-line: 11 19 43;
+  --line-alpha: 0.08;
 
   --shadow-card: 0 1px 3px rgb(0 0 0 / 0.05);
 }
@@ -65,8 +72,7 @@ body {
 body {
   background-color: rgb(var(--c-bg));
   color: rgb(var(--c-t1));
-  font-family: Inter, -apple-system, BlinkMacSystemFont, 'SF Pro Text', Roboto, system-ui,
-    sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
   /* Плавная смена темы (400-500ms crossfade) */
   transition: background-color 450ms cubic-bezier(0.4, 0, 0.2, 1),
     color 450ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -86,6 +92,7 @@ main {
 
 /* Все числа — табличные, чтобы не «прыгали» при обновлении */
 .tabular,
+.tabular-nums,
 input[type='number'],
 input[type='date'] {
   font-variant-numeric: tabular-nums;
@@ -106,37 +113,60 @@ button {
 
 /* ═══════════════════════ КОМПОНЕНТЫ ═══════════════════════ */
 
+@layer base {
+  /* Разделители: rgba(255,255,255,0.1) в тёмной теме, rgba(11,19,43,0.08) в светлой */
+  *,
+  ::before,
+  ::after {
+    border-color: rgb(var(--c-line) / var(--line-alpha, 0.1));
+  }
+}
+
 @layer components {
-  /* Базовая карточка */
+  /* Базовая карточка: rounded-2xl (16px), bg-surface, тонкая линия, мягкая тень.
+     НИКАКИХ двойных рамок внутри карточек. */
   .card {
-    @apply rounded-card border border-line bg-surface;
+    @apply rounded-card border border-line bg-surface shadow-sm;
     box-shadow: var(--shadow-card);
   }
 
-  /* Вложенный блок внутри карточки */
+  /* Вложенный блок внутри карточки — без рамки, только фон */
   .card-inner {
-    @apply rounded-control bg-surface2;
+    @apply rounded-control bg-surface2/60;
   }
 
-  /* Заголовок секции */
+  /* Подписи типа «Остаток долга» */
   .section-title {
-    @apply text-caption font-semibold uppercase tracking-[0.04em] text-t3;
+    @apply text-xs font-medium uppercase tracking-widest text-t3;
+  }
+
+  /* Крупный заголовок экрана (Dashboard, Settings) */
+  .screen-title {
+    @apply text-3xl font-bold tracking-tight text-t1;
+  }
+
+  /* Любые денежные суммы — табличные цифры */
+  .money {
+    @apply tabular-nums;
   }
 
   /* Поле ввода */
   .field {
-    @apply mt-1 w-full rounded-control border border-line bg-surface2 px-3 py-2.5 text-base text-t1 outline-none transition-colors duration-200 placeholder:text-t3 focus:border-primary;
+    @apply mt-1 w-full rounded-control border border-line bg-surface2 px-3 py-2.5 text-base text-t1 outline-none transition-all duration-200 placeholder:text-t3 focus:border-primary;
   }
 
   /* Кнопки */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-control px-4 py-2.5 text-base font-semibold transition-all duration-150 active:scale-[0.97];
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-base font-bold transition-transform duration-150 active:scale-[0.97];
   }
   .btn-primary {
-    @apply bg-primary text-white;
+    @apply rounded-full bg-primary font-bold text-bg shadow-lg shadow-primary/20 transition-transform active:scale-95;
   }
   .btn-secondary {
-    @apply border border-line bg-surface2 text-t1;
+    @apply rounded-full border border-line bg-surface2 text-t1;
+  }
+  .btn-critical {
+    @apply rounded-full bg-critical font-bold text-white shadow-lg shadow-critical/25 transition-transform active:scale-95;
   }
   .btn-danger {
     @apply bg-danger/10 text-danger;
@@ -181,11 +211,11 @@ button {
   }
 }
 
-/* Слайдер «Ускорь свободу»: залитая часть — success, незалитая — line */
+/* Слайдер «Ускорь свободу»: залитая часть — primary, незалитая — line */
 input[type='range'] {
   width: 100%;
   height: 6px;
-  accent-color: rgb(var(--c-success));
+  accent-color: rgb(var(--c-primary));
   cursor: pointer;
 }
 /* Safe-area padding для мобильных устройств (вырез камеры, нижняя панель) */

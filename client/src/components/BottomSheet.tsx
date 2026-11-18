@@ -26,13 +26,13 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <div className="absolute inset-0 bg-bg/60 backdrop-blur-sm transition-opacity duration-[300ms] ease-app" onClick={onClose} />
+      <div className="absolute inset-0 animate-fade-in bg-bg/70 backdrop-blur-md transition-opacity duration-300" onClick={onClose} />
       <div
-        className="relative w-full max-w-3xl rounded-t-card border border-line bg-surface pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 shadow-sheet animate-sheet-up"
+        className="relative w-full max-w-3xl rounded-t-3xl border border-line bg-surface/95 backdrop-blur-xl pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 shadow-sheet animate-sheet-up"
         role="dialog"
         aria-modal="true"
       >
-        <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-surface2" />
+        <div className="mx-auto mb-2 h-1.5 w-12 rounded-full bg-surface2" />
         {title && <p className="px-4 pb-2 text-center text-sm font-medium text-t1">{title}</p>}
         <div className="px-2">{children}</div>
       </div>

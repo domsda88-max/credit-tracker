@@ -38,13 +38,13 @@ export function MoneyFlow() {
       <div className="grid grid-cols-2 gap-3">
         <div className="card-inner px-3 py-2.5">
           <p className="text-micro text-t3">Доход</p>
-          <p className="tabular mt-0.5 text-body font-semibold text-t1">
+          <p className="tabular-nums mt-0.5 text-body font-semibold text-t1">
             {hasIncome ? formatMoney(income) : '—'}
           </p>
         </div>
         <div className="card-inner px-3 py-2.5">
           <p className="text-micro text-t3">Платежи в месяц (регулярные платежи по всем активным долгам)</p>
-          <p className="tabular mt-0.5 text-body font-semibold text-t1">
+          <p className="tabular-nums mt-0.5 text-body font-semibold text-t1">
             {formatMoney(payments)}
           </p>
         </div>
@@ -52,13 +52,13 @@ export function MoneyFlow() {
 
       {graceTotal > 0 && (
         <p className="mt-2 text-micro text-t3">
-          С учётом обслуживания грейса: <span className="tabular font-medium text-t2">{formatMoney(payments + graceTotal)}</span> ₽
+          С учётом обслуживания грейса: <span className="tabular-nums font-medium text-t2">{formatMoney(payments + graceTotal)}</span> ₽
         </p>
       )}
 
       <div
         className={`mt-3 flex items-center justify-between gap-3 rounded-control px-3 py-2.5 ${
-          free !== null && free < 0 ? 'bg-danger/10' : 'bg-success/10'
+          free !== null && free < 0 ? 'bg-critical/10' : 'bg-warm/10'
         }`}
       >
         <span className="flex items-center gap-1.5 text-caption text-t2">
@@ -66,8 +66,8 @@ export function MoneyFlow() {
           <ArrowRight size={14} className="text-t3" />
         </span>
         <span
-          className={`tabular text-heading font-bold ${
-            free === null ? 'text-t2' : free < 0 ? 'text-danger' : 'text-success'
+          className={`tabular-nums text-heading font-bold ${
+            free === null ? 'text-t2' : free < 0 ? 'text-critical' : 'text-warm'
           }`}
         >
           {free === null ? '—' : formatMoney(free)}

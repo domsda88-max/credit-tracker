@@ -55,30 +55,30 @@ export function DashboardPage() {
       <OverdueAlert credits={list} />
 
       {list.length > 0 && summary && summary.activeCount > 0 && (
-        <section className="rounded-card border border-line bg-gradient-to-br from-primary/10 via-transparent to-success/5 p-4">
+        <section className="card animate-fade-up p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-wide text-t2">Всего к погашению</p>
-              <p className="mt-1 tabular text-2xl font-semibold text-t1 sm:text-3xl">
+              <p className="text-xs uppercase tracking-widest text-t3">Всего к погашению</p>
+              <p className="tabular-nums mt-1 text-3xl font-bold tracking-tight text-t1">
                 {formatMoney(summary.outstandingSum)}
               </p>
             </div>
             {summary.debtFreeDate && (
               <div className="text-right">
-                <p className="text-xs text-t3">Последний платёж</p>
-                <p className="mt-1 text-sm text-t2">{formatDate(summary.debtFreeDate)}</p>
+                <p className="text-xs uppercase tracking-widest text-t3">Последний платёж</p>
+                <p className="tabular-nums mt-1 text-sm font-medium text-t2">{formatDate(summary.debtFreeDate)}</p>
               </div>
             )}
           </div>
           <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface2">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-primary to-success"
+              className="h-full rounded-full bg-gradient-to-r from-primary to-warm transition-[width] duration-700 ease-app"
               style={{ width: `${percentPaid}%` }}
             />
           </div>
           <div className="mt-2 flex items-center justify-between text-xs text-t3">
-            <span>Погашено: {formatMoney(summary.paidByPrincipal)}</span>
-            <span>Выплачено всего: {formatMoney(summary.totalPaidSum)}</span>
+            <span className="tabular-nums">Погашено: {formatMoney(summary.paidByPrincipal)}</span>
+            <span className="tabular-nums">Выплачено всего: {formatMoney(summary.totalPaidSum)}</span>
           </div>
         </section>
       )}
@@ -103,7 +103,7 @@ export function DashboardPage() {
             <circle cx="56" cy="44" r="3" fill="rgb(var(--c-t2))" />
             <path
               d="M40 62c2.5 2.5 5.5 3.5 8 3.5s5.5-1 8-3.5"
-              stroke="rgb(var(--c-success))"
+              stroke="rgb(var(--c-primary))"
               strokeWidth="3"
               strokeLinecap="round"
             />
@@ -114,7 +114,7 @@ export function DashboardPage() {
           </p>
           <Link
             to="/credits/new"
-            className="btn btn-primary"
+            className="btn btn-primary w-full max-w-xs"
           >
             Добавить первый долг
           </Link>
@@ -122,9 +122,9 @@ export function DashboardPage() {
       ) : (
         <>
           <section className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-t1">Мои долги</h2>
-              <Link to="/credits/new" className="text-sm text-primary hover:text-primary">
+            <div className="flex items-center justify-between px-1">
+              <h2 className="screen-title">Мои долги</h2>
+              <Link to="/credits/new" className="text-sm font-semibold text-primary active:scale-[0.97] transition-transform">
                 + Добавить
               </Link>
             </div>

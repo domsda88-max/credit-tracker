@@ -188,9 +188,9 @@ export function EditCreditForm({
           </label>
         </div>
 
-        <div className="space-y-3 rounded-card border border-success/30 bg-success/5 p-4">
+        <div className="space-y-3 rounded-control bg-surface2/60 p-4">
         <label className="flex items-start gap-2 text-sm text-t2">
-          <input type="checkbox" {...register('markPastAsPaid')} className="mt-0.5 h-4 w-4 shrink-0 accent-success" />
+          <input type="checkbox" {...register('markPastAsPaid')} className="mt-0.5 h-4 w-4 shrink-0 accent-primary" />
           <span>
             Кредит оформлен раньше — платежи, срок которых уже прошёл, считать внесёнными
             <span className="mt-0.5 block text-xs text-t3">
@@ -206,14 +206,14 @@ export function EditCreditForm({
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="inline-flex w-full items-center justify-center gap-2 min-w-[150px] whitespace-nowrap rounded-control bg-primary px-5 py-2.5 font-medium text-white disabled:opacity-70 sm:w-auto"
+            className="btn btn-primary w-full min-w-[150px] whitespace-nowrap disabled:opacity-70 sm:w-auto"
           >
             {mutation.isPending ? (<><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />Сохраняю…</>) : 'Сохранить изменения'}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-control border border-line px-4 py-2.5 text-t2 transition hover:border-slate-500"
+            className="rounded-control border border-line px-4 py-2.5 text-t2 transition hover:border-t3"
           >
             Отмена
           </button>

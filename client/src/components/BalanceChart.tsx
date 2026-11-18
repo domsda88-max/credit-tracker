@@ -46,10 +46,10 @@ export function BalanceChart({ schedule, principal, outstanding }: Props) {
   const currentIndex = firstPending === -1 ? points.length - 1 : firstPending + 1;
 
   return (
-    <div className="rounded-card border border-line bg-surface/80 p-4">
+    <div className="card animate-fade-up p-5">
       <div className="flex items-baseline justify-between">
         <h2 className="font-medium text-t1">Динамика долга</h2>
-        <p className="text-xs text-t3">
+        <p className="tabular-nums text-xs text-t3">
           {formatMoneyShort(start)} → 0
         </p>
       </div>
@@ -63,17 +63,18 @@ export function BalanceChart({ schedule, principal, outstanding }: Props) {
       >
         <defs>
           <linearGradient id="debtFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0" />
+            <stop offset="0%" stopColor="rgb(var(--c-primary))" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="rgb(var(--c-primary))" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path d={areaPath} fill="url(#debtFill)" />
-        <path d={path} fill="none" stroke="#38bdf8" strokeWidth="0.8" vectorEffect="non-scaling-stroke" />
+        <path d={path} fill="none" stroke="rgb(var(--c-primary))" strokeWidth="0.8" vectorEffect="non-scaling-stroke" />
         <circle
+          stroke="rgb(var(--c-bg))" strokeWidth="0.6"
           cx={(currentIndex * step).toFixed(2)}
           cy={(height - (points[currentIndex] / max) * height).toFixed(2)}
           r="1.6"
-          fill="#f8fafc"
+          fill="rgb(var(--c-warm))"
           vectorEffect="non-scaling-stroke"
         />
       </svg>

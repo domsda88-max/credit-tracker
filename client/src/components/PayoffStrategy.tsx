@@ -46,8 +46,8 @@ export function PayoffStrategy({ credits }: Props) {
         Что гасить первым
       </h2>
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-card border border-line bg-surface p-4">
-          <p className="text-xs uppercase tracking-wide text-warning/80">🏔️ Лавина · меньше процентов</p>
+        <div className="card p-4">
+          <p className="text-xs uppercase tracking-wide text-warm/80">🏔️ Лавина · меньше процентов</p>
           <p className="mt-1 truncate font-semibold text-t1">{avalanche.name}</p>
           <p className="mt-0.5 text-xs text-t3">
             самая высокая ставка — {avalanche.rate}% · остаток {formatMoneyShort(avalanche.left)}
@@ -58,8 +58,8 @@ export function PayoffStrategy({ credits }: Props) {
         </div>
 
         {snowball ? (
-          <div className="rounded-card border border-line bg-surface p-4">
-            <p className="text-xs uppercase tracking-wide text-success/80">
+          <div className="card p-4">
+            <p className="text-xs uppercase tracking-wide text-primary/80">
               ☃️ Снежный ком · быстрые победы
             </p>
             <p className="mt-1 truncate font-semibold text-t1">{snowball.name}</p>
@@ -72,8 +72,8 @@ export function PayoffStrategy({ credits }: Props) {
           </div>
         ) : (
           priciestCard && (
-            <div className="rounded-card border border-line bg-surface p-4">
-              <p className="text-xs uppercase tracking-wide text-success/80">
+            <div className="card p-4">
+              <p className="text-xs uppercase tracking-wide text-primary/80">
                 💳 Кредитки · самая дорогая
               </p>
               <p className="mt-1 truncate font-semibold text-t1">{priciestCard.name}</p>

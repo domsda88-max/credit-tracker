@@ -51,7 +51,7 @@ export function IncomeSettings() {
   return (
     <div className="card p-4">
       <div className="flex items-start gap-3">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip bg-success/12 text-success">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip bg-primary/12 text-primary">
           <Wallet size={16} />
         </span>
         <div className="min-w-0 flex-1">
@@ -78,7 +78,7 @@ export function IncomeSettings() {
 
       {user.monthlyIncome != null && !dirty && (
         <p className="mt-2 text-caption text-t3">
-          Сейчас: <span className="tabular text-t2">{formatMoney(user.monthlyIncome)}</span>
+          Сейчас: <span className="tabular-nums text-t2">{formatMoney(user.monthlyIncome)}</span>
         </p>
       )}
 
