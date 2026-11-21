@@ -45,12 +45,14 @@ test('FloatingNav: переключение между разделами', asyn
   }
 });
 
-test('FloatingNav: на форме добавления навигация исчезает из DOM', async ({ page }) => {
+test('FloatingNav: на форме добавления навигация остаётся видимой', async ({ page }) => {
   await seedApp(page, 'light');
   await mockApi(page);
   await openApp(page, '/');
   await openAddCreditForm(page);
-  await expect(page.locator('nav[aria-label="Основная навигация"]')).toHaveCount(0);
+  const nav = page.locator('nav[aria-label="Основная навигация"]');
+  await expect(nav).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Долги', exact: true })).toHaveAttribute('aria-current', 'page');
 });
 
 test('FloatingNav: возврат с формы — навигация появляется, без ошибок React', async ({ page }) => {
