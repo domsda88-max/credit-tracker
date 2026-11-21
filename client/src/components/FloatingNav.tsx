@@ -49,7 +49,7 @@ export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
               aria-label={label}
               aria-current={active ? 'page' : undefined}
               onClick={() => navigate(path)}
-              className={`ui-press relative flex h-[52px] w-[72px] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 transition-colors duration-200 ${
+              className={`ui-press relative flex h-[52px] w-[68px] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 transition-colors duration-200 ${
                 active ? 'text-primary-fg' : 'text-t3 hover:text-t1'
               }`}
             >
