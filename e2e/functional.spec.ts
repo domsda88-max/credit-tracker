@@ -69,9 +69,15 @@ test('FloatingNav: возврат с формы — навигация появ�
 
   await page.getByRole('button', { name: 'Закрыть' }).click();
 
-  await expect(page).toHaveURL('/');
+  await expect(page).toHaveURL('/debts');
   await expect(page.getByRole('button', { name: 'Главная' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Долги' })).toBeVisible();
+
+  // После возврата с формы проверяем именно переход на главную:
+  // FloatingNav должен восстановиться без нарушения порядка хуков.
+  await page.getByRole('button', { name: 'Главная', exact: true }).click();
+  await expect(page).toHaveURL('/');
+  await expect(page.getByRole('button', { name: 'Главная' })).toHaveAttribute('aria-current', 'page');
   expect(consoleErrors, `Browser console errors:\n${consoleErrors.join('\n')}`).toEqual([]);
   expect(pageErrors, `Uncaught page errors:\n${pageErrors.join('\n')}`).toEqual([]);
 });
