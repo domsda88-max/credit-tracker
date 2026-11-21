@@ -4,14 +4,13 @@ import { useState } from 'react';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/auth';
 import { useToast } from './useToast';
-import { usePushNotifications } from '../hooks/usePushNotifications';
+import type { PushStatus } from '../hooks/usePushNotifications';
 import { motivationSlots } from '../utils/motivation';
 
-export function MotivationSettings() {
+export function MotivationSettings({ pushStatus }: { pushStatus: PushStatus }) {
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const toast = useToast();
-  const { status } = usePushNotifications();
 
   const [time, setTime] = useState(user?.motivationTime ?? '09:30');
   const [perDay, setPerDay] = useState(user?.motivationPerDay ?? 1);
@@ -75,7 +74,7 @@ export function MotivationSettings() {
           role="switch"
           aria-checked={enabled}
           onClick={() => void toggle()}
-          disabled={status !== 'subscribed'}
+          disabled={pushStatus !== 'subscribed'}
           className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 disabled:opacity-50 ${
             enabled ? 'bg-primary' : 'bg-surface2'
           }`}

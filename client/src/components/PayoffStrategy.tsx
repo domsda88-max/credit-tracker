@@ -48,7 +48,7 @@ export function PayoffStrategy({ credits }: Props) {
       </h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="min-w-0 card card-pad">
-          <p className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-warm-fg/80">
+          <p className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-warm-fg">
             <Mountain size={14} aria-hidden="true" />
             Лавина · меньше процентов
           </p>
@@ -63,7 +63,7 @@ export function PayoffStrategy({ credits }: Props) {
 
         {snowball ? (
           <div className="min-w-0 card card-pad">
-          <p className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-warm-fg/80">
+          <p className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-warm-fg">
             <Snowflake size={14} aria-hidden="true" />
             Снежный ком · быстрые победы
           </p>
@@ -78,7 +78,7 @@ export function PayoffStrategy({ credits }: Props) {
         ) : (
           priciestCard && (
             <div className="min-w-0 card card-pad">
-              <p className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-warm-fg/80">
+              <p className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-warm-fg">
                 <CreditCard size={14} aria-hidden="true" />
                 Кредитки · самая дорогая
               </p>

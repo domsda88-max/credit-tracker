@@ -11,6 +11,7 @@ import {
 } from './fixtures';
 
 const OUT = path.resolve('e2e/out');
+const THEMES = ['light', 'dark'] as const;
 
 test.beforeAll(() => {
   fs.mkdirSync(OUT, { recursive: true });
@@ -20,16 +21,17 @@ async function screenshot(page: Parameters<typeof openApp>[0], name: string) {
   await page.screenshot({ path: path.join(OUT, `${name}.png`) });
 }
 
-for (const theme of ['light', 'warm', 'dark'] as const) {
+for (const theme of THEMES) {
   test(`dashboard: ${theme} theme, tokens, immersive layout`, async ({ page }) => {
     await seedApp(page, theme);
     await mockApi(page);
     await openApp(page, '/');
 
-    await expect(page.locator('.debt-card').first()).toBeVisible();
-    const title = page.locator('h3.debt-card__title').first();
+    await expect(page.getByText('Ближайшие платежи', { exact: true })).toBeVisible();
+    await expect(page.locator('.payment-row').first()).toBeVisible();
+
+    const title = page.locator('.payment-row p').first();
     await expect(title).toBeVisible();
-    // CSS-свойства эллипсиса должны быть заданы
     const titleCss = await title.evaluate((el) => {
       const s = getComputedStyle(el);
       return {
@@ -44,16 +46,16 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
 
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
 
-    // Нет глобального хедера, нет таб-бара, нет верхнего FAB
     await expect(page.locator('header')).toHaveCount(0);
     await expect(page.getByText('Credit Tracker', { exact: true })).toHaveCount(0);
     await expect(page.locator('.tabbar')).toHaveCount(0);
 
-    // Горизонтальная навигация: три кнопки видны на главной
-    await expect(page.getByRole('button', { name: 'Главная' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Добавить долг' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Настройки' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Главная' })).toHaveAttribute('aria-current', 'page');
+    const nav = page.locator('nav[aria-label="Основная навигация"]');
+    await expect(nav).toBeVisible();
+    for (const label of ['Обзор', 'Платежи', 'Долги', 'Аналитика']) {
+      await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
+    }
+    await expect(page.getByRole('button', { name: 'Обзор' })).toHaveAttribute('aria-current', 'page');
 
     const layout = await page.evaluate(() => {
       const main = document.querySelector('main');
@@ -71,12 +73,12 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
   });
 }
 
-test('debt card title is a single ellipsised line', async ({ page }) => {
+test('название платежа — одна строка с эллипсисом', async ({ page }) => {
   await seedApp(page, 'light');
   await mockApi(page);
   await openApp(page, '/');
 
-  const title = page.locator('h3.debt-card__title').first();
+  const title = page.locator('.payment-row p').first();
   const metrics = await title.evaluate((el) => {
     const style = getComputedStyle(el);
     return {
@@ -91,18 +93,33 @@ test('debt card title is a single ellipsised line', async ({ page }) => {
 
   expect(metrics.whiteSpace).toBe('nowrap');
   expect(metrics.textOverflow).toBe('ellipsis');
-  expect(metrics.height).toBeLessThan(24);
+  expect(metrics.height).toBeLessThan(26);
   expect(metrics.scrollWidth).toBeGreaterThanOrEqual(metrics.clientWidth);
 });
 
-test('navigation: horizontal bar screenshot (light)', async ({ page }) => {
+test('navigation: glass bar screenshot (light)', async ({ page }) => {
   await seedApp(page, 'light');
   await mockApi(page);
   await openApp(page, '/');
 
-  await expect(page.getByRole('button', { name: 'Главная' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Добавить долг' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Настройки' })).toBeVisible();
+  for (const label of ['Обзор', 'Платежи', 'Долги', 'Аналитика']) {
+    await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
+  }
+
+  const navStyle = await page
+    .locator('nav[aria-label="Основная навигация"]')
+    .evaluate((el) => {
+      const s = getComputedStyle(el);
+      return {
+        backdrop: s.backdropFilter || s.webkitBackdropFilter,
+        background: s.backgroundColor,
+        border: s.borderTopColor,
+      };
+    });
+  expect(navStyle.backdrop).toContain('blur');
+  expect(navStyle.background).toMatch(/rgba?\(/);
+  expect(navStyle.border).toMatch(/rgba?\(/);
+
   await screenshot(page, 'dashboard-nav-bar-light');
 });
 
@@ -111,8 +128,9 @@ test('motivation slots keep minutes and day 61 is not 100%', async ({ page }) =>
   await mockApi(page);
   await openApp(page, '/settings');
 
-  await page.getByRole('button', { name: /^Мотивация/ }).click();
-
+  await page.getByTestId('notifications-chevron').click();
+  await expect(page.getByTestId('notifications-accordion')).toHaveAttribute('data-open', 'true');
+  await expect(page.getByText('Ежедневная мотивация')).toBeVisible();
   await expect(
     page.getByRole('switch', { name: 'Включить ежедневную мотивацию' }),
   ).toBeVisible();
@@ -125,9 +143,9 @@ test('motivation slots keep minutes and day 61 is not 100%', async ({ page }) =>
   expect(Number.parseFloat(width)).toBeCloseTo(87, 0);
   expect(Number.parseFloat(width)).toBeLessThan(100);
 
-  const motivationPanel = page.locator('.acc').filter({ has: page.locator('input[type="time"]') });
-  await motivationPanel.locator('input[type="time"]').fill('10:15');
-  await motivationPanel.locator('select').selectOption('4');
+  const panel = page.getByTestId('notifications-accordion');
+  await panel.locator('input[type="time"]').fill('10:15');
+  await panel.locator('select').last().selectOption('4');
   await expect(page.getByText('Уведомления в: 10:15, 16:15, 22:15, 04:15')).toBeVisible();
 
   await screenshot(page, 'settings-motivation-dark');
@@ -138,15 +156,16 @@ test('accordion collapse leaves no ghost content', async ({ page }) => {
   await mockApi(page);
   await openApp(page, '/settings');
 
-  const header = page.getByRole('button', { name: /^Мотивация/ });
-  const panel = page.locator('.acc').filter({ has: page.locator('input[type="time"]') });
+  const accordion = page.getByTestId('notifications-accordion');
+  const panel = accordion.locator('.acc');
   const content = page.getByRole('switch', { name: 'Включить ежедневную мотивацию' });
+  const chevron = page.getByTestId('notifications-chevron');
 
-  await header.click();
+  await chevron.click();
   await expect(content).toBeVisible();
   await expect(panel).toHaveAttribute('data-open', 'true');
 
-  await header.click();
+  await chevron.click();
   await expect(panel).toHaveAttribute('data-open', 'false');
   await page.waitForTimeout(350);
 
@@ -169,16 +188,16 @@ test('skeleton only on the first cold load', async ({ page }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
 
   await expect(page.locator('.skeleton').first()).toBeVisible();
-  await expect(page.locator('.debt-card').first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('.payment-row').first()).toBeVisible({ timeout: 15_000 });
   expect(await page.locator('.skeleton').count()).toBe(0);
 
   await page.getByRole('button', { name: 'Настройки' }).click();
   await expect(page).toHaveURL('/settings');
-  await expect(page.getByRole('button', { name: 'Push-уведомления' })).toBeVisible();
+  await expect(page.getByTestId('push-toggle-button')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Главная' }).click();
+  await page.getByRole('button', { name: 'Обзор' }).click();
   await expect(page).toHaveURL('/');
-  await expect(page.locator('.debt-card').first()).toBeVisible();
+  await expect(page.locator('.payment-row').first()).toBeVisible();
   expect(await page.locator('.skeleton').count()).toBe(0);
 });
 
@@ -211,15 +230,18 @@ test('payments schedule: one primary CTA, compact marks, year headers', async ({
   await screenshot(page, 'credit-detail-light');
 });
 
-for (const theme of ['light', 'warm', 'dark'] as const) {
+for (const theme of THEMES) {
   test(`contrast: all visible text >= 4.5:1 (${theme})`, async ({ page }) => {
     test.setTimeout(90_000);
     await seedApp(page, theme);
     await mockApi(page);
     const pairs = [];
 
-    await openApp(page, '/');
-    pairs.push(...(await collectTextPairs(page)));
+    for (const route of ['/', '/payments', '/debts', '/stats']) {
+      await openApp(page, route);
+      pairs.push(...(await collectTextPairs(page)));
+    }
+    await screenshot(page, `payments-${theme}`);
 
     await openApp(page, '/settings');
     const headers = page.locator('button[aria-expanded]');
@@ -283,13 +305,12 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
         );
       };
 
-        const allowedImage = (value: string) => {
-          const v = value.trim().toLowerCase();
-          if (v === 'none') return true;
-          if (v.includes('gradient')) return true;
-          // Gradients may contain transparent stops, but no literal palette colours.
-          return !/#[0-9a-f]{3,8}\b/.test(v) && !/rgba?\((?!0,\s*0,\s*0,\s*0\))/.test(v);
-        };
+      const allowedImage = (value: string) => {
+        const v = value.trim().toLowerCase();
+        if (v === 'none') return true;
+        if (v.includes('gradient')) return true;
+        return !/#[0-9a-f]{3,8}\b/.test(v) && !/rgba?\((?!0,\s*0,\s*0,\s*0\))/.test(v);
+      };
 
       const found = new Set<string>();
       const root = document.getElementById('root');
@@ -338,15 +359,13 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
   });
 }
 
-for (const theme of ['light', 'warm', 'dark'] as const) {
+for (const theme of THEMES) {
   test(`splash is painted with the stored theme (${theme})`, async ({ page }) => {
     await seedApp(page, theme);
     await mockApi(page, { bundleDelayMs: 1500 } satisfies MockOptions);
 
     await page.goto('/', { waitUntil: 'commit' });
     const splash = page.locator('#splash');
-    // Сплеш должен быть виден на холодном старте (bundle задерживается на 1.5с).
-    // Если бандл загрузился из кэша быстрее — сплеш уже убран, но цвет фона всё равно должен быть темой.
     const splashVisible = await splash.isVisible();
     if (splashVisible) {
       await expect(splash).toBeVisible();
@@ -371,7 +390,7 @@ for (const theme of ['light', 'warm', 'dark'] as const) {
 
     await screenshot(page, `splash-${theme}`);
 
-    await expect(page.getByRole('button', { name: 'Главная' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: 'Обзор' })).toBeVisible({ timeout: 15_000 });
     await expect(splash).toHaveCount(0);
   });
 }

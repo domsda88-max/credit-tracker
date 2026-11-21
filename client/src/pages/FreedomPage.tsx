@@ -4,6 +4,7 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { creditsApi } from '../api/credits';
 import { debtPaidPercent, formatDate, formatMoney, formatMoneyShort } from '../utils/format';
 import { simulateAccelerator } from '../utils/finance/accelerator';
+import { PayoffStrategy } from '../components/PayoffStrategy';
 import type { CreditListItem } from '../types';
 import { CREDIT_TYPE_LABELS } from '../utils/format';
 
@@ -271,6 +272,9 @@ export function FreedomPage() {
         </section>
       )}
 
+      {/* Стратегия приоритетного погашения живет в аналитике, а не на главной */}
+      <PayoffStrategy credits={(credits ?? []) as CreditListItem[]} />
+
       <section className="card card-pad">
         <div className="mb-4 flex items-center justify-between gap-2">
           <h2 className="text-heading font-semibold text-t1">Ваши активные долги</h2>
@@ -306,9 +310,9 @@ export function FreedomPage() {
         </div>
       </section>
 
-      <section className="card card-pad border border-warm/20 bg-warm/5">
+      <section className="card card-pad border border-warning/20 bg-warning/5">
         <div className="flex items-center gap-2.5 mb-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-control bg-warm/15 text-warm-fg">
+          <span className="flex h-10 w-10 items-center justify-center rounded-control bg-warning/15 text-warning-fg">
             <TrendingDown size={18} />
           </span>
           <h2 className="text-heading font-semibold text-t1">Что влияет на срок</h2>

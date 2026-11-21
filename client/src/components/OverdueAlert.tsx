@@ -41,7 +41,7 @@ export function OverdueAlert({ credits }: Props) {
             className="flex items-center justify-between gap-3 text-sm"
           >
             <span className="truncate text-t1">{c.name}</span>
-            <span className="shrink-0 text-xs text-critical-fg/80">
+            <span className="shrink-0 text-xs text-critical-fg">
               {formatDate(c.nextPayment!.dueDate)} · {describeDueDate(c.nextPayment!.dueDate)}
             </span>
           </Link>

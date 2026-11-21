@@ -258,8 +258,54 @@ export async function mockApi(page: Page, options: MockOptions = {}) {
       return reply({ ok: true });
     }
     if (method === 'GET' && path === '/push/status') return reply({ subscribed: false });
+    if (method === 'GET' && path === '/push/vapid-public-key') return reply({ publicKey: 'AAAA' });
+    if (method === 'POST' && path === '/push/subscribe') return reply({ ok: true });
+    if (method === 'DELETE' && path === '/push/subscribe') return reply({ ok: true });
 
     return reply({});
+  });
+}
+
+/**
+ * Playwright блокирует service workers, поэтому подменяем Web Push API.
+ * Это позволяет проверить кнопку «Включить/Выключить» без реальной подписки.
+ */
+export async function mockPush(page: Page) {
+  await page.addInitScript(() => {
+    let subscribed = false;
+    const subscription = {
+      endpoint: 'https://push.example.test/mock-subscription',
+      toJSON: () => ({
+        endpoint: 'https://push.example.test/mock-subscription',
+        keys: { p256dh: 'mock-p256dh', auth: 'mock-auth' },
+      }),
+      unsubscribe: async () => {
+        subscribed = false;
+        return true;
+      },
+    };
+    const registration = {
+      pushManager: {
+        getSubscription: async () => (subscribed ? subscription : null),
+        subscribe: async () => {
+          subscribed = true;
+          return subscription;
+        },
+      },
+    };
+
+    Object.defineProperty(window.Notification, 'permission', {
+      configurable: true,
+      get: () => 'granted',
+    });
+    Object.defineProperty(window.Notification, 'requestPermission', {
+      configurable: true,
+      value: async () => 'granted',
+    });
+    Object.defineProperty(navigator.serviceWorker, 'ready', {
+      configurable: true,
+      value: Promise.resolve(registration),
+    });
   });
 }
 

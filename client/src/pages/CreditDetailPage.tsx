@@ -369,7 +369,7 @@ export function CreditDetailPage() {
               <p className="font-medium text-critical-fg">
                 Минимум к погашению: <span className="tabular">{formatMoney(preview.minAmount)}</span>
               </p>
-              <p className="mt-1 text-xs text-critical-fg/80">
+              <p className="mt-1 text-xs text-critical-fg">
                 Сумма должна покрыть начисленные проценты за {preview.days} дн.
               </p>
             </div>

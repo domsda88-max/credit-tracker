@@ -24,27 +24,27 @@ export function MoneyFlow() {
   const hasIncome = income !== null;
 
   return (
-    <section className="card card-pad animate-fade-up">
-      <div className="mb-3 flex items-center justify-between gap-2">
+    <section className="card card-pad card-enter">
+      <div className="mb-4 flex items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 section-title">
           <Wallet size={14} />
           Деньги в месяц
         </p>
-        <Link to="/settings" className="text-caption text-primary-fg">
+        <Link to="/settings" className="ui-press rounded-chip px-1 text-caption text-primary-fg">
           {hasIncome ? 'Изменить' : 'Указать доход'}
         </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="card-inner px-3 py-2.5">
+        <div className="card-inner px-3 py-3">
           <p className="text-micro text-t3">Доход</p>
-          <p className="tabular mt-0.5 text-body font-semibold text-t1">
+          <p className="tabular mt-1 text-body font-semibold text-t1">
             {hasIncome ? formatMoney(income) : '—'}
           </p>
         </div>
-        <div className="card-inner px-3 py-2.5">
-          <p className="text-micro text-t3">Платежи в месяц (регулярные платежи по всем активным долгам)</p>
-          <p className="tabular mt-0.5 text-body font-semibold text-t1">
+        <div className="card-inner px-3 py-3">
+          <p className="text-micro text-t3">Регулярные платежи</p>
+          <p className="tabular mt-1 text-body font-semibold text-t1">
             {formatMoney(payments)}
           </p>
         </div>
@@ -58,16 +58,16 @@ export function MoneyFlow() {
 
       <div
         className={`mt-3 flex items-center justify-between gap-3 rounded-control px-3 py-2.5 ${
-          free !== null && free < 0 ? 'bg-critical/10' : 'bg-success/10'
+          free !== null && free < 0 ? 'bg-danger/10' : 'bg-success/10'
         }`}
       >
-        <span className="flex items-center gap-1.5 text-caption text-t2">
+        <span className="flex items-center gap-1.5 text-caption text-t3">
           Свободно
           <ArrowRight size={14} className="text-t3" />
         </span>
         <span
           className={`tabular text-heading font-bold ${
-            free === null ? 'text-t2' : free < 0 ? 'text-critical-fg' : 'text-success-fg'
+            free === null ? 'text-t2' : free < 0 ? 'text-danger-fg' : 'text-success-fg'
           }`}
         >
           {free === null ? 'Укажите доход' : formatMoney(free)}
@@ -80,7 +80,7 @@ export function MoneyFlow() {
         </p>
       )}
       {free !== null && free < 0 && (
-        <p className="mt-2 text-micro text-critical-fg">
+        <p className="mt-2 text-micro text-danger-fg">
           Платежи больше дохода на {formatMoney(Math.abs(free))} — стоит пересмотреть нагрузку.
         </p>
       )}

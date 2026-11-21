@@ -4,10 +4,18 @@ import { mockApi, openApp, seedApp } from './fixtures';
 /**
  * Дизайн-система на практике: проверяем не «красиво ли», а измеримые вещи —
  * отсутствие горизонтального переполнения, одинаковые отступы контента,
- * ровную нижнюю навигацию и геометрию иконок.
+ * ровную нижнюю навигацию и геометрию элементов управления.
  */
 
-const ROUTES = ['/', '/stats', '/settings', '/credits/new', '/credits/c1'];
+const ROUTES = [
+  '/',
+  '/payments',
+  '/debts',
+  '/stats',
+  '/settings',
+  '/credits/new',
+  '/credits/c1',
+];
 
 const VIEWPORTS = [
   { name: '320', width: 320, height: 700 },
@@ -85,16 +93,13 @@ for (const vp of VIEWPORTS) {
 
         const m = await measure(page);
 
-        // Нет горизонтального скролла — ни у документа, ни у main.
         expect(m.docOverflow, `doc overflow on ${route}`).toBeLessThanOrEqual(0);
         expect(m.mainOverflow, `main overflow on ${route}`).toBeLessThanOrEqual(0);
 
-        // Контент начинается ровно там же, где main: без двойных отступов.
         expect(m.main).not.toBeNull();
         expect(m.content).not.toBeNull();
         expect(Math.abs(m.content!.x - m.main!.x), `content x on ${route}`).toBeLessThanOrEqual(0.5);
 
-        // Единый верхний отступ 8px (+ safe-area).
         expect(m.content!.y - m.main!.y, `content top on ${route}`).toBeGreaterThanOrEqual(7.5);
         expect(m.content!.y - m.main!.y, `content top on ${route}`).toBeLessThanOrEqual(8.5);
       });
@@ -103,33 +108,30 @@ for (const vp of VIEWPORTS) {
 }
 
 test.describe('bottom navigation', () => {
-  test('иконки без подписей, 48x48, равный шаг, по центру', async ({ page }) => {
+  test('четыре подписанных кнопки 66x52, равный шаг, по центру', async ({ page }) => {
     await seedApp(page, 'light');
     await mockApi(page);
     await openApp(page, '/');
 
     const m = await measure(page);
 
-    expect(m.buttons).toHaveLength(4);
+    expect(m.buttons.map((b) => b.label)).toEqual(['Обзор', 'Платежи', 'Долги', 'Аналитика']);
     for (const b of m.buttons) {
       expect(b.label, 'aria-label обязателен').toBeTruthy();
-      expect(b.hasVisibleLabel, `подпись у ${b.label}`).toBe(false);
-      expect(b.w, `ширина ${b.label}`).toBeCloseTo(48, 0);
-      expect(b.h, `высота ${b.label}`).toBeCloseTo(48, 0);
+      expect(b.hasVisibleLabel, `подпись у ${b.label}`).toBe(true);
+      expect(b.w, `ширина ${b.label}`).toBeCloseTo(66, 0);
+      expect(b.h, `высота ${b.label}`).toBeCloseTo(52, 0);
     }
 
-    // Равный шаг между центрами кнопок.
     const centers = m.buttons.map((b) => b.center);
     const gaps = centers.slice(1).map((c, i) => Math.round((c - centers[i]) * 10) / 10);
     for (const gap of gaps) {
       expect(gap, 'равный шаг между кнопками').toBeCloseTo(gaps[0], 0);
     }
 
-    // Панель по центру экрана и в 6px от низа.
     expect(Math.abs(m.navCenterDelta ?? 99)).toBeLessThanOrEqual(1);
     expect(m.navBottomGap).toBeCloseTo(6, 0);
 
-    // Активная кнопка помечена.
     expect(m.buttons.filter((b) => b.current === 'page')).toHaveLength(1);
     expect(m.buttons[0].current).toBe('page');
   });
@@ -169,7 +171,7 @@ test.describe('экраны и онбординг', () => {
     for (const route of ['/stats', '/settings']) {
       await openApp(page, route);
       const paddings = await page.evaluate(() =>
-        Array.from(document.querySelectorAll('main .card')).map((el) => {
+        Array.from(document.querySelectorAll('main .card-pad')).map((el) => {
           const s = getComputedStyle(el);
           return [s.paddingTop, s.paddingRight, s.paddingBottom, s.paddingLeft].join(' ');
         }),
@@ -180,8 +182,23 @@ test.describe('экраны и онбординг', () => {
     }
   });
 
+  test('шапки аккордеонов имеют горизонтальный отступ 20px', async ({ page }) => {
+    await seedApp(page, 'light');
+    await mockApi(page);
+    await openApp(page, '/settings');
+
+    const paddings = await page.evaluate(() =>
+      Array.from(
+        document.querySelectorAll(
+          'main [data-testid="income-accordion"] > button[aria-expanded], main [data-testid="export-accordion"] > button[aria-expanded], main [data-testid="import-accordion"] > button[aria-expanded], main [data-testid="notifications-accordion"] > div:first-child',
+        ),
+      ).map((el) => getComputedStyle(el).paddingLeft),
+    );
+    expect(paddings.length).toBeGreaterThan(0);
+    expect(new Set(paddings)).toEqual(new Set(['20px']));
+  });
+
   test('онбординг показывается один раз и пропускается', async ({ page }) => {
-    // Без флага онбординга — приложение перекрыто введением.
     await page.addInitScript(() => {
       localStorage.setItem(
         'credit-tracker-auth',
@@ -205,7 +222,7 @@ test.describe('экраны и онбординг', () => {
 
     await page.getByRole('button', { name: 'Пропустить введение' }).click();
     await expect(page.locator('main')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Главная' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Обзор' })).toBeVisible();
 
     const flag = await page.evaluate(() => localStorage.getItem('credit-tracker-onboarded'));
     expect(flag).toBe('1');

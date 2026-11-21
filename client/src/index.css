@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 /*
- * Design tokens are imported before this file in main.tsx.
- * This file only contains structure and component classes.
+ * Дизайн-токены импортируются перед этим файлом (см. main.tsx).
+ * Здесь только структура, компоненты и анимации.
  */
 
 html,
@@ -24,9 +24,11 @@ body {
 body {
   background-color: var(--color-bg);
   color: var(--color-ink);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
-  /* Плавная смена темы (crossfade) */
-  transition: background-color 300ms ease, color 300ms ease, border-color 300ms ease;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'SF Pro Text', Roboto, system-ui,
+    sans-serif;
+  /* Плавная смена темы: один кроссфейд на весь интерфейс */
+  transition: background-color var(--dur-base) var(--ease-app),
+    color var(--dur-base) var(--ease-app);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -58,7 +60,7 @@ select,
 textarea {
   font-family: inherit;
   font-size: 16px;
-  min-height: 44px;
+  min-height: 48px;
   width: 100%;
   box-sizing: border-box;
   touch-action: manipulation;
@@ -92,11 +94,10 @@ button {
   -webkit-touch-callout: none;
 }
 
-/* Ссылки таб-бара (NavLink), чипы, FAB и кнопки-ссылки — запрет выделения и вызова контекста */
+/* Ссылки таб-бара, чипы и кнопки-ссылки — запрет выделения и контекстного меню */
 a,
 .nav-link,
 .rounded-chip,
-[aria-label="Добавить долг"],
 .link-button {
   user-select: none;
   -webkit-user-select: none;
@@ -107,35 +108,37 @@ a,
 /* ═══════════════════════ КОМПОНЕНТЫ ═══════════════════════ */
 
 @layer components {
-  /* Базовая карточка: рамка обязательна, иначе surface «слипается» с bg */
+  /* Карточка: мягкая граница + почти невесомая тень */
   .card {
-    @apply rounded-[22px] border border-line bg-surface;
+    @apply rounded-card border border-line bg-surface;
     box-shadow: var(--shadow-card);
+    transition: background-color var(--dur-base) var(--ease-app),
+      border-color var(--dur-base) var(--ease-app), color var(--dur-base) var(--ease-app);
   }
 
   /* Вложенный блок внутри карточки */
   .card-inner {
-    @apply rounded-2xl bg-surface2;
+    @apply rounded-control bg-surface2;
   }
 
   /* Заголовок секции — единая система капс-малых заголовков */
   .section-title {
-    @apply text-sm font-semibold tracking-tight text-t2;
+    @apply text-caption font-semibold uppercase tracking-[0.04em] text-t3;
   }
 
-  /* Вертикальный ритм страницы: один шаг между блоками на всех экранах */
+  /* Вертикальный ритм страницы: воздушный, но без бесконечной прокрутки */
   .page-stack {
     @apply space-y-6;
   }
 
   /* Единый внутренний отступ карточек */
   .card-pad {
-    @apply p-5 sm:p-6;
+    @apply p-5;
   }
 
   /* Поле ввода */
   .field {
-    @apply mt-1 w-full rounded-xl border border-line bg-surface2 px-4 py-3 text-base text-t1 outline-none transition-colors duration-200 placeholder:text-t3 focus:border-primary;
+    @apply mt-1 w-full rounded-control border border-line bg-surface2 px-3 py-3 text-base text-t1 outline-none transition-colors duration-200 placeholder:text-t3 focus:border-primary;
   }
 
   select.field {
@@ -144,36 +147,64 @@ a,
 
   /* Кнопки */
   .btn {
-    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition-all duration-200 active:scale-[0.98];
+    @apply inline-flex items-center justify-center gap-2 rounded-control px-4 py-3 text-base font-semibold transition-all duration-200 active:scale-[0.97];
   }
   .btn-primary {
-    @apply min-h-12 bg-primary text-bg rounded-full font-bold transition-all duration-200;
-    box-shadow: 0 0 20px rgb(var(--c-primary) / 0.2);
-  }
-  .btn-primary:active {
-    transform: scale(0.95);
+    @apply bg-primary text-bg hover:bg-primary/90;
   }
   .btn-secondary {
-    @apply min-h-12 border border-line bg-surface2 text-t1;
+    @apply border border-line bg-surface2 text-t1 hover:border-primary/40;
   }
   .btn-danger {
     @apply bg-danger/10 text-danger-fg;
   }
 }
 
-/* Плавное появление контента */
-.fade-in {
-  @apply transition-opacity duration-300;
+/* Нажатие на карточку/кнопку — короткий естественный отклик */
+.tap,
+.ui-press {
+  transition: transform var(--dur-fast) var(--ease-app),
+    opacity var(--dur-fast) var(--ease-app),
+    background-color var(--dur-fast) var(--ease-app);
+  will-change: transform;
 }
-.tap {
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform, opacity;
-  contain: layout style paint;
+.tap:active,
+.ui-press:active {
+  opacity: 0.86;
+  transform: scale(0.975);
 }
-.tap:active {
-  opacity: 0.85;
-  transform: scale(0.97);
+
+/* Переход между экранами */
+.route-enter {
+  animation: route-in 240ms var(--ease-app) both;
+}
+
+@keyframes route-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Появление карточек с лёгкой ступенчатостью */
+.card-enter {
+  animation: card-in 260ms var(--ease-app) both;
+  animation-delay: var(--stagger, 0ms);
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Shimmer для skeleton-загрузки */
@@ -190,7 +221,7 @@ a,
   background-image: linear-gradient(
     90deg,
     transparent,
-    color-mix(in oklch, var(--color-ink-subtle) 14%, transparent),
+    color-mix(in oklch, var(--color-ink-subtle) 12%, transparent),
     transparent
   );
   animation: shimmer 1.5s infinite;
@@ -202,7 +233,7 @@ a,
   }
 }
 
-/* Слайдер «Ускорь свободу»: залитая часть — success, незалитая — line */
+/* Слайдер «Ускорь свободу»: залитая часть — акцент, незалитая — line */
 input[type='range'] {
   width: 100%;
   height: 6px;
@@ -210,77 +241,32 @@ input[type='range'] {
   cursor: pointer;
 }
 
-/* Safe-area padding для мобильных устройств (вырез камеры, нижняя панель) */
+/* Safe-area padding для мобильных устройств */
 .safe-area-bottom {
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 
-/* Единственный источник правды для отступа контента (нижняя навигация 56px + 12px отступ) */
+/* Нижний отступ контента: панель навигации + комфортный зазор */
 .page {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
-  padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 112px);
+  padding-top: 8px;
 }
 
-/* Деликатный crossfade ключевых контейнеров при смене темы */
-main,
-.card {
-  transition: none;
-}
-
-/* Кастомный вид нативного инпута времени — скрываем системные спиннеры/стрелки */
-input[type='time']::-webkit-calendar-picker-indicator,
-input[type='time']::-webkit-inner-spin-button,
-input[type='time']::-webkit-outer-spin-button,
-input[type='time']::-webkit-clear-button {
-  display: none;
-  -webkit-appearance: none;
-  margin: 0;
-}
-input[type='time'] {
-  -moz-appearance: textfield;
-  appearance: none;
-}
-
-/* Отключённая кнопка должна выглядеть как disabled, а не как баг рендера */
-.btn-primary:disabled,
-.btn-primary[disabled],
-button.bg-primary:disabled {
-  background-color: var(--color-surface-sunken);
-  color: var(--color-ink-subtle);
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-[data-theme='dark'] button:disabled,
-[data-theme='dark'] .btn-primary:disabled,
-[data-theme='dark'] button.bg-primary:disabled {
-  border: 1px solid var(--color-line);
-  background: var(--color-surface2);
-  color: var(--color-t3);
-  opacity: 1;
-  filter: none;
-}
-
-/* Тёмная тема: видимые состояния OFF переключателей, треки прогресс-баров, чипы */
-[data-theme='dark'] [role="switch"] {
-  border: 1px solid var(--color-line);
-  background: var(--color-surface2);
-}
-[data-theme='dark'] [role="switch"][aria-checked="false"]::after {
-  background: var(--color-t3);
-}
-[data-theme='dark'] .progress-track,
-[data-theme='dark'] input[type="range"]::-webkit-slider-runnable-track,
-[data-theme='dark'] input[type="range"]::-moz-range-track {
-  background: var(--color-line);
-  height: 6px;
+/* Верхняя служебная панель и нижняя навигация — полупрозрачное стекло */
+.glass-bar {
+  background: rgb(var(--c-surface) / 0.68);
+  border-color: rgb(var(--c-line) / 0.7);
+  -webkit-backdrop-filter: blur(14px) saturate(1.35);
+  backdrop-filter: blur(14px) saturate(1.35);
+  transition: background-color var(--dur-base) var(--ease-app),
+    border-color var(--dur-base) var(--ease-app);
 }
 
 /* Аккордеон: grid-template-rows, без «призраков» opacity */
 .acc {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: grid-template-rows 240ms var(--ease-app);
 }
 .acc[data-open='true'] {
   grid-template-rows: 1fr;
@@ -288,6 +274,29 @@ button.bg-primary:disabled {
 .acc > .acc__inner {
   overflow: hidden;
   min-height: 0;
+}
+
+/* Состояния переключателей и треков — общие для обеих тем */
+[role='switch'] {
+  border: 1px solid var(--color-line);
+  background: var(--color-surface2);
+  transition: background-color var(--dur-base) var(--ease-app),
+    border-color var(--dur-base) var(--ease-app);
+}
+[role='switch'][aria-checked='true'] {
+  border-color: transparent;
+}
+[role='switch'][aria-checked='false']::after {
+  background: var(--color-t3);
+}
+[role='switch'] > span {
+  transition: transform 220ms var(--ease-app), background-color var(--dur-fast) var(--ease-app);
+}
+.progress-track,
+input[type='range']::-webkit-slider-runnable-track,
+input[type='range']::-moz-range-track {
+  background: var(--color-line);
+  height: 6px;
 }
 
 /* Карточка долга: заголовок всегда в одну строку с эллипсисом */
@@ -313,6 +322,12 @@ button.bg-primary:disabled {
   white-space: nowrap;
 }
 
+/* Строка платежа: мягкая подсветка при изменении состояния */
+.payment-row {
+  transition: background-color var(--dur-base) var(--ease-app),
+    color var(--dur-base) var(--ease-app);
+}
+
 /* Нативная «виртуализация» длинного графика платежей */
 .schedule-row--virtual {
   content-visibility: auto;
@@ -334,11 +349,38 @@ main::-webkit-scrollbar,
   outline-offset: 2px;
 }
 
+/* Кастомный вид нативного инпута времени */
+input[type='time']::-webkit-calendar-picker-indicator,
+input[type='time']::-webkit-inner-spin-button,
+input[type='time']::-webkit-outer-spin-button,
+input[type='time']::-webkit-clear-button {
+  display: none;
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='time'] {
+  -moz-appearance: textfield;
+  appearance: none;
+}
+
+/* Отключённая кнопка выглядит как disabled, а не как баг рендера */
+button:disabled,
+.btn-primary:disabled,
+button.bg-primary:disabled {
+  background-color: var(--color-surface-sunken);
+  color: var(--color-t3);
+  border-color: var(--color-line);
+  opacity: 0.7;
+  cursor: not-allowed;
+  filter: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;

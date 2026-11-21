@@ -1,52 +1,39 @@
-import { useState } from 'react';
-import { usePushNotifications } from '../hooks/usePushNotifications';
+import type { PushStatus } from '../hooks/usePushNotifications';
+
+interface Props {
+  status: PushStatus;
+  error: string | null;
+  busy: boolean;
+  onToggle: () => void;
+}
 
 /**
- * Компактный переключатель Push-уведомлений (iOS-style switch): вместо
- * отдельных кнопок «Включить/Выключить/Проверить» — один тумблер.
+ * Компактный переключатель Push-уведомлений (iOS-style switch).
+ * Состоянием управляет SettingsPage — одна подписка на все блоки настроек.
  */
-export function PushSettings() {
-  const { status, error, subscribe, unsubscribe } = usePushNotifications();
-  const [pending, setPending] = useState(false);
-
+export function PushSettings({ status, error, busy, onToggle }: Props) {
   const enabled = status === 'subscribed';
-  const loading = status === 'loading';
-
-  const toggle = async () => {
-    if (pending || loading || status === 'unsupported') return;
-    setPending(true);
-    try {
-      if (enabled) {
-        await unsubscribe();
-      } else {
-        await subscribe();
-      }
-    } finally {
-      setPending(false);
-    }
-  };
+  const disabled = busy || status === 'loading' || status === 'unsupported';
 
   return (
     <div className="p-4">
       <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="mt-0.5 text-xs text-t3">
-            Сводка платежей в выбранное время + напоминания о сроках
-          </p>
-        </div>
+        <p className="min-w-0 text-caption text-t3">
+          Сводка платежей в выбранное время + напоминания о сроках
+        </p>
         <button
           type="button"
           role="switch"
           aria-checked={enabled}
-          onClick={() => void toggle()}
-          disabled={loading || pending || status === 'unsupported'}
-          className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 disabled:opacity-50 ${
+          onClick={onToggle}
+          disabled={disabled}
+          className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full ${
             enabled ? 'bg-primary' : 'bg-surface2'
           }`}
           aria-label="Включить push-уведомления"
         >
           <span
-            className={`inline-block h-6 w-6 transform rounded-full bg-surface shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            className={`inline-block h-6 w-6 transform rounded-full bg-surface shadow-sm ${
               enabled ? 'translate-x-[1.375rem]' : 'translate-x-0.5'
             }`}
           />

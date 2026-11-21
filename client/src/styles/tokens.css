@@ -1,110 +1,131 @@
+/*
+ * Единый источник дизайн-токенов.
+ * Две темы: светлая и тёмная. Все цвета приложения — только отсюда.
+ */
+
 :root {
   color-scheme: light;
-  /* Premium Finance — Light */
-  --c-bg: 245 244 240;
-  --c-surface: 255 255 255;
-  --c-surface2: 236 235 230;
-  --c-t1: 25 37 54;
-  --c-t2: 104 116 134;
-  --c-t3: 126 136 151;
-  --c-primary: 102 84 166;
-  --c-primary-soft: 239 236 248;
-  --c-accent: 102 84 166;
-  --c-accent-soft: 239 236 248;
-  --c-warm: 180 123 50;
-  --c-critical: 194 78 85;
-  --c-line: 229 227 221;
-  --c-success: 35 133 104;
-  --c-warning: 180 123 50;
-  --c-danger: 194 78 85;
-  --c-success-strong: 25 111 85;
-  --c-warning-strong: 132 84 27;
-  --c-danger-strong: 164 52 60;
+
+  /* Палитра светлой темы */
+  --c-bg: 245 244 240; /* #F5F4F0 */
+  --c-surface: 255 255 255; /* #FFFFFF */
+  --c-surface2: 236 235 230; /* #ECEBE6 */
+  --c-t1: 25 37 54; /* #192536 */
+  --c-t2: 104 116 134; /* #687486 */
+  --c-t3: 91 102 120; /* чуть плотнее t2 — для мелкого текста на surface2 */
+  --c-primary: 102 84 166; /* #6654A6 */
+  --c-accent: 102 84 166; /* #6654A6 */
+  --c-success: 35 133 104; /* #238568 */
+  --c-warning: 180 123 50; /* #B47B32 */
+  --c-danger: 194 78 85; /* #C24E55 */
+  --c-warm: 180 123 50; /* псевдоним warning для компонентов */
+  --c-critical: 194 78 85; /* псевдоним danger для компонентов */
+  --c-line: 229 227 221; /* #E5E3DD */
+
+  /* Текстовые оттенки на заливках: сохраняют контраст AA */
+  --c-primary-strong: 81 63 138;
+  --c-success-strong: 29 110 84;
+  --c-warning-strong: 138 90 30;
+  --c-danger-strong: 166 58 66;
+
+  --c-primary-soft: 238 235 247;
+  --c-accent-soft: 238 235 247;
+
   --color-bg: rgb(var(--c-bg));
   --color-surface: rgb(var(--c-surface));
   --color-surface-sunken: rgb(var(--c-surface2));
   --color-ink: rgb(var(--c-t1));
-  --color-ink-muted: rgb(var(--c-t2));
-  --color-ink-subtle: rgb(var(--c-t3));
   --color-ink-on-dark: rgb(var(--c-t1));
+  /* t2 остаётся точным #687486 в палитре; семантический текст использует AA-оттенок. */
+  --color-ink-muted: rgb(var(--c-t3));
+  --color-ink-subtle: rgb(var(--c-t3));
   --color-primary: rgb(var(--c-primary));
-  --color-warm: rgb(var(--c-warm));
-  --color-critical: rgb(var(--c-critical));
+  --color-primary-soft: rgb(var(--c-primary-soft));
   --color-accent: rgb(var(--c-accent));
+  --color-accent-soft: rgb(var(--c-accent-soft));
   --color-success: rgb(var(--c-success));
   --color-warning: rgb(var(--c-warning));
   --color-danger: rgb(var(--c-danger));
+  --color-warm: rgb(var(--c-warm));
+  --color-critical: rgb(var(--c-critical));
   --color-border: rgb(var(--c-line));
-  --color-success-fg: rgb(24 103 80);
-  --color-danger-fg: rgb(157 48 57);
-  --color-primary-fg: rgb(72 57 128);
-  --color-warning-fg: rgb(125 79 25);
-  --color-warm-fg: rgb(125 79 25);
-  --color-critical-fg: rgb(157 48 57);
-  --color-chart: #6654A6;
-  --color-grace: #8B80BC;
-  --color-grid: #E5E3DD;
-  --card-gradient: linear-gradient(135deg, #FFFFFF, #F4F2EC);
-  --fab-gradient: linear-gradient(135deg, #6654A6, #514184);
-  --shadow-card: 0 8px 24px rgb(25 37 54 / 0.045);
-  --shadow-tabbar: 0 10px 36px rgb(25 37 54 / 0.12);
-  --radius-card: 22px;
+
+  --color-line: rgb(var(--c-line));
+  --color-t1: rgb(var(--c-t1));
+  --color-t2: rgb(var(--c-t3));
+  --color-t3: rgb(var(--c-t3));
+
+  --color-primary-fg: rgb(var(--c-primary-strong));
+  --color-success-fg: rgb(var(--c-success-strong));
+  --color-warning-fg: rgb(var(--c-warning-strong));
+  --color-danger-fg: rgb(var(--c-danger-strong));
+  --color-warm-fg: rgb(var(--c-warning-strong));
+  --color-critical-fg: rgb(var(--c-danger-strong));
+
+  --color-chart: #6654a6;
+  --color-grace: #a69bcf;
+  --color-grid: #e5e3dd;
+  --color-scrim: 25 37 54;
+
+  --card-gradient: linear-gradient(135deg, rgb(var(--c-surface)), rgb(var(--c-surface2)));
+  --fab-gradient: linear-gradient(135deg, rgb(var(--c-primary)), rgb(var(--c-primary-strong)));
+
+  --shadow-card: 0 1px 2px rgb(25 37 54 / 0.04), 0 8px 24px rgb(25 37 54 / 0.03);
+  --shadow-nav: 0 6px 24px rgb(25 37 54 / 0.1);
+  --shadow-tabbar: 0 8px 28px rgb(25 37 54 / 0.12);
+  --radius-card: 18px;
   --radius-control: 14px;
+  --dur-fast: 180ms;
+  --dur-base: 220ms;
+  --ease-app: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+
 [data-theme='dark'] {
   color-scheme: dark;
-  /* Premium Finance — Dark */
-  --c-bg: 17 21 28;
-  --c-surface: 26 32 43;
-  --c-surface2: 37 45 58;
-  --c-t1: 241 242 245;
-  --c-t2: 161 168 181;
-  --c-t3: 132 142 158;
-  --c-primary: 166 155 207;
-  --c-primary-soft: 52 47 73;
-  --c-accent: 166 155 207;
-  --c-accent-soft: 52 47 73;
-  --c-warm: 229 177 95;
-  --c-critical: 239 119 125;
-  --c-line: 48 57 71;
-  --c-success: 84 185 151;
-  --c-warning: 229 177 95;
-  --c-danger: 239 119 125;
+
+  /* Палитра тёмной темы */
+  --c-bg: 17 21 28; /* #11151C */
+  --c-surface: 26 32 43; /* #1A202B */
+  --c-surface2: 37 45 58; /* #252D3A */
+  --c-t1: 241 242 245; /* #F1F2F5 */
+  --c-t2: 161 168 181; /* #A1A8B5 */
+  --c-t3: 161 168 181; /* #A1A8B5 */
+  --c-primary: 166 155 207; /* #A69BCF */
+  --c-accent: 166 155 207; /* #A69BCF */
+  --c-success: 84 185 151; /* #54B997 */
+  --c-warning: 229 177 95; /* #E5B15F */
+  --c-danger: 239 119 125; /* #EF777D */
+  --c-warm: 229 177 95; /* псевдоним warning */
+  --c-critical: 239 119 125; /* псевдоним danger */
+  --c-line: 48 57 71; /* #303947 */
+
+  /* В тёмной теме базовые акценты уже контрастны на тёмных поверхностях */
+  --c-primary-strong: 166 155 207;
   --c-success-strong: 84 185 151;
   --c-warning-strong: 229 177 95;
   --c-danger-strong: 239 119 125;
-  --color-bg: rgb(var(--c-bg));
-  --color-surface: rgb(var(--c-surface));
-  --color-surface-sunken: rgb(var(--c-surface2));
-  --color-ink: rgb(var(--c-t1));
+
+  --c-primary-soft: 45 51 69;
+  --c-accent-soft: 45 51 69;
+
+  /* В тёмной теме исходный t2 уже контрастен на surface2. */
   --color-ink-muted: rgb(var(--c-t2));
-  --color-ink-subtle: rgb(var(--c-t3));
-  --color-ink-on-dark: rgb(var(--c-t1));
-  --color-primary: rgb(var(--c-primary));
-  --color-warm: rgb(var(--c-warm));
-  --color-critical: rgb(var(--c-critical));
-  --color-accent: rgb(var(--c-accent));
-  --color-success: rgb(var(--c-success));
-  --color-warning: rgb(var(--c-warning));
-  --color-danger: rgb(var(--c-danger));
-  --color-border: rgb(var(--c-line));
-  --color-success-fg: rgb(113 218 181);
-  --color-danger-fg: rgb(255 151 156);
-  --color-primary-fg: rgb(210 203 235);
-  --color-warning-fg: rgb(246 207 143);
-  --color-warm-fg: rgb(246 207 143);
-  --color-critical-fg: rgb(255 151 156);
-  --color-chart: #A69BCF;
-  --color-grace: #8B80BC;
+  --color-t2: rgb(var(--c-t2));
+
+  --color-primary-fg: rgb(var(--c-primary));
+  --color-success-fg: rgb(var(--c-success));
+  --color-warning-fg: rgb(var(--c-warning));
+  --color-danger-fg: rgb(var(--c-danger));
+
+  --color-chart: #a69bcf;
+  --color-grace: #6654a6;
   --color-grid: #303947;
-  --card-gradient: linear-gradient(135deg, #252D3A, #1A202B);
-  --fab-gradient: linear-gradient(135deg, #A69BCF, #6654A6);
-  --shadow-card: 0 8px 28px rgb(0 0 0 / 0.16);
-  --shadow-tabbar: 0 10px 36px rgb(0 0 0 / 0.42);
-}
-:root,
-[data-theme='dark'] {
-  --color-success-strong: rgb(var(--c-success-strong));
-  --color-warning-strong: rgb(var(--c-warning-strong));
-  --color-danger-strong: rgb(var(--c-danger-strong));
+  --color-scrim: 5 8 13;
+
+  --card-gradient: linear-gradient(135deg, rgb(var(--c-surface)), rgb(var(--c-surface2)));
+  --fab-gradient: linear-gradient(135deg, rgb(var(--c-primary)), rgb(var(--c-accent)));
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.18);
+  --shadow-nav: 0 8px 28px rgb(0 0 0 / 0.32);
+  --shadow-tabbar: 0 8px 28px rgb(0 0 0 / 0.32);
 }

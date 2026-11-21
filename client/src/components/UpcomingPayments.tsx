@@ -1,18 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CalendarDays, ChevronDown, ChevronRight } from 'lucide-react';
 import type { CreditListItem } from '../types';
-import { describeDueDate, daysUntil, formatDateShort, formatMoney, urgencyTone } from '../utils/format';
+import { daysUntil, describeDueDate, formatDateShort, formatMoney, urgencyTone } from '../utils/format';
+import { getUpcomingPayments } from '../utils/upcoming';
+import { StatusBadge } from './StatusBadge';
 
 interface Props {
   credits: CreditListItem[];
-}
-
-interface Item {
-  creditId: string;
-  creditName: string;
-  dueDate: string;
-  amount: number;
-  overdue: boolean;
 }
 
 const COLLAPSE_KEY = 'upcomingPaymentsCollapsed';
@@ -38,42 +33,22 @@ export function UpcomingPayments({ credits }: Props) {
     });
   };
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const curYear = today.getUTCFullYear();
-  const curMonth = today.getUTCMonth();
-
-  const items: Item[] = credits
-    .filter((c) => c.status === 'ACTIVE' && c.nextPayment)
-    .map((c) => ({
-      creditId: c.id,
-      creditName: c.name,
-      dueDate: c.nextPayment!.dueDate,
-      amount: Number(c.nextPayment!.amount),
-      overdue: new Date(c.nextPayment!.dueDate).getTime() < today.getTime(),
-    }))
-    .filter((item) => {
-      const d = new Date(item.dueDate);
-      const isOverdue = d.getTime() < today.getTime();
-      const isThisMonth = d.getUTCFullYear() === curYear && d.getUTCMonth() === curMonth;
-      return isOverdue || isThisMonth;
-    })
-    .sort((a, b) => {
-      const da = new Date(a.dueDate).getTime();
-      const db = new Date(b.dueDate).getTime();
-      const oa = da < today.getTime();
-      const ob = db < today.getTime();
-      if (oa !== ob) return oa ? -1 : 1;
-      if (oa && ob) return da - db; // overdue: oldest first (most overdue)
-      return da - db;
-    });
+  const items = getUpcomingPayments(credits);
 
   if (items.length === 0) {
     return (
-      <section className="space-y-3">
-        <p className="section-title">Ближайшие платежи</p>
-        <div className="py-4 text-center text-caption text-t3">
-          Нет платежей в этом месяце
+      <section className="card card-enter overflow-hidden">
+        <div className="card-pad">
+          <p className="section-title">Ближайшие платежи</p>
+          <div className="mt-4 flex flex-col items-center text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface2 text-primary-fg">
+              <CalendarDays size={22} aria-hidden="true" />
+            </span>
+            <p className="mt-3 text-body font-semibold text-t1">Платежей в этом месяце нет</p>
+            <p className="mt-1 text-caption text-t3">
+              Когда появятся новые платежи, они будут здесь
+            </p>
+          </div>
         </div>
       </section>
     );
@@ -82,50 +57,66 @@ export function UpcomingPayments({ credits }: Props) {
   const total = items.reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <section className="space-y-3">
-      <button
-        type="button"
-        onClick={toggle}
-        aria-expanded={!collapsed}
-        className="flex w-full items-center justify-between gap-3 text-left"
-      >
-        <span className="section-title">Ближайшие платежи</span>
-        <span className="flex items-center gap-2">
-          <span className="tabular text-caption text-t3">
-            {items.length} · {formatMoney(total)}
-          </span>
-          <span className={`text-t3 transition-transform ${collapsed ? '' : 'rotate-180'}`} aria-hidden="true">
-            ▾
-          </span>
-        </span>
-      </button>
-
-      {!collapsed && (
-        <div className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
-          {items.map((item) => {
-            const tone = urgencyTone(daysUntil(item.dueDate));
-            const toneClass =
-              tone === 'danger' ? 'text-danger-fg' : tone === 'warm' ? 'text-warm-fg' : 'text-t2';
-            return (
-              <Link
-                key={item.creditId}
-                to={`/credits/${item.creditId}`}
-                className="flex items-center justify-between gap-3 px-4 py-3 transition active:bg-surface2"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-body font-medium text-t1">{item.creditName}</p>
-                  <p className={`text-caption ${toneClass}`}>
-                    {formatDateShort(item.dueDate)} · {describeDueDate(item.dueDate)}
-                  </p>
-                </div>
-                <span className={`tabular shrink-0 text-body font-semibold ${toneClass}`}>
-                  {formatMoney(item.amount)}
-                </span>
-              </Link>
-            );
-          })}
+    <section className="card card-enter overflow-hidden" aria-labelledby="upcoming-payments-title">
+      <div className="flex items-start justify-between gap-3 px-5 pb-4 pt-5">
+        <div className="min-w-0">
+          <p id="upcoming-payments-title" className="section-title">
+            Ближайшие платежи
+          </p>
+          <p className="mt-1.5 text-caption text-t2">
+            <span className="tabular font-medium text-t1">{items.length}</span> ·{' '}
+            <span className="tabular font-semibold text-t1">{formatMoney(total)}</span>
+          </p>
         </div>
-      )}
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? 'Показать ближайшие платежи' : 'Скрыть ближайшие платежи'}
+          className="ui-press flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface2 text-t2"
+        >
+          <ChevronDown
+            size={18}
+            aria-hidden="true"
+            className={`transition-transform duration-200 ${collapsed ? '' : 'rotate-180'}`}
+          />
+        </button>
+      </div>
+
+      <div className="acc" data-open={!collapsed}>
+        <div className="acc__inner">
+          <div className="divide-y divide-line border-t border-line">
+            {items.map((item) => {
+              const tone = urgencyTone(daysUntil(item.dueDate));
+              const toneClass =
+                tone === 'danger' ? 'text-danger-fg' : tone === 'warm' ? 'text-warm-fg' : 'text-t2';
+              return (
+                <Link
+                  key={item.creditId}
+                  to={`/credits/${item.creditId}`}
+                  className="upcoming-row payment-row flex items-center gap-3 px-5 py-3.5 hover:bg-surface2/60 active:bg-surface2"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-body font-medium text-t1">{item.creditName}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className={`tabular text-caption ${toneClass}`}>
+                        {formatDateShort(item.dueDate)} · {describeDueDate(item.dueDate)}
+                      </span>
+                      <StatusBadge status={item.status} />
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <span className={`tabular text-body font-semibold ${toneClass}`}>
+                      {formatMoney(item.amount)}
+                    </span>
+                    <ChevronRight size={16} className="text-t3" aria-hidden="true" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </section>
   );
 }

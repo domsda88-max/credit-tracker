@@ -1,20 +1,19 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Settings2 } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { creditsApi } from '../api/credits';
-import { CreditRow } from '../components/CreditRow';
 import { MoneyFlow } from '../components/MoneyFlow';
 import { GraceReplenishBlock } from '../components/GraceReplenishBlock';
 import { OverdueAlert } from '../components/OverdueAlert';
 import { UpcomingPayments } from '../components/UpcomingPayments';
-import { PayoffStrategy } from '../components/PayoffStrategy';
+import { formatDateShort, formatMoneyShort } from '../utils/format';
 
 /** Экран загрузки: скелетоны карточек вместо спиннера. */
 function LoadingScreen() {
   return (
     <div className="page-stack">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="skeleton h-24 rounded-card" />
+        <div key={i} className="skeleton h-28 rounded-card" />
       ))}
     </div>
   );
@@ -32,6 +31,13 @@ export function DashboardPage() {
     staleTime: 60_000,
   });
 
+  const { data: summary } = useQuery({
+    queryKey: ['summary'],
+    queryFn: () => creditsApi.summary(),
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
+
   // Скелетон — только на первом холодном загрузке. При возврате из кэша
   // показываем прошлые данные, а не мигающую заглушку.
   if (isPending && !credits) {
@@ -43,53 +49,53 @@ export function DashboardPage() {
   }
 
   const list = credits ?? [];
-  const active = list.filter((c) => c.status === 'ACTIVE');
-  const closed = list.filter((c) => c.status === 'CLOSED');
 
   return (
-    <div className="page-stack animate-fade-in">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <p className="section-title">Ваши финансы</p>
-          <h1 className="text-2xl font-bold tracking-tight text-t1">Обзор</h1>
-          <p className="mt-1 text-sm text-t3">Всё важное о ваших обязательствах</p>
-        </div>
-        <Link to="/settings" aria-label="Настройки" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-line bg-surface text-t2 transition hover:bg-surface2 hover:text-t1">
-          <Settings2 size={19} />
-        </Link>
-      </header>
-      <OverdueAlert credits={list} />
+    <div className="page-stack">
+      {/* 1. Главный блок — ближайшие платежи */}
       <UpcomingPayments credits={list} />
-      <MoneyFlow />
-      <GraceReplenishBlock />
 
-      <PayoffStrategy credits={list} />
+      {/* 2. Ежемесячная финансовая нагрузка */}
+      {list.length > 0 && <MoneyFlow />}
 
-      {/* === МОИ ДОЛГИ: карточки активных долгов === */}
-      <section className="space-y-3">
-        <h2 className="section-title">Мои долги</h2>
-        {active.length === 0 ? (
-          <p className="py-4 text-center text-caption text-t3">Нет активных долгов</p>
-        ) : (
-          <>
-            {active.map((credit) => (
-              <CreditRow key={credit.id} credit={credit} />
-            ))}
-          </>
-        )}
-      </section>
-
-      {closed.length > 0 && (
-        <section className="space-y-2 border-t border-line pt-4">
-          <h2 className="section-title">Закрытые</h2>
-          {closed.map((credit) => (
-            <CreditRow key={credit.id} credit={credit} />
-          ))}
+      {/* 3. Короткая сводка: только самое нужное, без дублирования списка долгов */}
+      {summary && summary.activeCount > 0 && (
+        <section className="card card-pad card-enter">
+          <div className="flex items-center justify-between gap-3">
+            <p className="section-title">Сводка</p>
+            <Link
+              to="/stats"
+              className="ui-press flex items-center gap-0.5 rounded-chip px-1 text-caption text-primary-fg"
+            >
+              Аналитика <ArrowUpRight size={14} aria-hidden="true" />
+            </Link>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <div className="min-w-0">
+              <p className="text-micro text-t3">Активные долги</p>
+              <p className="tabular mt-1 text-body font-semibold text-t1">{summary.activeCount}</p>
+            </div>
+            <div className="min-w-0">
+              <p className="text-micro text-t3">Остаток</p>
+              <p className="tabular mt-1 truncate text-body font-semibold text-t1">
+                {formatMoneyShort(summary.outstandingSum)}
+              </p>
+            </div>
+            <div className="min-w-0">
+              <p className="text-micro text-t3">Свобода</p>
+              <p className="tabular mt-1 truncate text-body font-semibold text-t1">
+                {summary.debtFreeDate ? formatDateShort(summary.debtFreeDate) : '—'}
+              </p>
+            </div>
+          </div>
         </section>
       )}
 
+      <OverdueAlert credits={list} />
+      <GraceReplenishBlock />
+
       {list.length === 0 && (
-        <div className="card flex flex-col items-center gap-4 p-8 text-center">
+        <div className="card card-pad card-enter flex flex-col items-center gap-4 text-center">
           <svg width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden="true">
             <circle cx="48" cy="48" r="44" fill="var(--color-surface-sunken)" />
             <path
@@ -102,7 +108,7 @@ export function DashboardPage() {
             <circle cx="56" cy="44" r="3" fill="var(--color-ink-muted)" />
             <path
               d="M40 62c2.5 2.5 5.5 3.5 8 3.5s5.5-1 8-3.5"
-              stroke="var(--color-warm)"
+              stroke="var(--color-success)"
               strokeWidth="3"
               strokeLinecap="round"
             />
@@ -112,10 +118,7 @@ export function DashboardPage() {
           <p className="max-w-xs text-caption text-t3">
             Добавьте первый кредит, карту или заём — всё будет под контролем
           </p>
-          <Link
-            to="/credits/new"
-            className="btn btn-primary"
-          >
+          <Link to="/credits/new" className="btn btn-primary">
             Добавить первый долг
           </Link>
         </div>

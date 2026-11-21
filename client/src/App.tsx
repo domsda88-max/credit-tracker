@@ -3,17 +3,18 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import ScrollToTop from './components/ScrollToTop';import { SkeletonList } from './components/Skeleton';
+import ScrollToTop from './components/ScrollToTop';
+import { SkeletonList } from './components/Skeleton';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { trackScreen, useAnalytics } from './hooks/useAnalytics';
 
-const PaymentsPage = lazy(() => import('./pages/PaymentsPage').then((m) => ({ default: m.PaymentsPage })));
-const DebtsPage = lazy(() => import('./pages/DebtsPage').then((m) => ({ default: m.DebtsPage })));
 const AddCreditPage = lazy(() => import('./pages/AddCreditPage').then((m) => ({ default: m.AddCreditPage })));
 const CsvImportPage = lazy(() => import('./pages/CsvImportPage').then((m) => ({ default: m.CsvImportPage })));
 const CreditDetailPage = lazy(() => import('./pages/CreditDetailPage').then((m) => ({ default: m.CreditDetailPage })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
+const DebtsPage = lazy(() => import('./pages/DebtsPage').then((m) => ({ default: m.DebtsPage })));
+const PaymentsPage = lazy(() => import('./pages/PaymentsPage').then((m) => ({ default: m.PaymentsPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const FreedomPage = lazy(() => import('./pages/FreedomPage').then((m) => ({ default: m.FreedomPage })));
 
@@ -45,6 +46,7 @@ export function App() {
             <Route path="/credits/new" element={<AddCreditPage />} />
             <Route path="/credits/:id" element={<CreditDetailPage />} />
             <Route path="/stats" element={<FreedomPage />} />
+            <Route path="/analytics" element={<Navigate to="/stats" replace />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/import" element={<CsvImportPage />} />
           </Route>

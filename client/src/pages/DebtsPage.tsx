@@ -1,53 +1,79 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { creditsApi } from '../api/credits';
 import { CreditRow } from '../components/CreditRow';
 
+function LoadingScreen() {
+  return (
+    <div className="page-stack">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="skeleton h-28 rounded-card" />
+      ))}
+    </div>
+  );
+}
+
 export function DebtsPage() {
-  const { data: credits, isPending, error } = useQuery({
+  const {
+    data: credits,
+    isPending,
+    error,
+  } = useQuery({
     queryKey: ['credits'],
     queryFn: () => creditsApi.list(),
+    placeholderData: keepPreviousData,
     staleTime: 60_000,
   });
 
-  if (isPending) return <div className="page-stack"><div className="skeleton h-28 rounded-card" /><div className="skeleton h-28 rounded-card" /></div>;
-  if (error) return <p className="card card-pad text-sm text-danger-fg">Не удалось загрузить долги.</p>;
+  if (isPending && !credits) return <LoadingScreen />;
+  if (error) {
+    return <p className="text-sm text-danger-fg">Не удалось загрузить данные: {(error as Error).message}</p>;
+  }
 
-  const active = (credits ?? []).filter((credit) => credit.status === 'ACTIVE');
-  const closed = (credits ?? []).filter((credit) => credit.status === 'CLOSED');
+  const list = credits ?? [];
+  const active = list.filter((c) => c.status === 'ACTIVE');
+  const closed = list.filter((c) => c.status === 'CLOSED');
 
   return (
-    <div className="page-stack animate-fade-in">
-      <header className="flex items-end justify-between gap-3">
-        <div>
-          <p className="section-title">Все обязательства</p>
-          <h1 className="text-2xl font-bold tracking-tight text-t1">Долги</h1>
-          <p className="mt-1 text-sm text-t3">{active.length} активных · {closed.length} закрытых</p>
-        </div>
-        <Link to="/credits/new" className="flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-bg transition active:scale-95">
-          <Plus size={17} /> Добавить
-        </Link>
-      </header>
-
+    <div className="page-stack">
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-t1">Активные</h2>
-          <span className="text-xs text-t3">{active.length}</span>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="section-title">Мои долги</h2>
+          <span className="text-caption text-t3">{active.length}</span>
         </div>
-        {active.length ? active.map((credit) => <CreditRow key={credit.id} credit={credit} />) : (
-          <div className="card card-pad text-center">
-            <p className="font-semibold text-t1">Активных долгов нет</p>
-            <p className="mt-1 text-sm text-t3">Добавьте кредит или заём, чтобы видеть его здесь</p>
+        {active.length === 0 ? (
+          <div className="card card-pad card-enter text-center">
+            <p className="text-body font-semibold text-t1">Активных долгов нет</p>
+            <p className="mt-1 text-caption text-t3">Все кредиты закрыты — отличная работа</p>
           </div>
+        ) : (
+          active.map((credit, index) => <CreditRow key={credit.id} credit={credit} index={index} />)
         )}
       </section>
 
       {closed.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-base font-semibold text-t1">Закрытые</h2>
-          {closed.map((credit) => <CreditRow key={credit.id} credit={credit} />)}
+          <h2 className="section-title">Закрытые</h2>
+          {closed.map((credit, index) => (
+            <CreditRow key={credit.id} credit={credit} index={index} />
+          ))}
         </section>
+      )}
+
+      {list.length === 0 && (
+        <div className="card card-pad card-enter flex flex-col items-center gap-4 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface2 text-primary-fg">
+            <Plus size={22} aria-hidden="true" />
+          </span>
+          <p className="text-heading font-semibold text-t1">Пока нет долгов</p>
+          <p className="max-w-xs text-caption text-t3">
+            Добавьте первый кредит, карту или заём — всё будет под контролем
+          </p>
+          <Link to="/credits/new" className="btn btn-primary">
+            Добавить первый долг
+          </Link>
+        </div>
       )}
     </div>
   );
