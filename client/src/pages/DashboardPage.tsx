@@ -48,12 +48,20 @@ export function DashboardPage() {
 
   return (
     <div className="page-stack animate-fade-in">
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <p className="section-title">Ваши финансы</p>
+          <h1 className="text-2xl font-bold tracking-tight text-t1">Обзор</h1>
+          <p className="mt-1 text-sm text-t3">Всё важное о ваших обязательствах</p>
+        </div>
+        <Link to="/settings" aria-label="Настройки" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-line bg-surface text-t2 transition hover:bg-surface2 hover:text-t1">
+          <Settings2 size={19} />
+        </Link>
+      </header>
       <OverdueAlert credits={list} />
-
+      <UpcomingPayments credits={list} />
       <MoneyFlow />
       <GraceReplenishBlock />
-
-      <UpcomingPayments credits={list} />
 
       <PayoffStrategy credits={list} />
 
