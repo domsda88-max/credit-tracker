@@ -108,18 +108,18 @@ for (const vp of VIEWPORTS) {
 }
 
 test.describe('bottom navigation', () => {
-  test('четыре подписанных кнопки 66x52, равный шаг, по центру', async ({ page }) => {
+  test('четыре подписанных кнопки 68x52, равный шаг, по центру', async ({ page }) => {
     await seedApp(page, 'light');
     await mockApi(page);
     await openApp(page, '/');
 
     const m = await measure(page);
 
-    expect(m.buttons.map((b) => b.label)).toEqual(['Обзор', 'Платежи', 'Долги', 'Аналитика']);
+    expect(m.buttons.map((b) => b.label)).toEqual(['Главная', 'Долги', 'Аналитика', 'Настройки']);
     for (const b of m.buttons) {
       expect(b.label, 'aria-label обязателен').toBeTruthy();
       expect(b.hasVisibleLabel, `подпись у ${b.label}`).toBe(true);
-      expect(b.w, `ширина ${b.label}`).toBeCloseTo(66, 0);
+      expect(b.w, `ширина ${b.label}`).toBeCloseTo(68, 0);
       expect(b.h, `высота ${b.label}`).toBeCloseTo(52, 0);
     }
 
@@ -222,7 +222,7 @@ test.describe('экраны и онбординг', () => {
 
     await page.getByRole('button', { name: 'Пропустить введение' }).click();
     await expect(page.locator('main')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Обзор' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Главная' })).toBeVisible();
 
     const flag = await page.evaluate(() => localStorage.getItem('credit-tracker-onboarded'));
     expect(flag).toBe('1');
