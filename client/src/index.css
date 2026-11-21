@@ -386,3 +386,41 @@ button.bg-primary:disabled {
     scroll-behavior: auto !important;
   }
 }
+
+
+/* Небольшой глянец на финансовых показателях: мягкий свет, без потери контраста. */
+.metric-gloss {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgb(var(--c-line) / 0.72);
+  background:
+    linear-gradient(145deg, rgb(var(--c-surface) / 0.98) 0%, rgb(var(--c-surface2) / 0.78) 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.72),
+    0 3px 10px rgb(var(--c-scrim) / 0.035);
+}
+.metric-gloss::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -65%;
+  left: -28%;
+  width: 72%;
+  height: 150%;
+  transform: rotate(24deg);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.22), transparent);
+  pointer-events: none;
+}
+.nav-icon-active {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55), 0 2px 8px rgb(var(--c-primary) / 0.12);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ui-press:active {
+    transition-duration: 110ms;
+  }
+}
+[data-theme='dark'] .metric-gloss {
+  background: linear-gradient(145deg, rgb(var(--c-surface) / 0.98), rgb(var(--c-surface2) / 0.88));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045), 0 3px 10px rgb(0 0 0 / 0.12);
+}
