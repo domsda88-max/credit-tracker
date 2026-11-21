@@ -24,9 +24,6 @@ export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
   const navigate = useNavigate();
   const pathname = location.pathname;
 
-  // На форме добавления долга навигация не нужна.
-  if (pathname === '/credits/new') return null;
-
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/';
     if (path === '/debts') return pathname === '/debts' || pathname === '/payments' || pathname.startsWith('/credits/');

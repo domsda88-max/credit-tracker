@@ -304,7 +304,7 @@ export function AddCreditPage() {
   const handleClose = () => navigate(-1);
 
   return (
-    <div className="min-w-0 w-full max-w-full page-stack">
+    <div className="credit-create-shell min-w-0 w-full max-w-full page-stack">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-heading font-bold text-t1">Новый долг</h1>
         <button type="button" onClick={handleClose} aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center rounded-full text-ink-on-dark transition hover:bg-surface2">

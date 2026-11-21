@@ -136,12 +136,14 @@ test.describe('bottom navigation', () => {
     expect(m.buttons[0].current).toBe('page');
   });
 
-  test('на форме добавления навигация скрыта', async ({ page }) => {
+  test('на форме добавления навигация остаётся видимой', async ({ page }) => {
     await seedApp(page, 'light');
     await mockApi(page);
     await openApp(page, '/credits/new');
     const m = await measure(page);
-    expect(m.nav).toBeNull();
+    expect(m.nav).not.toBeNull();
+    expect(m.buttons.map((button) => button.label)).toEqual(['Главная', 'Долги', 'Аналитика', 'Настройки']);
+    expect(m.buttons.find((button) => button.label === 'Долги')?.current).toBe('page');
   });
 });
 

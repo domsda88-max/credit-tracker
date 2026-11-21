@@ -424,3 +424,208 @@ button.bg-primary:disabled {
   background: linear-gradient(145deg, rgb(var(--c-surface) / 0.98), rgb(var(--c-surface2) / 0.88));
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045), 0 3px 10px rgb(0 0 0 / 0.12);
 }
+
+
+/* ═══════════════════════ GLASS SURFACES ═══════════════════════
+   Матовое стекло — единый спокойный стиль обычных разделов.
+   Более выразительное стекло включается только на экране добавления кредита.
+*/
+.card {
+  position: relative;
+  isolation: isolate;
+  background-color: rgb(var(--c-surface) / 0.9);
+  background-image:
+    radial-gradient(110% 75% at 0% 0%, rgb(255 255 255 / 0.24), transparent 60%),
+    linear-gradient(145deg, rgb(var(--c-surface) / 0.94), rgb(var(--c-surface2) / 0.78));
+  border-color: rgb(var(--c-line) / 0.82);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.58),
+    inset 0 -1px 0 rgb(var(--c-line) / 0.18),
+    0 5px 18px rgb(var(--c-scrim) / 0.055);
+  -webkit-backdrop-filter: blur(10px) saturate(1.12);
+  backdrop-filter: blur(10px) saturate(1.12);
+}
+
+.card-inner {
+  background-color: rgb(var(--c-surface2) / 0.78);
+  background-image: linear-gradient(135deg, rgb(var(--c-surface) / 0.72), rgb(var(--c-surface2) / 0.72));
+  border: 1px solid rgb(var(--c-line) / 0.64);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.38);
+  -webkit-backdrop-filter: blur(8px) saturate(1.08);
+  backdrop-filter: blur(8px) saturate(1.08);
+}
+
+.metric-gloss {
+  background: linear-gradient(145deg, rgb(var(--c-surface) / 0.9), rgb(var(--c-surface2) / 0.76));
+  border-color: rgb(var(--c-line) / 0.76);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.58),
+    0 4px 12px rgb(var(--c-scrim) / 0.045);
+  -webkit-backdrop-filter: blur(9px) saturate(1.1);
+  backdrop-filter: blur(9px) saturate(1.1);
+}
+
+.field,
+input:not([type='checkbox']):not([type='radio']):not([type='range']),
+select,
+textarea {
+  background-color: rgb(var(--c-surface) / 0.9);
+  -webkit-backdrop-filter: blur(7px);
+  backdrop-filter: blur(7px);
+}
+
+.glass-bar {
+  background-color: rgb(var(--c-surface) / 0.78);
+  background-image: linear-gradient(135deg, rgb(255 255 255 / 0.18), transparent 62%);
+  border-color: rgb(var(--c-line) / 0.76);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.62),
+    var(--shadow-tabbar);
+  -webkit-backdrop-filter: blur(16px) saturate(1.22);
+  backdrop-filter: blur(16px) saturate(1.22);
+}
+
+[data-theme='dark'] .card {
+  background-color: rgb(var(--c-surface) / 0.9);
+  background-image:
+    radial-gradient(110% 75% at 0% 0%, rgb(255 255 255 / 0.055), transparent 60%),
+    linear-gradient(145deg, rgb(var(--c-surface) / 0.94), rgb(var(--c-surface2) / 0.8));
+  border-color: rgb(var(--c-line) / 0.86);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.065),
+    inset 0 -1px 0 rgb(0 0 0 / 0.1),
+    0 7px 20px rgb(0 0 0 / 0.16);
+}
+
+[data-theme='dark'] .card-inner {
+  background-color: rgb(var(--c-surface2) / 0.8);
+  background-image: linear-gradient(135deg, rgb(var(--c-surface) / 0.74), rgb(var(--c-surface2) / 0.7));
+  border-color: rgb(var(--c-line) / 0.76);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045);
+}
+
+[data-theme='dark'] .metric-gloss {
+  background: linear-gradient(145deg, rgb(var(--c-surface) / 0.9), rgb(var(--c-surface2) / 0.76));
+  border-color: rgb(var(--c-line) / 0.82);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.055), 0 5px 14px rgb(0 0 0 / 0.13);
+}
+
+[data-theme='dark'] .glass-bar {
+  background-color: rgb(var(--c-surface) / 0.84);
+  background-image: linear-gradient(135deg, rgb(255 255 255 / 0.045), transparent 62%);
+  border-color: rgb(var(--c-line) / 0.86);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.075), var(--shadow-tabbar);
+}
+
+/* Экран добавления кредита: отдельный выразительный слой стекла внутри общего Layout. */
+.credit-create-shell {
+  position: relative;
+  isolation: isolate;
+  border-radius: 20px;
+  background:
+    radial-gradient(90% 35% at 8% 0%, rgb(var(--c-primary) / 0.12), transparent 72%),
+    radial-gradient(70% 35% at 100% 28%, rgb(255 255 255 / 0.32), transparent 72%);
+}
+
+.credit-create-shell .card {
+  background-color: rgb(var(--c-surface) / 0.58);
+  background-image:
+    radial-gradient(125% 90% at 0% 0%, rgb(255 255 255 / 0.58), transparent 56%),
+    linear-gradient(145deg, rgb(var(--c-surface) / 0.66), rgb(var(--c-surface2) / 0.38));
+  border-color: rgb(var(--c-line) / 0.72);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.86),
+    inset 0 -1px 0 rgb(var(--c-line) / 0.2),
+    0 12px 32px rgb(var(--c-scrim) / 0.09);
+  -webkit-backdrop-filter: blur(26px) saturate(1.55);
+  backdrop-filter: blur(26px) saturate(1.55);
+}
+
+.credit-create-shell .card::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(118deg, rgb(255 255 255 / 0.2), transparent 34%, transparent 72%, rgb(255 255 255 / 0.08));
+  pointer-events: none;
+}
+
+.credit-create-shell .card-inner,
+.credit-create-shell .field,
+.credit-create-shell input:not([type='checkbox']):not([type='radio']):not([type='range']),
+.credit-create-shell select,
+.credit-create-shell textarea {
+  background-color: rgb(var(--c-surface) / 0.48);
+  background-image: linear-gradient(135deg, rgb(255 255 255 / 0.3), rgb(var(--c-surface2) / 0.34));
+  border-color: rgb(var(--c-line) / 0.68);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.56);
+  -webkit-backdrop-filter: blur(20px) saturate(1.45);
+  backdrop-filter: blur(20px) saturate(1.45);
+}
+
+.credit-create-shell button:not(.btn-primary):not(.btn-secondary) {
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+[data-theme='dark'] .credit-create-shell {
+  background:
+    radial-gradient(90% 35% at 8% 0%, rgb(var(--c-primary) / 0.18), transparent 72%),
+    radial-gradient(70% 35% at 100% 28%, rgb(255 255 255 / 0.06), transparent 72%);
+}
+
+[data-theme='dark'] .credit-create-shell .card {
+  background-color: rgb(var(--c-surface) / 0.58);
+  background-image:
+    radial-gradient(125% 90% at 0% 0%, rgb(255 255 255 / 0.1), transparent 56%),
+    linear-gradient(145deg, rgb(var(--c-surface) / 0.72), rgb(var(--c-surface2) / 0.44));
+  border-color: rgb(var(--c-line) / 0.86);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.11),
+    0 14px 34px rgb(0 0 0 / 0.22);
+}
+
+[data-theme='dark'] .credit-create-shell .card-inner,
+[data-theme='dark'] .credit-create-shell .field,
+[data-theme='dark'] .credit-create-shell input:not([type='checkbox']):not([type='radio']):not([type='range']),
+[data-theme='dark'] .credit-create-shell select,
+[data-theme='dark'] .credit-create-shell textarea {
+  background-color: rgb(var(--c-surface) / 0.54);
+  background-image: linear-gradient(135deg, rgb(255 255 255 / 0.075), rgb(var(--c-surface2) / 0.4));
+  border-color: rgb(var(--c-line) / 0.82);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.075);
+}
+
+/* Прозрачность отключается в настройках доступности без потери контраста. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .card,
+  .credit-create-shell .card {
+    background-color: rgb(var(--c-surface));
+  }
+  .card-inner,
+  .credit-create-shell .card-inner {
+    background-color: rgb(var(--c-surface2));
+  }
+  .metric-gloss,
+  .glass-bar {
+    background-color: rgb(var(--c-surface));
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .card,
+  .card-inner,
+  .metric-gloss,
+  .glass-bar,
+  .credit-create-shell .card,
+  .credit-create-shell .card-inner,
+  .credit-create-shell .field,
+  .credit-create-shell input,
+  .credit-create-shell select,
+  .credit-create-shell textarea {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: rgb(var(--c-surface));
+  }
+}
