@@ -36,13 +36,13 @@ export function MoneyFlow() {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="card-inner px-3 py-3">
+        <div className="card-inner metric-gloss px-3 py-3">
           <p className="text-micro text-t3">Доход</p>
           <p className="tabular mt-1 text-body font-semibold text-t1">
             {hasIncome ? formatMoney(income) : '—'}
           </p>
         </div>
-        <div className="card-inner px-3 py-3">
+        <div className="card-inner metric-gloss px-3 py-3">
           <p className="text-micro text-t3">Регулярные платежи</p>
           <p className="tabular mt-1 text-body font-semibold text-t1">
             {formatMoney(payments)}
@@ -57,7 +57,7 @@ export function MoneyFlow() {
       )}
 
       <div
-        className={`mt-3 flex items-center justify-between gap-3 rounded-control px-3 py-2.5 ${
+        className={`metric-gloss mt-3 flex items-center justify-between gap-3 rounded-control px-3 py-2.5 ${
           free !== null && free < 0 ? 'bg-danger/10' : 'bg-success/10'
         }`}
       >
