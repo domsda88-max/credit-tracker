@@ -12,8 +12,7 @@ type AnalyticsEvent =
   | { event: 'early_repayment'; creditId: string; amount: number }
   | { event: 'login' }
   | { event: 'register' }
-  | { event: 'export_data' }
-  | { event: 'achievement_unlocked'; badge: string };
+  | { event: 'export_data' };
 
 type StoredEvent = AnalyticsEvent & { timestamp: number };
 

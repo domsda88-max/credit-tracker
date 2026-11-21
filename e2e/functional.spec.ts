@@ -4,16 +4,17 @@ import { mockApi, openApp, seedApp } from './fixtures';
 async function openAddCreditForm(page: import('@playwright/test').Page) {
   await page.getByRole('button', { name: 'Добавить долг' }).click();
   await expect(page).toHaveURL(/\/credits\/new$/);
-  await expect(page.getByRole('heading', { name: 'Добавление долга' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Новый долг' })).toBeVisible();
 }
 
-test('FloatingNav: три навигационные кнопки видны на главной', async ({ page }) => {
+test('FloatingNav: четыре навигационные кнопки видны на главной', async ({ page }) => {
   await seedApp(page, 'light');
   await mockApi(page);
   await openApp(page, '/');
 
   await expect(page.getByRole('button', { name: 'Главная' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Добавить долг' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Статистика' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Настройки' })).toBeVisible();
 
   // Активная кнопка "Главная" имеет aria-current="page"

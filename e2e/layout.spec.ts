@@ -7,7 +7,7 @@ import { mockApi, openApp, seedApp } from './fixtures';
  * ровную нижнюю навигацию и геометрию иконок.
  */
 
-const ROUTES = ['/', '/stats', '/achievements', '/settings', '/credits/new', '/credits/c1'];
+const ROUTES = ['/', '/stats', '/settings', '/credits/new', '/credits/c1'];
 
 const VIEWPORTS = [
   { name: '320', width: 320, height: 700 },
@@ -110,7 +110,7 @@ test.describe('bottom navigation', () => {
 
     const m = await measure(page);
 
-    expect(m.buttons).toHaveLength(5);
+    expect(m.buttons).toHaveLength(4);
     for (const b of m.buttons) {
       expect(b.label, 'aria-label обязателен').toBeTruthy();
       expect(b.hasVisibleLabel, `подпись у ${b.label}`).toBe(false);
@@ -125,9 +125,9 @@ test.describe('bottom navigation', () => {
       expect(gap, 'равный шаг между кнопками').toBeCloseTo(gaps[0], 0);
     }
 
-    // Панель по центру экрана и в 12px от низа.
+    // Панель по центру экрана и в 6px от низа.
     expect(Math.abs(m.navCenterDelta ?? 99)).toBeLessThanOrEqual(1);
-    expect(m.navBottomGap).toBeCloseTo(12, 0);
+    expect(m.navBottomGap).toBeCloseTo(6, 0);
 
     // Активная кнопка помечена.
     expect(m.buttons.filter((b) => b.current === 'page')).toHaveLength(1);
@@ -152,14 +152,6 @@ test.describe('экраны и онбординг', () => {
     await expect(page.getByText('Переплата по графику')).toBeVisible();
   });
 
-  test('/achievements показывает уровень и достижения', async ({ page }) => {
-    await seedApp(page, 'light');
-    await mockApi(page);
-    await openApp(page, '/achievements');
-    await expect(page.getByText('Ваш уровень')).toBeVisible();
-    await expect(page.getByText('Ваши достижения')).toBeVisible();
-  });
-
   test('/settings показывает видимые разделы', async ({ page }) => {
     await seedApp(page, 'light');
     await mockApi(page);
@@ -174,7 +166,7 @@ test.describe('экраны и онбординг', () => {
     await seedApp(page, 'light');
     await mockApi(page);
 
-    for (const route of ['/stats', '/achievements', '/settings']) {
+    for (const route of ['/stats', '/settings']) {
       await openApp(page, route);
       const paddings = await page.evaluate(() =>
         Array.from(document.querySelectorAll('main .card')).map((el) => {

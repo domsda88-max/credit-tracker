@@ -15,6 +15,14 @@
   --c-warm: 244 214 176;
   --c-critical: 217 119 6;
   --c-line: 229 236 246;
+  /* Семантические цвета состояний (из origin/main) */
+  --c-success: 23 185 130;
+  --c-warning: 234 179 8;
+  --c-danger: 239 68 68;
+  /* Плотные заливки кнопок: держат AA (>=4.5:1) с текстом text-bg */
+  --c-success-strong: 13 107 74;
+  --c-warning-strong: 146 64 14;
+  --c-danger-strong: 185 28 28;
 
   --color-bg: rgb(var(--c-bg));
   --color-surface: rgb(var(--c-surface));
@@ -70,6 +78,13 @@
   --c-warm: 228 228 236;
   --c-critical: 217 119 6;
   --c-line: 255 255 255;
+  --c-success: 23 185 130;
+  --c-warning: 234 179 8;
+  --c-danger: 239 68 68;
+  /* Плотные заливки кнопок: держат AA (>=4.5:1) с текстом text-bg */
+  --c-success-strong: 13 107 74;
+  --c-warning-strong: 146 64 14;
+  --c-danger-strong: 185 28 28;
 
   --color-bg: rgb(var(--c-bg));
   --color-surface: rgb(var(--c-surface));
@@ -122,6 +137,13 @@
   --c-warm: 240 217 181;
   --c-critical: 244 166 42;
   --c-line: 255 255 255;
+  --c-success: 32 213 176;
+  --c-warning: 234 179 8;
+  --c-danger: 239 68 68;
+  /* В тёмной теме тёмный text-bg уже даёт AA на базовых цветах */
+  --c-success-strong: 32 213 176;
+  --c-warning-strong: 234 179 8;
+  --c-danger-strong: 239 68 68;
 
   --color-bg: rgb(var(--c-bg));
   --color-surface: rgb(var(--c-surface));

@@ -14,7 +14,6 @@ const CreditDetailPage = lazy(() => import('./pages/CreditDetailPage').then((m) 
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const FreedomPage = lazy(() => import('./pages/FreedomPage').then((m) => ({ default: m.FreedomPage })));
-const AchievementsPage = lazy(() => import('./pages/AchievementsPage').then((m) => ({ default: m.AchievementsPage })));
 
 export function App() {
   const location = useLocation();
@@ -42,7 +41,6 @@ export function App() {
             <Route path="/credits/new" element={<AddCreditPage />} />
             <Route path="/credits/:id" element={<CreditDetailPage />} />
             <Route path="/stats" element={<FreedomPage />} />
-            <Route path="/achievements" element={<AchievementsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/import" element={<CsvImportPage />} />
           </Route>

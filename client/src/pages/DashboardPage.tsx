@@ -2,7 +2,6 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { creditsApi } from '../api/credits';
 import { CreditRow } from '../components/CreditRow';
-import { DebtOverview } from '../components/DebtOverview';
 import { MoneyFlow } from '../components/MoneyFlow';
 import { GraceReplenishBlock } from '../components/GraceReplenishBlock';
 import { OverdueAlert } from '../components/OverdueAlert';
@@ -50,7 +49,6 @@ export function DashboardPage() {
     <div className="page-stack animate-fade-in">
       <OverdueAlert credits={list} />
 
-      <DebtOverview />
       <MoneyFlow />
       <GraceReplenishBlock />
 
