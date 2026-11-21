@@ -1,13 +1,19 @@
 import { create } from 'zustand';
 
-export type ThemeMode = 'light' | 'warm' | 'dark';
+export type ThemeMode = 'light' | 'dark';
 
 const STORAGE_KEY = 'credit-tracker-theme';
 
 function readStored(): ThemeMode {
   try {
     const value = localStorage.getItem(STORAGE_KEY);
-    if (value === 'light' || value === 'warm' || value === 'dark') return value;
+    if (value === 'light' || value === 'dark') return value;
+
+    // Миграция старой темы Warm: приложение теперь поддерживает только Light и Dark.
+    if (value === 'warm') {
+      localStorage.setItem(STORAGE_KEY, 'dark');
+      return 'dark';
+    }
   } catch {
     /* ignore */
   }
@@ -41,7 +47,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   },
 
   cycle: () => {
-    const modes: ThemeMode[] = ['light', 'warm', 'dark'];
+    const modes: ThemeMode[] = ['light', 'dark'];
     const current = get().mode;
     const next = modes[(modes.indexOf(current) + 1) % modes.length];
     get().setMode(next);
