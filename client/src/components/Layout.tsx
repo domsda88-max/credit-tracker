@@ -48,7 +48,7 @@ export function Layout() {
     touchStart.current = { x: touch.clientX, y: touch.clientY };
   };
 
-  const handleTouchMove = (event: React.TouchEvent<HTMLElement>) => {
+  const handleTouchMove = (event: TouchEvent<HTMLElement>) => {
     if (!touchStart.current || refreshing || event.currentTarget.scrollTop > 0) return;
     const touch = event.touches[0];
     const deltaY = touch.clientY - touchStart.current.y;
