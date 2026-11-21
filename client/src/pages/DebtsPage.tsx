@@ -65,15 +65,17 @@ export function DebtsPage() {
         </div>
       </div>
 
-      {activeView === 'payments' ? (
-        <PaymentsPage />
-      ) : isPending && !credits ? (
-        <LoadingScreen />
-      ) : error ? (
-        <p className="text-sm text-danger-fg">Не удалось загрузить данные: {(error as Error).message}</p>
-      ) : (
-        <DebtList credits={credits ?? []} />
-      )}
+      <div key={activeView} className="route-enter">
+        {activeView === 'payments' ? (
+          <PaymentsPage />
+        ) : isPending && !credits ? (
+          <LoadingScreen />
+        ) : error ? (
+          <p className="text-sm text-danger-fg">Не удалось загрузить данные: {(error as Error).message}</p>
+        ) : (
+          <DebtList credits={credits ?? []} />
+        )}
+      </div>
     </div>
   );
 }
