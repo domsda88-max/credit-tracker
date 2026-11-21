@@ -52,10 +52,10 @@ for (const theme of THEMES) {
 
     const nav = page.locator('nav[aria-label="Основная навигация"]');
     await expect(nav).toBeVisible();
-    for (const label of ['Обзор', 'Платежи', 'Долги', 'Аналитика']) {
+    for (const label of ['Главная', 'Долги', 'Аналитика', 'Настройки']) {
       await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
     }
-    await expect(page.getByRole('button', { name: 'Обзор' })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('button', { name: 'Главная' })).toHaveAttribute('aria-current', 'page');
 
     const layout = await page.evaluate(() => {
       const main = document.querySelector('main');
@@ -102,7 +102,7 @@ test('navigation: glass bar screenshot (light)', async ({ page }) => {
   await mockApi(page);
   await openApp(page, '/');
 
-  for (const label of ['Обзор', 'Платежи', 'Долги', 'Аналитика']) {
+  for (const label of ['Главная', 'Долги', 'Аналитика', 'Настройки']) {
     await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
   }
 
@@ -195,7 +195,7 @@ test('skeleton only on the first cold load', async ({ page }) => {
   await expect(page).toHaveURL('/settings');
   await expect(page.getByTestId('push-toggle-button')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Обзор' }).click();
+  await page.getByRole('button', { name: 'Главная' }).click();
   await expect(page).toHaveURL('/');
   await expect(page.locator('.payment-row').first()).toBeVisible();
   expect(await page.locator('.skeleton').count()).toBe(0);
@@ -390,7 +390,7 @@ for (const theme of THEMES) {
 
     await screenshot(page, `splash-${theme}`);
 
-    await expect(page.getByRole('button', { name: 'Обзор' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: 'Главная' })).toBeVisible({ timeout: 15_000 });
     await expect(splash).toHaveCount(0);
   });
 }
