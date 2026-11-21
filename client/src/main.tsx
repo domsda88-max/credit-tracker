@@ -7,6 +7,7 @@ import { ToastProvider } from './components/Toast';
 import { initTheme } from './store/theme';
 import './styles/tokens.css';
 import './index.css';
+import './styles/glass-interactions.css';
 
 // Тема ставится до первого рендера — чтобы не мигало белым/тёмным.
 initTheme();
