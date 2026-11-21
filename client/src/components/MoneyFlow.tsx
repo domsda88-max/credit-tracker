@@ -58,7 +58,7 @@ export function MoneyFlow() {
 
       <div
         className={`mt-3 flex items-center justify-between gap-3 rounded-control px-3 py-2.5 ${
-          free !== null && free < 0 ? 'bg-danger/10' : 'bg-success/10'
+          free !== null && free < 0 ? 'bg-critical/10' : 'bg-success/10'
         }`}
       >
         <span className="flex items-center gap-1.5 text-caption text-t2">
@@ -67,7 +67,7 @@ export function MoneyFlow() {
         </span>
         <span
           className={`tabular text-heading font-bold ${
-            free === null ? 'text-t2' : free < 0 ? 'text-danger-fg' : 'text-success-fg'
+            free === null ? 'text-t2' : free < 0 ? 'text-critical-fg' : 'text-success-fg'
           }`}
         >
           {free === null ? 'Укажите доход' : formatMoney(free)}
@@ -80,7 +80,7 @@ export function MoneyFlow() {
         </p>
       )}
       {free !== null && free < 0 && (
-        <p className="mt-2 text-micro text-danger-fg">
+        <p className="mt-2 text-micro text-critical-fg">
           Платежи больше дохода на {formatMoney(Math.abs(free))} — стоит пересмотреть нагрузку.
         </p>
       )}

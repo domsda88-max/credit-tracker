@@ -199,9 +199,9 @@ export function FreedomPage() {
         </div>
       </section>
 
-      <section className="card card-pad border border-warning/20 bg-warning/5">
+      <section className="card card-pad border border-warm/20 bg-warm/5">
         <div className="flex items-center gap-2.5 mb-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-control bg-warning/15 text-warning-fg">
+          <span className="flex h-10 w-10 items-center justify-center rounded-control bg-warm/15 text-warm-fg">
             <TrendingDown size={18} />
           </span>
           <h2 className="text-heading font-semibold text-t1">Что влияет на срок</h2>

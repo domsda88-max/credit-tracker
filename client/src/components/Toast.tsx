@@ -32,7 +32,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               t.kind === 'success'
                 ? 'border-success/30 bg-success/15 text-success-fg'
                 : t.kind === 'error'
-                  ? 'border-danger/30 bg-danger/15 text-danger-fg'
+                  ? 'border-critical/30 bg-critical/15 text-critical-fg'
                   : 'border-primary/30 bg-primary/15 text-primary-fg'
             }`}
           >

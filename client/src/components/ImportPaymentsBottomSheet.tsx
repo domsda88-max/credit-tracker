@@ -255,7 +255,7 @@ export function ImportPaymentsBottomSheet({ isOpen, onClose, onSuccess }: Props)
                       <span className="text-sm font-medium text-t1">{displayDate(row.dueDate)}</span>
                       <span
                         className={`rounded-chip px-1.5 py-0.5 text-[10px] ${
-                          isPaid ? 'bg-success/15 text-success-fg' : 'bg-surface2 text-t3'
+                          isPaid ? 'bg-success/15 text-success-fg' : 'bg-surface2 text-ink-on-dark'
                         }`}
                       >
                         {STATUS_LABELS[row.status] ?? row.status}

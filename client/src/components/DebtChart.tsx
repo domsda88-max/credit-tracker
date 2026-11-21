@@ -37,7 +37,7 @@ export function DebtChart({ data }: Props) {
         <defs>
           <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
+            <stop offset="100%" stopColor="var(--color-warm)" stopOpacity="0" />
           </linearGradient>
         </defs>
         {[0.25, 0.5, 0.75].map((t) => (
@@ -47,7 +47,7 @@ export function DebtChart({ data }: Props) {
             x2={W - padX}
             y1={padY + (H - padY * 2) * t}
             y2={padY + (H - padY * 2) * t}
-            stroke="var(--color-border)"
+            stroke="var(--color-line)"
             strokeDasharray="4 4"
             opacity={0.5}
           />

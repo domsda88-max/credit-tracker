@@ -19,10 +19,11 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
+      document.body.style.overflow = prevOverflow;
     };
   }, [open, onClose]);
 
@@ -53,11 +54,12 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div
-        className="absolute inset-0 animate-fade-in bg-black/60 backdrop-blur-[2px]"
+        className="absolute inset-0 animate-fade-in bg-black/60 backdrop-blur-xl"
         onClick={onClose}
       />
       <div
         ref={panelRef}
+        onClick={(e) => e.stopPropagation()}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}

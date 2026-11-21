@@ -304,7 +304,7 @@ export function AddCreditPage() {
     <div className="min-w-0 w-full max-w-full page-stack">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-heading font-bold text-t1">Добавление долга</h1>
-        <button type="button" onClick={handleClose} aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center rounded-full text-t3 transition hover:bg-surface2">×</button>
+        <button type="button" onClick={handleClose} aria-label="Закрыть" className="flex h-11 w-11 items-center justify-center rounded-full text-ink-on-dark transition hover:bg-surface2">×</button>
       </div>
 
       <form onSubmit={handleSubmit((values) => mutation.mutate({ ...values, earlyRepayments: earlyRepayments.filter((er) => er.amount && er.date).map((er) => ({ amount: Number(er.amount), date: er.date })) }))} className="mt-5 page-stack touch-manipulation">
@@ -325,7 +325,7 @@ export function AddCreditPage() {
             </div>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {pass.req.map((r) => (
-                <span key={r} className="rounded-full border border-line bg-surface2/60 px-2 py-0.5 text-[11px] text-t2">{r}</span>
+                <span key={r} className="rounded-full border border-line bg-surface2/60 px-2 py-0.5 text-[11px] text-ink-on-dark">{r}</span>
               ))}
             </div>
             <label className="block mt-4">
@@ -558,7 +558,7 @@ export function AddCreditPage() {
                 <div key={idx} className="flex gap-2">
                   <input type="number" placeholder="Сумма, ₽" value={er.amount} onChange={(e) => { const updated = [...earlyRepayments]; updated[idx] = { ...updated[idx], amount: e.target.value }; setEarlyRepayments(updated); }} className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-t1" />
                   <input type="date" value={er.date} onChange={(e) => { const updated = [...earlyRepayments]; updated[idx] = { ...updated[idx], date: e.target.value }; setEarlyRepayments(updated); }} className="flex-1 rounded-control border border-line bg-surface px-3 py-2 text-t1" />
-                  <button type="button" onClick={() => setEarlyRepayments(earlyRepayments.filter((_, i) => i !== idx))} className="rounded-control border border-danger/40 px-3 text-danger-fg">×</button>
+                  <button type="button" onClick={() => setEarlyRepayments(earlyRepayments.filter((_, i) => i !== idx))} className="rounded-control border border-critical/40 px-3 text-critical-fg">×</button>
                 </div>
               ))}
               <button type="button" onClick={() => setEarlyRepayments([...earlyRepayments, { amount: '', date: '' }])} className="w-full rounded-control border border-line px-3 py-2 text-sm text-t2">+ Добавить досрочку</button>

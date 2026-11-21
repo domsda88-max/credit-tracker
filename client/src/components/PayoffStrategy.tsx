@@ -47,7 +47,7 @@ export function PayoffStrategy({ credits }: Props) {
       </h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="min-w-0 card card-pad">
-          <p className="text-xs uppercase tracking-wide text-warning-fg/80">🏔️ Лавина · меньше процентов</p>
+          <p className="text-xs uppercase tracking-wide text-warm-fg/80">🏔️ Лавина · меньше процентов</p>
           <p className="mt-1 truncate font-semibold text-t1">{avalanche.name}</p>
           <p className="mt-0.5 text-xs text-t3">
             самая высокая ставка — {avalanche.rate}% · остаток {formatMoneyShort(avalanche.left)}
@@ -59,9 +59,9 @@ export function PayoffStrategy({ credits }: Props) {
 
         {snowball ? (
           <div className="min-w-0 card card-pad">
-            <p className="text-xs uppercase tracking-wide text-success-fg/80">
-              ☃️ Снежный ком · быстрые победы
-            </p>
+          <p className="text-xs uppercase tracking-wide text-warm-fg/80">
+            ☃️ Снежный ком · быстрые победы
+          </p>
             <p className="mt-1 truncate font-semibold text-t1">{snowball.name}</p>
             <p className="mt-0.5 text-xs text-t3">
               самый маленький остаток — {formatMoneyShort(snowball.left)} · {snowball.rate}%
@@ -73,7 +73,7 @@ export function PayoffStrategy({ credits }: Props) {
         ) : (
           priciestCard && (
             <div className="min-w-0 card card-pad">
-              <p className="text-xs uppercase tracking-wide text-success-fg/80">
+              <p className="text-xs uppercase tracking-wide text-warm-fg/80">
                 💳 Кредитки · самая дорогая
               </p>
               <p className="mt-1 truncate font-semibold text-t1">{priciestCard.name}</p>
@@ -90,9 +90,9 @@ export function PayoffStrategy({ credits }: Props) {
       </div>
 
       {snowball && priciestCard && (
-        <p className="rounded-control bg-surface2 px-3 py-2 text-xs text-t2">
+        <p className="rounded-control bg-surface2 px-3 py-2 text-xs text-ink-on-dark">
           💳 По кредиткам долг возобновляемый: «закрыть» их досрочкой нельзя, но самую дорогую
-          стоит гасить в первую очередь — <span className="text-t1">{priciestCard.name}</span>{' '}
+          стоит гасить в первую очередь — <span className="text-ink-on-dark">{priciestCard.name}</span>{' '}
           ({priciestCard.rate}%).
         </p>
       )}

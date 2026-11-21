@@ -32,10 +32,10 @@ export function formatDateShort(value: string | Date | null | undefined): string
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
 }
 
-/** Тон срочности платежа: danger ≤3 дн., warning 4–7 дн., иначе нейтрально. */
-export function urgencyTone(days: number): 'danger' | 'warning' | 'muted' {
+/** Тон срочности платежа: danger ≤3 дн., warm 4–7 дн., иначе muted. */
+export function urgencyTone(days: number): 'danger' | 'warm' | 'muted' {
   if (days <= 3) return 'danger';
-  if (days <= 7) return 'warning';
+  if (days <= 7) return 'warm';
   return 'muted';
 }
 

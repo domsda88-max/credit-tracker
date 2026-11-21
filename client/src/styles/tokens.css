@@ -1,20 +1,20 @@
 :root {
   color-scheme: light;
 
-  --c-bg: 236 244 252;
-  --c-surface: 220 236 252;
-  --c-surface2: 247 250 255;
-  --c-t1: 16 33 61;
-  --c-t2: 55 80 120;
-  --c-t3: 55 80 120;
-  --c-primary: 21 95 232;
-  --c-primary-soft: 220 236 252;
-  --c-accent: 31 122 245;
-  --c-accent-soft: 220 236 252;
-  --c-success: 23 185 130;
-  --c-warning: 234 179 8;
-  --c-danger: 239 68 68;
-  --c-line: 201 220 242;
+  /* Палитра №1 — Light / Blue Fintech. Светлые поверхности, глубокие синие акценты. */
+  --c-bg: 245 248 251;
+  --c-surface: 255 255 255;
+  --c-surface2: 234 240 246;
+  --c-t1: 11 19 43;
+  --c-t2: 28 37 65;
+  --c-t3: 58 80 107;
+  --c-primary: 11 19 43;
+  --c-primary-soft: 234 240 246;
+  --c-accent: 11 19 43;
+  --c-accent-soft: 234 240 246;
+  --c-warm: 244 214 176;
+  --c-critical: 217 119 6;
+  --c-line: 229 236 246;
 
   --color-bg: rgb(var(--c-bg));
   --color-surface: rgb(var(--c-surface));
@@ -22,97 +22,142 @@
   --color-ink: rgb(var(--c-t1));
   --color-ink-muted: rgb(var(--c-t2));
   --color-ink-subtle: rgb(var(--c-t3));
+  --color-ink-on-dark: rgb(11 19 43);
   --color-primary: rgb(var(--c-primary));
-  --color-primary-soft: rgb(var(--c-primary-soft));
-  --color-accent: rgb(var(--c-accent));
-  --color-accent-soft: rgb(var(--c-accent-soft));
+  --color-warm: rgb(var(--c-warm));
+  --color-critical: rgb(var(--c-critical));
+  --color-accent: rgb(var(--c-primary));
   --color-success: rgb(var(--c-success));
-  --color-warning: rgb(var(--c-warning));
-  --color-danger: rgb(var(--c-danger));
+  --color-warning: rgb(var(--c-warm));
+  --color-danger: rgb(var(--c-critical));
   --color-border: rgb(var(--c-line));
 
-  --color-success-fg: rgb(13 107 74);
-  --color-danger-fg: rgb(185 28 28);
-  --color-primary-fg: rgb(20 60 140);
-  --color-warning-fg: rgb(146 64 14);
+  --color-success-fg: rgb(5 46 22);
+  --color-danger-fg: rgb(59 18 0);
+  --color-primary-fg: rgb(255 255 255);
+  --color-warning-fg: rgb(11 19 43);
+  --color-warm-fg: rgb(11 19 43);
+  --color-critical-fg: rgb(59 18 0);
 
   --color-chart: #3598F3;
   --color-grace: #67BDF5;
   --color-grid: #C9DCF2;
 
   --card-gradient: linear-gradient(135deg, #EAF3FF, #D7E8FC);
-  --fab-gradient: linear-gradient(135deg, #3598F3, #155FE8);
+  --fab-gradient: linear-gradient(135deg, #0B132B, #1C2541);
 
-  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04);
-  --shadow-tabbar: 0 8px 30px rgb(16 24 40 / 0.12);
+  --shadow-card: 0 1px 2px rgb(11 19 43 / 0.06);
+  --shadow-tabbar: 0 8px 30px rgb(11 19 43 / 0.1);
   --radius-card: 16px;
   --radius-control: 12px;
 }
 
 [data-theme='warm'] {
-  color-scheme: light;
+  color-scheme: dark;
 
-  --c-bg: 244 240 232;
-  --c-surface: 255 253 248;
-  --c-surface2: 234 229 218;
-  --c-t1: 36 53 77;
-  --c-t2: 70 90 115;
-  --c-t3: 70 90 115;
-  --c-primary: 21 95 232;
-  --c-primary-soft: 234 229 218;
-  --c-accent: 40 111 214;
-  --c-accent-soft: 234 229 218;
-  --c-success: 23 185 130;
-  --c-warning: 234 179 8;
-  --c-danger: 239 68 68;
-  --c-line: 209 204 193;
+  /* Палитра №3 — Warm / Black Plum Wine. Тёмная основа, сливовые и винные оттенки, светлые Mist-поверхности.
+   * На светлой поверхности Mist (#E4E4EC) текст тёмный; белый текст — только на тёмных поверхностях. */
+  --c-bg: 12 12 20;
+  --c-surface: 228 228 236;
+  --c-surface2: 68 20 44;
+  --c-t1: 12 12 20;
+  --c-t2: 64 64 80;
+  --c-t3: 90 90 102;
+  --c-primary: 100 36 68;
+  --c-primary-soft: 228 228 236;
+  --c-accent: 100 36 68;
+  --c-accent-soft: 228 228 236;
+  --c-warm: 228 228 236;
+  --c-critical: 217 119 6;
+  --c-line: 255 255 255;
 
-  --color-chart: #3598F3;
-  --color-grace: #67BDF5;
-  --color-grid: #C9DCF2;
+  --color-bg: rgb(var(--c-bg));
+  --color-surface: rgb(var(--c-surface));
+  --color-surface-sunken: rgb(var(--c-surface2));
+  --color-ink: rgb(var(--c-t1));
+  --color-ink-muted: rgb(var(--c-t2));
+  --color-ink-subtle: rgb(var(--c-t3));
+  --color-ink-on-dark: rgb(255 255 255);
+  --color-primary: rgb(var(--c-primary));
+  --color-warm: rgb(var(--c-warm));
+  --color-critical: rgb(var(--c-critical));
+  --color-accent: rgb(var(--c-primary));
+  --color-success: rgb(var(--c-success));
+  --color-warning: rgb(var(--c-warm));
+  --color-danger: rgb(var(--c-critical));
+  --color-border: rgb(var(--c-line));
 
-  --color-success-fg: rgb(13 107 74);
-  --color-danger-fg: rgb(185 28 28);
-  --color-primary-fg: rgb(20 60 140);
-  --color-warning-fg: rgb(146 64 14);
+  --color-success-fg: rgb(5 46 22);
+  --color-danger-fg: rgb(59 18 0);
+  --color-primary-fg: rgb(255 255 255);
+  --color-warning-fg: rgb(12 12 20);
+  --color-warm-fg: rgb(12 12 20);
+  --color-critical-fg: rgb(59 18 0);
 
-  --card-gradient: linear-gradient(135deg, #F4F0E8, #EAE5DA);
-  --fab-gradient: linear-gradient(135deg, #3598F3, #286FD6);
+  --color-chart: #642444;
+  --color-grace: #A678B9;
+  --color-grid: rgba(255 255 255 / 0.1);
 
-  --shadow-card: 0 1px 2px rgb(30 24 16 / 0.05);
-  --shadow-tabbar: 0 8px 30px rgb(30 24 16 / 0.1);
+  --card-gradient: linear-gradient(135deg, #44142C, #0C0C14);
+  --fab-gradient: linear-gradient(135deg, #642444, #44142C);
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow-tabbar: 0 8px 30px rgb(0 0 0 / 0.45);
 }
 
 [data-theme='dark'] {
   color-scheme: dark;
 
-  --c-bg: 11 20 33;
-  --c-surface: 20 36 60;
-  --c-surface2: 20 28 44;
-  --c-t1: 242 247 255;
-  --c-t2: 175 197 226;
-  --c-t3: 175 197 226;
-  --c-primary: 44 143 248;
-  --c-primary-soft: 20 36 60;
-  --c-accent: 44 143 248;
-  --c-accent-soft: 20 36 60;
-  --c-success: 32 213 176;
-  --c-warning: 234 179 8;
-  --c-danger: 239 68 68;
-  --c-line: 38 59 85;
+  /* Палитра №2 — Dark / Purple Fintech. Глубокий графитовый фон, фиолетовые поверхности. */
+  --c-bg: 26 26 31;
+  --c-surface: 45 43 85;
+  --c-surface2: 30 28 50;
+  --c-t1: 255 255 255;
+  --c-t2: 217 217 224;
+  --c-t3: 200 180 210;
+  --c-primary: 106 90 205;
+  --c-primary-soft: 45 43 85;
+  --c-accent: 106 90 205;
+  --c-accent-soft: 45 43 85;
+  --c-warm: 240 217 181;
+  --c-critical: 244 166 42;
+  --c-line: 255 255 255;
 
-  --color-chart: #3598F3;
-  --color-grace: #67BDF5;
-  --color-grid: #263B55;
+  --color-bg: rgb(var(--c-bg));
+  --color-surface: rgb(var(--c-surface));
+  --color-surface-sunken: rgb(var(--c-surface2));
+  --color-ink: rgb(var(--c-t1));
+  --color-ink-muted: rgb(var(--c-t2));
+  --color-ink-subtle: rgb(var(--c-t3));
+  --color-ink-on-dark: rgb(255 255 255);
+  --color-primary: rgb(var(--c-primary));
+  --color-warm: rgb(var(--c-warm));
+  --color-critical: rgb(var(--c-critical));
+  --color-accent: rgb(var(--c-primary));
+  --color-success: rgb(var(--c-success));
+  --color-warning: rgb(var(--c-warm));
+  --color-danger: rgb(var(--c-critical));
+  --color-border: rgb(var(--c-line));
 
-  --color-success-fg: rgb(110 231 183);
-  --color-danger-fg: rgb(252 165 165);
-  --color-primary-fg: rgb(147 197 253);
-  --color-warning-fg: rgb(253 224 71);
+  --color-success-fg: rgb(5 46 22);
+  --color-danger-fg: rgb(26 26 31);
+  --color-primary-fg: rgb(255 255 255);
+  --color-warning-fg: rgb(26 26 31);
+  --color-warm-fg: rgb(26 26 31);
+  --color-critical-fg: rgb(26 26 31);
 
-  --card-gradient: linear-gradient(135deg, #183653, #10243B);
-  --fab-gradient: linear-gradient(135deg, #3598F3, #1769E8);
+  --color-chart: #6A5ACD;
+  --color-grace: #A678B9;
+  --color-grid: rgba(255 255 255 / 0.1);
+
+  --card-gradient: linear-gradient(135deg, #2D2B55, #1A1A1F);
+  --fab-gradient: linear-gradient(135deg, #6A5ACD, #44142C);
 
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.35);
   --shadow-tabbar: 0 8px 30px rgb(0 0 0 / 0.45);
 }
+
+/* Legacy success — отдельный зелёный позитивный цвет, не смешивать с warm. */
+:root { --c-success: 34 197 94; }
+[data-theme='warm'] { --c-success: 34 197 94; }
+[data-theme='dark'] { --c-success: 32 213 176; }

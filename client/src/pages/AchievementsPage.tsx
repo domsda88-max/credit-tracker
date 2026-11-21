@@ -77,7 +77,7 @@ export function AchievementsPage() {
         )}
       </section>
 
-      <section className="card card-pad border border-warning/20 bg-warning/5">
+      <section className="card card-pad border border-warm/20 bg-warm/5">
         <div className="mb-4 flex items-center justify-between gap-2">
           <h3 className="text-heading font-semibold text-t1">Статистика активности</h3>
         </div>

@@ -68,7 +68,7 @@ export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
       aria-label="Основная навигация"
       className="fixed bottom-[calc(env(safe-area-inset-bottom)+12px)] left-1/2 z-[60] -translate-x-1/2"
     >
-      <div className="flex items-center justify-center gap-1 rounded-full border border-line bg-surface/95 p-1.5 shadow-[0_10px_40px_rgb(0_0_0_/_0.20)] backdrop-blur-md">
+      <div className="flex items-center justify-center gap-1 rounded-full border border-line bg-surface/90 p-1.5 shadow-[0_10px_40px_rgb(0_0_0_/_0.20)] backdrop-blur-xl">
         {ITEMS.map(({ path, icon, label }) => {
           const active = isActive(path);
           const showOffline = path === '/settings' && offlineCount > 0;
@@ -78,11 +78,14 @@ export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
               type="button"
               aria-label={label}
               aria-current={active ? 'page' : undefined}
-              onClick={() => navigate(path)}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(path);
+              }}
               className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors duration-200 ${
                 active
                   ? 'bg-accent text-bg'
-                  : 'text-t3 hover:bg-surface2 hover:text-t1'
+                  : 'text-t1 hover:bg-surface2 hover:text-ink-on-dark'
               }`}
             >
               {icon}

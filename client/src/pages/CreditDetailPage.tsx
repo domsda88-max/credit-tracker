@@ -229,7 +229,7 @@ export function CreditDetailPage() {
                   setError(extractErrorMessage(err));
                 }
               }}
-              className="flex h-9 w-9 min-h-0 items-center justify-center rounded-lg border border-danger/40 text-danger-fg transition hover:bg-danger/10"
+              className="flex h-9 w-9 min-h-0 items-center justify-center rounded-lg border border-critical/40 text-critical-fg transition hover:bg-critical/10"
               aria-label="Удалить кредит"
             >
               <Trash2 size={18} />
@@ -375,11 +375,11 @@ export function CreditDetailPage() {
           </form>
 
           {preview && !preview.coversInterest && (
-            <div className="mt-3 rounded-control border border-danger/30 bg-danger/10 px-4 py-3 text-sm">
-              <p className="font-medium text-danger-fg">
+            <div className="mt-3 rounded-control border border-critical/30 bg-critical/10 px-4 py-3 text-sm">
+              <p className="font-medium text-critical-fg">
                 Минимум к погашению: <span className="tabular">{formatMoney(preview.minAmount)}</span>
               </p>
-              <p className="mt-1 text-xs text-danger-fg/80">
+              <p className="mt-1 text-xs text-critical-fg/80">
                 Сумма должна покрыть начисленные проценты за {preview.days} дн.
               </p>
             </div>
@@ -440,7 +440,7 @@ export function CreditDetailPage() {
         </div>
 
         {collapsedCount > 0 && (
-          <p className="mt-3 rounded-control bg-surface2 px-3 py-2 text-xs text-t2">
+          <p className="mt-3 rounded-control bg-surface2 px-3 py-2 text-xs text-ink-on-dark">
             {collapsedCount} прошедших платежей уже учтены как оплаченные. Нажмите «Показать оплаченные», чтобы посмотреть.
           </p>
         )}

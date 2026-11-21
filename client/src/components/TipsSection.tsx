@@ -36,7 +36,7 @@ export function TipsSection() {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="rounded-control p-1.5 text-t3 transition hover:bg-surface2"
+          className="rounded-control p-1.5 text-t1 transition hover:bg-surface2 hover:text-ink-on-dark"
           aria-expanded={open}
           aria-label="Развернуть советы"
         >

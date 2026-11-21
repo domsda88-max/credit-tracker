@@ -70,7 +70,7 @@ export function Onboarding() {
             <button
               type="button"
               onClick={() => setIndex((i) => i + 1)}
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-control border border-line px-6 py-3 font-semibold text-t1 transition hover:bg-surface2"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-control border border-line px-6 py-3 font-semibold text-ink-on-dark transition hover:bg-surface2"
             >
               Далее <ArrowRight size={18} />
             </button>

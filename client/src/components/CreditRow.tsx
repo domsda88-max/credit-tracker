@@ -42,7 +42,7 @@ const TYPE_ICON: Record<CreditType, typeof CreditCard> = {
 
 const TONE = {
   danger: { border: 'border-l-danger', text: 'text-danger-fg', dot: 'bg-danger' },
-  warning: { border: 'border-l-warning', text: 'text-warning-fg', dot: 'bg-warning' },
+  warm: { border: 'border-l-warm', text: 'text-warm-fg', dot: 'bg-warm' },
   muted: { border: 'border-l-line', text: 'text-t2', dot: 'bg-t3' },
 } as const;
 
@@ -215,14 +215,14 @@ export function CreditRow({ credit, index = 0 }: Props) {
               className={`h-full rounded-full transition-[width] duration-[600ms] ease-app ${
                 isClosed
                   ? 'bg-success'
-                  : 'bg-gradient-to-r from-primary to-success'
+                  : 'bg-gradient-to-r from-primary to-warm'
               }`}
               style={{ width: `${barWidth}%` }}
             />
           </div>
 
           {next && !isClosed && !freezeCycle && (
-            <div className={`card-inner mt-3 border-l-[3px] py-2 pl-2.5 pr-3 text-base ${tone.border}`}>
+            <div className={`card-inner mt-3 py-2 pl-2.5 pr-3 text-base ${tone.border}`}>
               <div className="debt-card__next">
                 <div className="min-w-0">
                   <p className="text-caption text-t2">Ближайший платёж</p>
@@ -280,7 +280,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
             e.stopPropagation();
             setOpen(true);
           }}
-          className="absolute right-1.5 top-1.5 flex h-11 w-11 items-center justify-center rounded-full text-t3 transition-colors active:bg-surface2"
+          className="absolute right-1.5 top-1.5 flex h-11 w-11 items-center justify-center rounded-full text-t1 transition-colors active:bg-surface2 active:text-ink-on-dark"
           aria-label="Меню действий"
         >
           <MoreVertical size={22} />
@@ -295,15 +295,15 @@ export function CreditRow({ credit, index = 0 }: Props) {
               setOpen(false);
               navigate(`/credits/${credit.id}`);
             }}
-            className="flex w-full items-center gap-3 rounded-control px-3 py-3 text-left text-t1 transition-colors active:bg-surface2"
+            className="flex w-full items-center gap-3 rounded-control px-3 py-3 text-left text-t1 transition-colors active:bg-surface2 active:text-ink-on-dark"
           >
-            <Pencil size={20} className="text-t2" />
+            <Pencil size={20} className="text-t1 active:text-ink-on-dark" />
             <span>Редактировать</span>
           </button>
           <button
             type="button"
             onClick={handleFreezeClick}
-            className="flex w-full items-center gap-3 rounded-control px-3 py-3 text-left text-t1 transition-colors active:bg-surface2"
+            className="flex w-full items-center gap-3 rounded-control px-3 py-3 text-left text-t1 transition-colors active:bg-surface2 active:text-ink-on-dark"
           >
             <Snowflake size={20} className="text-primary-fg" />
             <span>{credit.frozen ? 'Грейс слетел' : 'Грейс активен'}</span>
@@ -325,7 +325,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
                 setOpen(false);
                 setEarlyOpen(true);
               }}
-              className="flex w-full items-center gap-3 rounded-control px-3 py-3 text-left text-t1 transition-colors active:bg-surface2"
+              className="flex w-full items-center gap-3 rounded-control px-3 py-3 text-left text-t1 transition-colors active:bg-surface2 active:text-ink-on-dark"
             >
               <TrendingDown size={20} className="text-success-fg" />
               <span>Досрочное погашение</span>

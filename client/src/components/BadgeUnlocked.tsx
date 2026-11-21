@@ -24,8 +24,8 @@ export function BadgeUnlocked({ badgeId, onClose }: Props) {
   const colorMap: Record<string, string> = {
     primary: 'border-primary bg-primary/10 text-primary-fg',
     success: 'border-success bg-success/10 text-success-fg',
-    warning: 'border-warning bg-warning/10 text-warning-fg',
-    danger: 'border-danger bg-danger/10 text-danger-fg',
+    warm: 'border-warm bg-warm/10 text-warm-fg',
+    critical: 'border-critical bg-critical/10 text-critical-fg',
   };
 
   return (
@@ -47,7 +47,7 @@ export function BadgeUnlocked({ badgeId, onClose }: Props) {
             setVisible(false);
             onClose?.();
           }}
-          className="shrink-0 rounded-control p-1.5 text-t3 hover:bg-surface2 transition"
+          className="shrink-0 rounded-control p-1.5 text-t1 hover:bg-surface2 hover:text-ink-on-dark transition"
           aria-label="Закрыть"
         >
           ✕

@@ -148,9 +148,9 @@ export function DebtOverview() {
       )}
 
       {activeDebtsExist && (
-        <div className="mt-3 rounded-control border border-success/15 bg-success/[0.05] px-4 py-3" style={{ minHeight: 150, overflowAnchor: 'none' }}>
+        <div className="mt-3 rounded-control border border-warm/20 bg-warm/10 px-4 py-3" style={{ minHeight: 150, overflowAnchor: 'none' }}>
           <p className="flex items-center gap-1.5 text-micro uppercase tracking-[0.04em] text-t2">
-            <Zap size={14} className="text-success-fg" />
+            <Zap size={14} className="text-warm-fg" />
             Ускорь свободу
           </p>
           <p className="mt-1.5 text-caption leading-relaxed text-t1" style={{ minHeight: 44 }}>
@@ -162,7 +162,7 @@ export function DebtOverview() {
                 <span className="font-medium text-t1">{accelerator.targetName}</span>):
                 <br />
                 освободишься{' '}
-                <span className="font-semibold text-success-fg">
+                <span className="font-semibold text-warm-fg">
                   через {monthsLabel(accelerator.acceleratedMonths)} ({accelerator.acceleratedMonths.toFixed(1)} мес.)
                 </span>{' '}
                 вместо {monthsLabel(accelerator.baselineMonths)}

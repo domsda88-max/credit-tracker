@@ -95,7 +95,7 @@ export function DashboardPage() {
             <circle cx="56" cy="44" r="3" fill="var(--color-ink-muted)" />
             <path
               d="M40 62c2.5 2.5 5.5 3.5 8 3.5s5.5-1 8-3.5"
-              stroke="var(--color-success)"
+              stroke="var(--color-warm)"
               strokeWidth="3"
               strokeLinecap="round"
             />
