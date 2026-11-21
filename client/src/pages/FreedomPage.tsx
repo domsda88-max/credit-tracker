@@ -137,18 +137,18 @@ export function FreedomPage() {
           />
         </div>
 
-        <div className="mt-3 grid grid-cols-3 gap-4 text-caption text-t3">
-          <div>
-            <p className="text-micro uppercase tracking-[0.04em]">Первоначальный долг</p>
-            <p className="tabular mt-0.5 text-t1">{formatMoney(totalPrincipal)}</p>
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="metric-gloss min-w-0 rounded-control p-3">
+            <p className="min-h-[2rem] text-[10px] font-medium uppercase leading-snug tracking-[0.035em] text-t3">Первоначальный долг</p>
+            <p className="tabular mt-1 break-words text-sm font-semibold leading-tight text-t1 sm:text-base">{formatMoney(totalPrincipal)}</p>
           </div>
-          <div>
-            <p className="text-micro uppercase tracking-[0.04em]">Остаток долга</p>
-            <p className="tabular mt-0.5 font-semibold text-t1">{formatMoney(totalOutstanding)}</p>
+          <div className="metric-gloss min-w-0 rounded-control p-3">
+            <p className="min-h-[2rem] text-[10px] font-medium uppercase leading-snug tracking-[0.035em] text-t3">Остаток долга</p>
+            <p className="tabular mt-1 break-words text-sm font-semibold leading-tight text-t1 sm:text-base">{formatMoney(totalOutstanding)}</p>
           </div>
-          <div>
-            <p className="text-micro uppercase tracking-[0.04em]">Выплачено</p>
-            <p className="tabular mt-0.5 text-success-fg">{formatMoney(totalPaid)}</p>
+          <div className="metric-gloss col-span-2 min-w-0 rounded-control p-3 sm:col-span-1">
+            <p className="min-h-[2rem] text-[10px] font-medium uppercase leading-snug tracking-[0.035em] text-t3">Выплачено</p>
+            <p className="tabular mt-1 break-words text-sm font-semibold leading-tight text-success-fg sm:text-base">{formatMoney(totalPaid)}</p>
           </div>
         </div>
 
