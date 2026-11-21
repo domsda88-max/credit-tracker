@@ -19,62 +19,83 @@ export function SettingsPage() {
   const handleLogout = () => { logout(); navigate('/login', { replace: true }); };
 
   return (
-    <div className="w-full max-w-full page-stack overflow-x-hidden touch-manipulation">
-      <section className="border-b border-line pb-4">
-        <h2 className="text-3xl font-bold tracking-tight text-t1">Тема</h2>
+    <div className="w-full max-w-full page-stack overflow-x-hidden touch-manipulation animate-fade-in">
+      <header className="space-y-1 pb-1">
+        <p className="section-title">Персонализация</p>
+        <h1 className="text-2xl font-bold tracking-tight text-t1">Настройки</h1>
+        <p className="text-sm text-t3">Настройте приложение под себя</p>
+      </header>
+
+      <section className="card card-pad space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight text-t1">Внешний вид</h2>
+          <p className="mt-1 text-sm text-t3">Выберите комфортную тему приложения</p>
+        </div>
         <SegmentedControl />
       </section>
 
-      <section className="border-b border-line pb-4">
-        <h2 className="text-3xl font-bold tracking-tight text-t1">Деньги</h2>
-        <p className="text-xs uppercase tracking-widest text-t3">
-          Покажем, сколько остаётся после обязательных платежей
-        </p>
+      <section className="card card-pad space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight text-t1">Деньги</h2>
+          <p className="mt-1 text-sm text-t3">Доход и свободный остаток после обязательных платежей</p>
+        </div>
         <IncomeSettings />
       </section>
 
-      <section className="border-b border-line pb-4">
-        <h2 className="text-3xl font-bold tracking-tight text-t1">Уведомления</h2>
-        <p className="text-xs uppercase tracking-widest text-t3">
-          Сводка платежей в выбранное время + напоминания о сроках
-        </p>
-        <PushSettings />
-        <ReminderSettings />
-        <MotivationSettings />
+      <section className="card card-pad space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight text-t1">Уведомления</h2>
+          <p className="mt-1 text-sm text-t3">Напоминания о сроках и сводки платежей</p>
+        </div>
+        <div className="space-y-3">
+          <PushSettings />
+          <ReminderSettings />
+          <MotivationSettings />
+        </div>
       </section>
 
-      <section className="border-b border-line pb-4">
-        <h2 className="text-3xl font-bold tracking-tight text-t1">Данные</h2>
+      <section className="card card-pad space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight text-t1">Данные</h2>
+          <p className="mt-1 text-sm text-t3">Экспортируйте или восстановите историю платежей</p>
+        </div>
         <DataExport />
-        <div className="mt-4 space-y-3">
-          <p className="text-xs uppercase tracking-widest text-t3">
-            Импорт оплат
-          </p>
-          <p className="text-xs text-t3">
-            Импортируются только строки со статусом «Оплачен». Используйте файл, скачанный
-            через «Экспорт CSV».
-          </p>
+        <div className="card-inner space-y-3 p-4">
+          <div>
+            <p className="text-sm font-semibold text-t1">Импорт оплат</p>
+            <p className="mt-1 text-sm leading-relaxed text-t3">
+              Импортируются только строки со статусом «Оплачен». Используйте файл, скачанный через «Экспорт CSV».
+            </p>
+          </div>
           <button
             type="button"
             onClick={() => setImportOpen(true)}
-            className="flex w-full items-center justify-center gap-1.5 rounded-control border border-line px-3 py-2 text-sm text-t2 transition hover:border-primary/50"
+            className="btn btn-secondary w-full"
           >
-            <Upload size={16} aria-hidden="true" /> Импортировать CSV
+            <Upload size={17} aria-hidden="true" /> Импортировать CSV
           </button>
         </div>
       </section>
 
-      <section className="border-b border-line pb-4">
-        <h2 className="text-3xl font-bold tracking-tight text-t1">Аккаунт</h2>
-        <div className="p-5">
-          <p className="text-xs uppercase tracking-widest text-t3">Вы вошли как</p>
-          <p className="mt-0.5 text-sm text-t1 break-all">{user?.email}</p>
-          <button type="button" onClick={handleLogout} className="mt-3 w-full rounded-control border border-danger/60 bg-transparent px-4 py-2.5 text-sm font-medium text-danger-fg transition hover:bg-danger/10">Выйти из аккаунта</button>
+      <section className="card card-pad space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight text-t1">Аккаунт</h2>
+          <p className="mt-1 text-sm text-t3">Параметры вашей учётной записи</p>
+        </div>
+        <div className="card-inner p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-t3">Вы вошли как</p>
+          <p className="mt-1 break-all text-sm font-medium text-t1">{user?.email}</p>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mt-4 w-full rounded-xl border border-danger/40 bg-danger/5 px-4 py-3 text-sm font-semibold text-danger-fg transition hover:bg-danger/10"
+          >
+            Выйти из аккаунта
+          </button>
         </div>
       </section>
 
       <TipsSection />
-
       <ImportPaymentsBottomSheet isOpen={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
