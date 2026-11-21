@@ -590,8 +590,10 @@ export const creditsService = {
         return updated;
       }
 
-      // Все ранее оплаченные строки заменяются новыми — старые удаляем целиком.
-      await tx.paymentSchedule.deleteMany({ where: { creditId } });
+      // Пересобираем только неоплаченные строки. Фактически оплаченные платежи
+      // и их paidAt/paidAmount — часть истории и не должны исчезать при
+      // редактировании ставки, срока или дня платежа.
+      await tx.paymentSchedule.deleteMany({ where: { creditId, status: 'PENDING' } });
       await tx.paymentSchedule.createMany({
         data: items.map((item, index) => {
           const isPast = index < pastToMark;
@@ -606,6 +608,8 @@ export const creditsService = {
             paidAmount: isPast ? item.amount : null,
           };
         }),
+        // При совпадении даты с уже оплаченным платежом сохраняем существующую PAID-строку.
+        skipDuplicates: true,
       });
 
       await tx.credit.update({

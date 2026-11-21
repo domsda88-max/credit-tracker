@@ -291,7 +291,10 @@ export function AddCreditPage() {
       });
     },
     onSuccess: async (credit) => {
-      await queryClient.invalidateQueries({ queryKey: ['credits'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['credits'] }),
+        queryClient.invalidateQueries({ queryKey: ['summary'] }),
+      ]);
       navigate(`/credits/${credit.id}`);
     },
     onError: (err) => setError(extractErrorMessage(err)),
