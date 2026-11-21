@@ -1,4 +1,4 @@
-import { BarChart3, CalendarDays, Home, Landmark, type LucideIcon } from 'lucide-react';
+import { BarChart3, Home, Landmark, Settings2, type LucideIcon } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface NavItem {
@@ -8,10 +8,10 @@ interface NavItem {
 }
 
 const ITEMS: NavItem[] = [
-  { path: '/', icon: Home, label: 'Обзор' },
-  { path: '/payments', icon: CalendarDays, label: 'Платежи' },
+  { path: '/', icon: Home, label: 'Главная' },
   { path: '/debts', icon: Landmark, label: 'Долги' },
   { path: '/stats', icon: BarChart3, label: 'Аналитика' },
+  { path: '/settings', icon: Settings2, label: 'Настройки' },
 ];
 
 interface FloatingNavProps {
@@ -19,7 +19,7 @@ interface FloatingNavProps {
 }
 
 export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
-  // Хуки вызываются безусловно — до любого early return (Rules of Hooks).
+  // Все хуки вызываются безусловно, до раннего return (Rules of Hooks).
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
@@ -29,6 +29,7 @@ export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
 
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/';
+    if (path === '/debts') return pathname === '/debts' || pathname === '/payments' || pathname.startsWith('/credits/');
     return pathname === path || pathname.startsWith(`${path}/`);
   };
 
@@ -48,20 +49,20 @@ export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
               aria-label={label}
               aria-current={active ? 'page' : undefined}
               onClick={() => navigate(path)}
-              className={`ui-press relative flex h-[52px] w-[66px] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 ${
+              className={`ui-press relative flex h-[52px] w-[72px] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 transition-colors duration-200 ${
                 active ? 'text-primary-fg' : 'text-t3 hover:text-t1'
               }`}
             >
               <span
                 className={`flex h-6 w-11 items-center justify-center rounded-full transition-all duration-200 ${
-                  active ? 'bg-primary/12' : 'bg-transparent'
+                  active ? 'bg-primary/12 nav-icon-active' : 'bg-transparent'
                 }`}
               >
                 <Icon
                   size={20}
                   strokeWidth={active ? 2.4 : 2}
                   aria-hidden="true"
-                  className={`transition-transform duration-200 ${active ? 'scale-105' : ''}`}
+                  className={`transition-transform duration-200 ${active ? 'scale-110' : ''}`}
                 />
               </span>
               <span className="text-[10px] font-medium leading-none tracking-[-0.01em]">{label}</span>
