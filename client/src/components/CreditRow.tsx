@@ -202,7 +202,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
               </div>
             </div>
 
-            <div className="shrink-0 text-right">
+            <div className="metric-gloss shrink-0 rounded-control px-2.5 py-1.5 text-right">
               <p className="tabular text-heading font-bold text-t1">
                 {formatMoneyShort(credit.outstanding)}
               </p>

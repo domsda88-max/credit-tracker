@@ -1,10 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mockApi, mockPush, openApp, seedApp } from './fixtures';
 
-const NAV_ITEMS = ['Обзор', 'Платежи', 'Долги', 'Аналитика'] as const;
+const NAV_ITEMS = ['Главная', 'Долги', 'Аналитика', 'Настройки'] as const;
 
 async function openAddCreditForm(page: Page) {
-  await page.getByRole('button', { name: 'Добавить долг' }).click();
+  await page.getByRole('button', { name: 'Долги', exact: true }).click();
+  await expect(page).toHaveURL('/debts');
+  await page.getByRole('link', { name: 'Добавить долг' }).click();
   await expect(page).toHaveURL(/\/credits\/new$/);
   await expect(page.getByRole('heading', { name: 'Новый долг' })).toBeVisible();
 }
@@ -19,9 +21,7 @@ test('FloatingNav: четыре раздела видны на главной', 
   for (const label of NAV_ITEMS) {
     await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
   }
-  await expect(page.getByRole('button', { name: 'Главная' })).toHaveCount(0);
-
-  await expect(page.getByRole('button', { name: 'Обзор' })).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('button', { name: 'Главная' })).toHaveAttribute('aria-current', 'page');
 });
 
 test('FloatingNav: переключение между разделами', async ({ page }) => {
@@ -30,10 +30,10 @@ test('FloatingNav: переключение между разделами', asyn
   await openApp(page, '/');
 
   const routes: Array<[(typeof NAV_ITEMS)[number], string]> = [
-    ['Платежи', '/payments'],
     ['Долги', '/debts'],
     ['Аналитика', '/stats'],
-    ['Обзор', '/'],
+    ['Настройки', '/settings'],
+    ['Главная', '/'],
   ];
   for (const [label, path] of routes) {
     await page.getByRole('button', { name: label, exact: true }).click();
@@ -69,26 +69,28 @@ test('FloatingNav: возврат с формы — навигация появ�
 
   await page.getByRole('button', { name: 'Закрыть' }).click();
 
-  await expect(page).toHaveURL('/');
-  await expect(page.getByRole('button', { name: 'Обзор' })).toBeVisible();
+  await expect(page).toHaveURL('/debts');
+  await expect(page.getByRole('button', { name: 'Главная' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Долги' })).toBeVisible();
+
+  // После возврата с формы проверяем именно переход на главную:
+  // FloatingNav должен восстановиться без нарушения порядка хуков.
+  await page.getByRole('button', { name: 'Главная', exact: true }).click();
+  await expect(page).toHaveURL('/');
+  await expect(page.getByRole('button', { name: 'Главная' })).toHaveAttribute('aria-current', 'page');
   expect(consoleErrors, `Browser console errors:\n${consoleErrors.join('\n')}`).toEqual([]);
   expect(pageErrors, `Uncaught page errors:\n${pageErrors.join('\n')}`).toEqual([]);
 });
 
-test('Верхняя панель: Настройки остаются доступными вне нижней навигации', async ({ page }) => {
+test('Настройки доступны из нижней навигации', async ({ page }) => {
   await seedApp(page, 'light');
   await mockApi(page);
   await openApp(page, '/');
 
-  const topBar = page.locator('.glass-bar').first();
-  await topBar.getByRole('button', { name: 'Настройки' }).click();
+  await page.getByRole('button', { name: 'Настройки', exact: true }).click();
   await expect(page).toHaveURL('/settings');
   await expect(page.locator('nav[aria-label="Основная навигация"]')).toBeVisible();
-  await expect(topBar.getByRole('button', { name: 'Настройки' })).toBeVisible();
-  expect(
-    await page.locator('nav[aria-label="Основная навигация"] [aria-current="page"]').count(),
-  ).toBe(0);
+  await expect(page.getByRole('button', { name: 'Настройки', exact: true })).toHaveAttribute('aria-current', 'page');
 });
 
 test('Главная: ближайшие платежи → деньги в месяц → сводка, без списка долгов', async ({ page }) => {
@@ -118,8 +120,9 @@ test('Платежи используют ту же логику ближайш�
   await openApp(page, '/');
 
   const firstOnDashboard = await page.locator('.payment-row').first().textContent();
-  await page.getByRole('button', { name: 'Платежи', exact: true }).click();
-  await expect(page).toHaveURL('/payments');
+  await page.getByRole('button', { name: 'Долги', exact: true }).click();
+  await page.getByRole('tab', { name: 'Платежи' }).click();
+  await expect(page).toHaveURL('/debts?view=payments');
   await expect(page.getByText('Ближайшие платежи', { exact: true })).toBeVisible();
   expect(await page.locator('.payment-row').first().textContent()).toBe(firstOnDashboard);
 });
@@ -129,6 +132,9 @@ test('Долги: отдельная вкладка со списком акти
   await mockApi(page);
   await openApp(page, '/debts');
 
+  await expect(page.getByRole('tab', { name: 'Долги' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Платежи' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Добавить долг' })).toBeVisible();
   await expect(page.getByText('Мои долги', { exact: true })).toBeVisible();
   await expect(page.getByText('Закрытые', { exact: true })).toBeVisible();
   await expect(page.locator('.debt-card')).toHaveCount(3);

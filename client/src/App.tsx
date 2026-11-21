@@ -14,7 +14,6 @@ const CsvImportPage = lazy(() => import('./pages/CsvImportPage').then((m) => ({ 
 const CreditDetailPage = lazy(() => import('./pages/CreditDetailPage').then((m) => ({ default: m.CreditDetailPage })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const DebtsPage = lazy(() => import('./pages/DebtsPage').then((m) => ({ default: m.DebtsPage })));
-const PaymentsPage = lazy(() => import('./pages/PaymentsPage').then((m) => ({ default: m.PaymentsPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const FreedomPage = lazy(() => import('./pages/FreedomPage').then((m) => ({ default: m.FreedomPage })));
 
@@ -41,7 +40,7 @@ export function App() {
             }
           >
             <Route path="/" element={<DashboardPage />} />
-            <Route path="/payments" element={<PaymentsPage />} />
+            <Route path="/payments" element={<Navigate to="/debts?view=payments" replace />} />
             <Route path="/debts" element={<DebtsPage />} />
             <Route path="/credits/new" element={<AddCreditPage />} />
             <Route path="/credits/:id" element={<CreditDetailPage />} />
