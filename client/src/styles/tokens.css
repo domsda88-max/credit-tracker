@@ -1,185 +1,110 @@
 :root {
   color-scheme: light;
-
-  /* Палитра №1 — Light / Blue Fintech. Светлые поверхности, глубокие синие акценты. */
-  --c-bg: 245 248 251;
+  /* Premium Finance — Light */
+  --c-bg: 245 244 240;
   --c-surface: 255 255 255;
-  --c-surface2: 234 240 246;
-  --c-t1: 11 19 43;
-  --c-t2: 28 37 65;
-  --c-t3: 58 80 107;
-  --c-primary: 11 19 43;
-  --c-primary-soft: 234 240 246;
-  --c-accent: 11 19 43;
-  --c-accent-soft: 234 240 246;
-  --c-warm: 244 214 176;
-  --c-critical: 217 119 6;
-  --c-line: 229 236 246;
-  /* Семантические цвета состояний (из origin/main) */
-  --c-success: 23 185 130;
-  --c-warning: 234 179 8;
-  --c-danger: 239 68 68;
-  /* Плотные заливки кнопок: держат AA (>=4.5:1) с текстом text-bg */
-  --c-success-strong: 13 107 74;
-  --c-warning-strong: 146 64 14;
-  --c-danger-strong: 185 28 28;
-
+  --c-surface2: 236 235 230;
+  --c-t1: 25 37 54;
+  --c-t2: 104 116 134;
+  --c-t3: 126 136 151;
+  --c-primary: 102 84 166;
+  --c-primary-soft: 239 236 248;
+  --c-accent: 102 84 166;
+  --c-accent-soft: 239 236 248;
+  --c-warm: 180 123 50;
+  --c-critical: 194 78 85;
+  --c-line: 229 227 221;
+  --c-success: 35 133 104;
+  --c-warning: 180 123 50;
+  --c-danger: 194 78 85;
+  --c-success-strong: 25 111 85;
+  --c-warning-strong: 132 84 27;
+  --c-danger-strong: 164 52 60;
   --color-bg: rgb(var(--c-bg));
   --color-surface: rgb(var(--c-surface));
   --color-surface-sunken: rgb(var(--c-surface2));
   --color-ink: rgb(var(--c-t1));
   --color-ink-muted: rgb(var(--c-t2));
   --color-ink-subtle: rgb(var(--c-t3));
-  --color-ink-on-dark: rgb(11 19 43);
+  --color-ink-on-dark: rgb(var(--c-t1));
   --color-primary: rgb(var(--c-primary));
   --color-warm: rgb(var(--c-warm));
   --color-critical: rgb(var(--c-critical));
-  --color-accent: rgb(var(--c-primary));
+  --color-accent: rgb(var(--c-accent));
   --color-success: rgb(var(--c-success));
-  --color-warning: rgb(var(--c-warm));
-  --color-danger: rgb(var(--c-critical));
+  --color-warning: rgb(var(--c-warning));
+  --color-danger: rgb(var(--c-danger));
   --color-border: rgb(var(--c-line));
-
-  --color-success-fg: rgb(5 46 22);
-  --color-danger-fg: rgb(59 18 0);
-  --color-primary-fg: rgb(255 255 255);
-  --color-warning-fg: rgb(11 19 43);
-  --color-warm-fg: rgb(11 19 43);
-  --color-critical-fg: rgb(59 18 0);
-
-  --color-chart: #3598F3;
-  --color-grace: #67BDF5;
-  --color-grid: #C9DCF2;
-
-  --card-gradient: linear-gradient(135deg, #EAF3FF, #D7E8FC);
-  --fab-gradient: linear-gradient(135deg, #0B132B, #1C2541);
-
-  --shadow-card: 0 1px 2px rgb(11 19 43 / 0.06);
-  --shadow-tabbar: 0 8px 30px rgb(11 19 43 / 0.1);
-  --radius-card: 16px;
-  --radius-control: 12px;
+  --color-success-fg: rgb(24 103 80);
+  --color-danger-fg: rgb(157 48 57);
+  --color-primary-fg: rgb(72 57 128);
+  --color-warning-fg: rgb(125 79 25);
+  --color-warm-fg: rgb(125 79 25);
+  --color-critical-fg: rgb(157 48 57);
+  --color-chart: #6654A6;
+  --color-grace: #8B80BC;
+  --color-grid: #E5E3DD;
+  --card-gradient: linear-gradient(135deg, #FFFFFF, #F4F2EC);
+  --fab-gradient: linear-gradient(135deg, #6654A6, #514184);
+  --shadow-card: 0 8px 24px rgb(25 37 54 / 0.045);
+  --shadow-tabbar: 0 10px 36px rgb(25 37 54 / 0.12);
+  --radius-card: 22px;
+  --radius-control: 14px;
 }
-
-[data-theme='warm'] {
-  color-scheme: dark;
-
-  /* Палитра №3 — Warm / Black Plum Wine. Тёмная основа, сливовые и винные оттенки, светлые Mist-поверхности.
-   * На светлой поверхности Mist (#E4E4EC) текст тёмный; белый текст — только на тёмных поверхностях. */
-  --c-bg: 12 12 20;
-  --c-surface: 228 228 236;
-  --c-surface2: 68 20 44;
-  --c-t1: 12 12 20;
-  --c-t2: 64 64 80;
-  --c-t3: 90 90 102;
-  --c-primary: 100 36 68;
-  --c-primary-soft: 228 228 236;
-  --c-accent: 100 36 68;
-  --c-accent-soft: 228 228 236;
-  --c-warm: 228 228 236;
-  --c-critical: 217 119 6;
-  --c-line: 255 255 255;
-  --c-success: 23 185 130;
-  --c-warning: 234 179 8;
-  --c-danger: 239 68 68;
-  /* Плотные заливки кнопок: держат AA (>=4.5:1) с текстом text-bg */
-  --c-success-strong: 13 107 74;
-  --c-warning-strong: 146 64 14;
-  --c-danger-strong: 185 28 28;
-
-  --color-bg: rgb(var(--c-bg));
-  --color-surface: rgb(var(--c-surface));
-  --color-surface-sunken: rgb(var(--c-surface2));
-  --color-ink: rgb(var(--c-t1));
-  --color-ink-muted: rgb(var(--c-t2));
-  --color-ink-subtle: rgb(var(--c-t3));
-  --color-ink-on-dark: rgb(255 255 255);
-  --color-primary: rgb(var(--c-primary));
-  --color-warm: rgb(var(--c-warm));
-  --color-critical: rgb(var(--c-critical));
-  --color-accent: rgb(var(--c-primary));
-  --color-success: rgb(var(--c-success));
-  --color-warning: rgb(var(--c-warm));
-  --color-danger: rgb(var(--c-critical));
-  --color-border: rgb(var(--c-line));
-
-  --color-success-fg: rgb(5 46 22);
-  --color-danger-fg: rgb(59 18 0);
-  --color-primary-fg: rgb(255 255 255);
-  --color-warning-fg: rgb(12 12 20);
-  --color-warm-fg: rgb(12 12 20);
-  --color-critical-fg: rgb(59 18 0);
-
-  --color-chart: #642444;
-  --color-grace: #A678B9;
-  --color-grid: rgba(255 255 255 / 0.1);
-
-  --card-gradient: linear-gradient(135deg, #44142C, #0C0C14);
-  --fab-gradient: linear-gradient(135deg, #642444, #44142C);
-
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.35);
-  --shadow-tabbar: 0 8px 30px rgb(0 0 0 / 0.45);
-}
-
 [data-theme='dark'] {
   color-scheme: dark;
-
-  /* Палитра №2 — Dark / Purple Fintech. Глубокий графитовый фон, фиолетовые поверхности. */
-  --c-bg: 26 26 31;
-  --c-surface: 45 43 85;
-  --c-surface2: 30 28 50;
-  --c-t1: 255 255 255;
-  --c-t2: 217 217 224;
-  --c-t3: 200 180 210;
-  --c-primary: 106 90 205;
-  --c-primary-soft: 45 43 85;
-  --c-accent: 106 90 205;
-  --c-accent-soft: 45 43 85;
-  --c-warm: 240 217 181;
-  --c-critical: 244 166 42;
-  --c-line: 255 255 255;
-  --c-success: 32 213 176;
-  --c-warning: 234 179 8;
-  --c-danger: 239 68 68;
-  /* В тёмной теме тёмный text-bg уже даёт AA на базовых цветах */
-  --c-success-strong: 32 213 176;
-  --c-warning-strong: 234 179 8;
-  --c-danger-strong: 239 68 68;
-
+  /* Premium Finance — Dark */
+  --c-bg: 17 21 28;
+  --c-surface: 26 32 43;
+  --c-surface2: 37 45 58;
+  --c-t1: 241 242 245;
+  --c-t2: 161 168 181;
+  --c-t3: 132 142 158;
+  --c-primary: 166 155 207;
+  --c-primary-soft: 52 47 73;
+  --c-accent: 166 155 207;
+  --c-accent-soft: 52 47 73;
+  --c-warm: 229 177 95;
+  --c-critical: 239 119 125;
+  --c-line: 48 57 71;
+  --c-success: 84 185 151;
+  --c-warning: 229 177 95;
+  --c-danger: 239 119 125;
+  --c-success-strong: 84 185 151;
+  --c-warning-strong: 229 177 95;
+  --c-danger-strong: 239 119 125;
   --color-bg: rgb(var(--c-bg));
   --color-surface: rgb(var(--c-surface));
   --color-surface-sunken: rgb(var(--c-surface2));
   --color-ink: rgb(var(--c-t1));
   --color-ink-muted: rgb(var(--c-t2));
   --color-ink-subtle: rgb(var(--c-t3));
-  --color-ink-on-dark: rgb(255 255 255);
+  --color-ink-on-dark: rgb(var(--c-t1));
   --color-primary: rgb(var(--c-primary));
   --color-warm: rgb(var(--c-warm));
   --color-critical: rgb(var(--c-critical));
-  --color-accent: rgb(var(--c-primary));
+  --color-accent: rgb(var(--c-accent));
   --color-success: rgb(var(--c-success));
-  --color-warning: rgb(var(--c-warm));
-  --color-danger: rgb(var(--c-critical));
+  --color-warning: rgb(var(--c-warning));
+  --color-danger: rgb(var(--c-danger));
   --color-border: rgb(var(--c-line));
-
-  --color-success-fg: rgb(5 46 22);
-  --color-danger-fg: rgb(26 26 31);
-  --color-primary-fg: rgb(255 255 255);
-  --color-warning-fg: rgb(26 26 31);
-  --color-warm-fg: rgb(26 26 31);
-  --color-critical-fg: rgb(26 26 31);
-
-  --color-chart: #6A5ACD;
-  --color-grace: #A678B9;
-  --color-grid: rgba(255 255 255 / 0.1);
-
-  --card-gradient: linear-gradient(135deg, #2D2B55, #1A1A1F);
-  --fab-gradient: linear-gradient(135deg, #6A5ACD, #44142C);
-
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.35);
-  --shadow-tabbar: 0 8px 30px rgb(0 0 0 / 0.45);
+  --color-success-fg: rgb(113 218 181);
+  --color-danger-fg: rgb(255 151 156);
+  --color-primary-fg: rgb(210 203 235);
+  --color-warning-fg: rgb(246 207 143);
+  --color-warm-fg: rgb(246 207 143);
+  --color-critical-fg: rgb(255 151 156);
+  --color-chart: #A69BCF;
+  --color-grace: #8B80BC;
+  --color-grid: #303947;
+  --card-gradient: linear-gradient(135deg, #252D3A, #1A202B);
+  --fab-gradient: linear-gradient(135deg, #A69BCF, #6654A6);
+  --shadow-card: 0 8px 28px rgb(0 0 0 / 0.16);
+  --shadow-tabbar: 0 10px 36px rgb(0 0 0 / 0.42);
 }
-
-/* Legacy success — отдельный зелёный позитивный цвет, не смешивать с warm. */
-:root { --c-success: 34 197 94; }
-[data-theme='warm'] { --c-success: 34 197 94; }
-[data-theme='dark'] { --c-success: 32 213 176; }
+:root,
+[data-theme='dark'] {
+  --color-success-strong: rgb(var(--c-success-strong));
+  --color-warning-strong: rgb(var(--c-warning-strong));
+  --color-danger-strong: rgb(var(--c-danger-strong));
+}

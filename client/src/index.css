@@ -109,32 +109,33 @@ a,
 @layer components {
   /* Базовая карточка: рамка обязательна, иначе surface «слипается» с bg */
   .card {
-    @apply rounded-2xl border border-line bg-surface shadow-sm;
+    @apply rounded-[22px] border border-line bg-surface;
+    box-shadow: var(--shadow-card);
   }
 
   /* Вложенный блок внутри карточки */
   .card-inner {
-    @apply rounded-control bg-surface2;
+    @apply rounded-2xl bg-surface2;
   }
 
   /* Заголовок секции — единая система капс-малых заголовков */
   .section-title {
-    @apply text-caption font-semibold uppercase tracking-[0.04em] text-t3;
+    @apply text-sm font-semibold tracking-tight text-t2;
   }
 
   /* Вертикальный ритм страницы: один шаг между блоками на всех экранах */
   .page-stack {
-    @apply space-y-4;
+    @apply space-y-6;
   }
 
   /* Единый внутренний отступ карточек */
   .card-pad {
-    @apply p-5;
+    @apply p-5 sm:p-6;
   }
 
   /* Поле ввода */
   .field {
-    @apply mt-1 w-full rounded-control border border-line bg-surface2 px-3 py-2.5 text-base text-t1 outline-none transition-colors duration-200 placeholder:text-t3 focus:border-primary;
+    @apply mt-1 w-full rounded-xl border border-line bg-surface2 px-4 py-3 text-base text-t1 outline-none transition-colors duration-200 placeholder:text-t3 focus:border-primary;
   }
 
   select.field {
@@ -143,17 +144,17 @@ a,
 
   /* Кнопки */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-control px-4 py-2.5 text-base font-semibold transition-all duration-150 active:scale-[0.97];
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition-all duration-200 active:scale-[0.98];
   }
   .btn-primary {
-    @apply bg-primary text-bg rounded-full font-bold transition-transform;
+    @apply min-h-12 bg-primary text-bg rounded-full font-bold transition-all duration-200;
     box-shadow: 0 0 20px rgb(var(--c-primary) / 0.2);
   }
   .btn-primary:active {
     transform: scale(0.95);
   }
   .btn-secondary {
-    @apply border border-line bg-surface2 text-t1;
+    @apply min-h-12 border border-line bg-surface2 text-t1;
   }
   .btn-danger {
     @apply bg-danger/10 text-danger-fg;
@@ -258,15 +259,6 @@ button.bg-primary:disabled {
   color: var(--color-t3);
   opacity: 1;
   filter: none;
-}
-
-[data-theme='warm'] button:disabled,
-[data-theme='warm'] .btn-primary:disabled,
-[data-theme='warm'] button.bg-primary:disabled {
-  background-color: var(--color-surface-sunken);
-  color: var(--color-ink-muted);
-  opacity: 0.6;
-  filter: saturate(0.8);
 }
 
 /* Тёмная тема: видимые состояния OFF переключателей, треки прогресс-баров, чипы */
