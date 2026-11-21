@@ -66,7 +66,8 @@ export function PayoffStrategy({ credits }: Props) {
           <p className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-warm-fg/80">
             <Snowflake size={14} aria-hidden="true" />
             Снежный ком · быстрые победы
-            <p className="mt-1 truncate font-semibold text-t1">{snowball.name}</p>
+          </p>
+          <p className="mt-1 truncate font-semibold text-t1">{snowball.name}</p>
             <p className="mt-0.5 text-xs text-t3">
               самый маленький остаток — {formatMoneyShort(snowball.left)} · {snowball.rate}%
             </p>
@@ -102,7 +103,6 @@ export function PayoffStrategy({ credits }: Props) {
             стоит гасить в первую очередь — <span className="text-ink-on-dark">{priciestCard.name}</span>{' '}
             ({priciestCard.rate}%).
           </span>
-        </p>
         </p>
       )}
     </section>
