@@ -6,37 +6,37 @@
 :root {
   color-scheme: light;
 
-  /* Палитра светлой темы */
-  --c-bg: 245 244 240; /* #F5F4F0 */
+  /* Холодная светлая палитра Cool Lavender */
+  --c-bg: 242 244 249; /* #F2F4F9 */
   --c-surface: 255 255 255; /* #FFFFFF */
-  --c-surface2: 236 235 230; /* #ECEBE6 */
-  --c-t1: 25 37 54; /* #192536 */
-  --c-t2: 104 116 134; /* #687486 */
-  --c-t3: 91 102 120; /* чуть плотнее t2 — для мелкого текста на surface2 */
-  --c-primary: 102 84 166; /* #6654A6 */
-  --c-accent: 102 84 166; /* #6654A6 */
+  --c-surface2: 233 237 245; /* #E9EDF5 */
+  --c-t1: 32 40 59; /* #20283B */
+  --c-t2: 93 106 128; /* #5D6A80 */
+  --c-t3: 86 99 120; /* #566378 — контрастный вторичный текст */
+  --c-primary: 115 82 212; /* #7352D4 */
+  --c-accent: 134 102 234; /* #8666EA */
   --c-success: 35 133 104; /* #238568 */
   --c-warning: 180 123 50; /* #B47B32 */
   --c-danger: 194 78 85; /* #C24E55 */
-  --c-warm: 180 123 50; /* псевдоним warning для компонентов */
-  --c-critical: 194 78 85; /* псевдоним danger для компонентов */
-  --c-line: 229 227 221; /* #E5E3DD */
+  --c-warm: 180 123 50; /* семантический warning, не оттенок поверхностей */
+  --c-critical: 194 78 85; /* семантический danger */
+  --c-line: 223 228 238; /* #DFE4EE */
 
   /* Текстовые оттенки на заливках: сохраняют контраст AA */
-  --c-primary-strong: 81 63 138;
+  --c-primary-strong: 86 56 176; /* #5638B0 */
   --c-success-strong: 29 110 84;
   --c-warning-strong: 138 90 30;
   --c-danger-strong: 166 58 66;
 
-  --c-primary-soft: 238 235 247;
-  --c-accent-soft: 238 235 247;
+  --c-primary-soft: 238 233 252; /* #EEE9FC */
+  --c-accent-soft: 238 233 252;
 
   --color-bg: rgb(var(--c-bg));
   --color-surface: rgb(var(--c-surface));
   --color-surface-sunken: rgb(var(--c-surface2));
   --color-ink: rgb(var(--c-t1));
   --color-ink-on-dark: rgb(var(--c-t1));
-  /* t2 остаётся точным #687486 в палитре; семантический текст использует AA-оттенок. */
+  /* Семантический текст использует AA-оттенок на холодных поверхностях. */
   --color-ink-muted: rgb(var(--c-t3));
   --color-ink-subtle: rgb(var(--c-t3));
   --color-primary: rgb(var(--c-primary));
@@ -62,17 +62,17 @@
   --color-warm-fg: rgb(var(--c-warning-strong));
   --color-critical-fg: rgb(var(--c-danger-strong));
 
-  --color-chart: #6654a6;
+  --color-chart: #7352d4;
   --color-grace: #a69bcf;
-  --color-grid: #e5e3dd;
-  --color-scrim: 25 37 54;
+  --color-grid: #dfe4ee;
+  --color-scrim: 32 40 59;
 
   --card-gradient: linear-gradient(135deg, rgb(var(--c-surface)), rgb(var(--c-surface2)));
   --fab-gradient: linear-gradient(135deg, rgb(var(--c-primary)), rgb(var(--c-primary-strong)));
 
-  --shadow-card: 0 1px 2px rgb(25 37 54 / 0.04), 0 8px 24px rgb(25 37 54 / 0.03);
-  --shadow-nav: 0 6px 24px rgb(25 37 54 / 0.1);
-  --shadow-tabbar: 0 8px 28px rgb(25 37 54 / 0.12);
+  --shadow-card: 0 1px 2px rgb(32 40 59 / 0.04), 0 8px 24px rgb(32 40 59 / 0.035);
+  --shadow-nav: 0 6px 24px rgb(32 40 59 / 0.1);
+  --shadow-tabbar: 0 8px 28px rgb(32 40 59 / 0.12);
   --radius-card: 18px;
   --radius-control: 14px;
   --dur-fast: 180ms;
@@ -83,7 +83,7 @@
 [data-theme='dark'] {
   color-scheme: dark;
 
-  /* Палитра тёмной темы */
+  /* Палитра тёмной темы — без изменений */
   --c-bg: 17 21 28; /* #11151C */
   --c-surface: 26 32 43; /* #1A202B */
   --c-surface2: 37 45 58; /* #252D3A */
