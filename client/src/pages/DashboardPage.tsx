@@ -1,5 +1,6 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { Settings2 } from 'lucide-react';
 import { creditsApi } from '../api/credits';
 import { CreditRow } from '../components/CreditRow';
 import { MoneyFlow } from '../components/MoneyFlow';
