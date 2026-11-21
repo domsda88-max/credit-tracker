@@ -8,6 +8,8 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { trackScreen, useAnalytics } from './hooks/useAnalytics';
 
+const PaymentsPage = lazy(() => import('./pages/PaymentsPage').then((m) => ({ default: m.PaymentsPage })));
+const DebtsPage = lazy(() => import('./pages/DebtsPage').then((m) => ({ default: m.DebtsPage })));
 const AddCreditPage = lazy(() => import('./pages/AddCreditPage').then((m) => ({ default: m.AddCreditPage })));
 const CsvImportPage = lazy(() => import('./pages/CsvImportPage').then((m) => ({ default: m.CsvImportPage })));
 const CreditDetailPage = lazy(() => import('./pages/CreditDetailPage').then((m) => ({ default: m.CreditDetailPage })));
@@ -38,6 +40,8 @@ export function App() {
             }
           >
             <Route path="/" element={<DashboardPage />} />
+            <Route path="/payments" element={<PaymentsPage />} />
+            <Route path="/debts" element={<DebtsPage />} />
             <Route path="/credits/new" element={<AddCreditPage />} />
             <Route path="/credits/:id" element={<CreditDetailPage />} />
             <Route path="/stats" element={<FreedomPage />} />
