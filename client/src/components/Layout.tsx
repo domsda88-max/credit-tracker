@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type TouchEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
 import { Outlet, useLocation } from 'react-router-dom';
@@ -42,7 +42,7 @@ export function Layout() {
     }
   };
 
-  const handleTouchStart = (event: React.TouchEvent<HTMLElement>) => {
+  const handleTouchStart = (event: TouchEvent<HTMLElement>) => {
     if (event.currentTarget.scrollTop > 0 || refreshing) return;
     const touch = event.touches[0];
     touchStart.current = { x: touch.clientX, y: touch.clientY };
@@ -63,6 +63,11 @@ export function Layout() {
     touchStart.current = null;
     if (pullDistance >= 65) void refreshData();
     else setPullDistance(0);
+  };
+
+  const handleTouchCancel = () => {
+    touchStart.current = null;
+    setPullDistance(0);
   };
 
   useEffect(() => {
@@ -100,7 +105,7 @@ export function Layout() {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchEnd}
+          onTouchCancel={handleTouchCancel}
         >
           <div
             aria-live="polite"
