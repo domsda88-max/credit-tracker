@@ -52,7 +52,7 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div className="fixed inset-0 z-[70] flex items-end justify-center">
       <div
         className="absolute inset-0 animate-fade-in bg-black/60 backdrop-blur-xl"
         onClick={onClose}
