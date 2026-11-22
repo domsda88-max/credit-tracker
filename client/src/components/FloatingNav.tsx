@@ -35,13 +35,13 @@ export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
   return (
     <nav
       aria-label="Основная навигация"
-      className="glass-bar floating-nav fixed bottom-[calc(env(safe-area-inset-bottom)+6px)] left-1/2 z-[60] -translate-x-1/2 rounded-[20px] border px-2 py-1.5 shadow-nav"
+      className="glass-bar floating-nav fixed bottom-[max(8px,calc(env(safe-area-inset-bottom)-12px))] left-1/2 z-[60] w-[302px] max-w-[calc(100vw-32px)] -translate-x-1/2 rounded-[20px] border px-2 py-1.5 shadow-nav"
     >
-      <div className="floating-nav__items flex items-stretch justify-between gap-1">
+      <div className="floating-nav__items grid grid-cols-4 gap-1">
         <span
           aria-hidden="true"
           className="floating-nav__active-pill"
-          style={{ transform: `translateX(${activeIndex * 72}px)` }}
+          style={{ transform: `translateX(calc(${activeIndex * 100}% + ${activeIndex * 4}px))` }}
         />
         {ITEMS.map(({ path, icon: Icon, label }) => {
           const active = isActive(path);
@@ -53,7 +53,7 @@ export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
               aria-label={label}
               aria-current={active ? 'page' : undefined}
               onClick={() => navigate(path)}
-              className={`ui-press relative z-10 flex h-[52px] w-[68px] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 transition-colors duration-200 ${
+              className={`ui-press relative z-10 flex h-[52px] w-full min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 transition-colors duration-200 ${
                 active ? 'text-primary-fg' : 'text-t3 hover:text-t1'
               }`}
             >
