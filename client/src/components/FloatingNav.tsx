@@ -35,7 +35,7 @@ export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
   return (
     <nav
       aria-label="Основная навигация"
-      className="glass-bar floating-nav fixed bottom-[max(6px,calc(env(safe-area-inset-bottom)-22px))] left-1/2 z-[60] w-[302px] max-w-[calc(100vw-32px)] -translate-x-1/2 rounded-[20px] border px-2 py-1.5 shadow-nav"
+      className="glass-bar floating-nav fixed bottom-[calc(env(safe-area-inset-bottom,0px)+8px)] left-1/2 z-[60] w-[302px] max-w-[calc(100vw-32px)] -translate-x-1/2 rounded-[20px] border px-2 py-1.5 shadow-nav"
     >
       <div className="floating-nav__items relative grid grid-cols-4 gap-1">
         <span
@@ -59,7 +59,7 @@ export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
             >
               <span
                 className={`flex h-6 w-11 items-center justify-center rounded-full transition-all duration-200 ${
-                  active ? 'bg-primary/10 nav-icon-active' : 'bg-transparent'
+                  active ? 'nav-icon-active' : 'bg-transparent'
                 }`}
               >
                 <Icon
