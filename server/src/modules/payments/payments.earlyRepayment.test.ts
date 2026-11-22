@@ -4,7 +4,7 @@ import { paymentsService } from './payments.service';
 
 const mocks = vi.hoisted(() => {
   const tx = {
-    credit: { update: vi.fn() },
+    credit: { update: vi.fn(), updateMany: vi.fn() },
     paymentSchedule: {
       findUnique: vi.fn(),
       update: vi.fn(),
@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => {
       createMany: vi.fn(),
       deleteMany: vi.fn(),
     },
-    paymentEvent: { create: vi.fn() },
+    paymentEvent: { create: vi.fn(), findFirst: vi.fn() },
   };
   return {
     tx,
@@ -116,14 +116,22 @@ function validDto() {
   return { amount: 10_000, date: new Date(Date.UTC(2026, 2, 15)) };
 }
 
+function numericPart(value: unknown): number | undefined {
+  if (typeof value === 'number') return value;
+  if (value && typeof value === 'object' && typeof (value as any).increment === 'number') {
+    return (value as any).increment;
+  }
+  return undefined;
+}
+
 function appliedSplit() {
   const upsertCall = mocks.tx.paymentSchedule.upsert.mock.calls[0];
   if (upsertCall) {
     const arg = upsertCall[0] as any;
     return {
-      principalPart: arg.update.principalPart.increment as number,
-      interestPart: arg.update.interestPart.increment as number,
-      amount: arg.create.amount as number,
+      principalPart: numericPart(arg.update.principalPart) ?? (arg.create?.principalPart as number),
+      interestPart: numericPart(arg.update.interestPart) ?? (arg.create?.interestPart as number),
+      amount: numericPart(arg.update.amount) ?? (arg.create?.amount as number),
     };
   }
   const createCall = mocks.tx.paymentSchedule.create.mock.calls[0];
@@ -156,6 +164,8 @@ beforeEach(() => {
   mocks.tx.paymentSchedule.createMany.mockResolvedValue({ count: 0 });
   mocks.tx.paymentSchedule.deleteMany.mockResolvedValue({ count: 0 });
   mocks.tx.paymentEvent.create.mockResolvedValue({ id: 'evt-1' });
+  mocks.tx.paymentEvent.findFirst.mockResolvedValue(null);
+  mocks.tx.credit.updateMany.mockResolvedValue({ count: 1 });
   mocks.tx.credit.update.mockImplementation(async ({ data }: any) => ({
     ...makeCredit(),
     ...data,
@@ -169,16 +179,21 @@ afterEach(() => {
 });
 
 describe('early repayment: guards and split parity', () => {
-  it('rejects overpayment in both apply and preview', async () => {
+  it('records overpayment separately and never lowers the balance below zero', async () => {
     const dto = { amount: 80_000 + 368.22 + 100, date: new Date(Date.UTC(2026, 2, 15)) };
-    await expect(paymentsService.earlyRepayment(USER_ID, CREDIT_ID, dto)).rejects.toMatchObject({
-      statusCode: 400,
-      message: expect.stringContaining('превышает'),
-    });
-    await expect(paymentsService.previewEarlyRepayment(USER_ID, CREDIT_ID, dto)).rejects.toMatchObject({
-      statusCode: 400,
-      message: expect.stringContaining('превышает'),
-    });
+    const result = await paymentsService.earlyRepayment(USER_ID, CREDIT_ID, dto);
+    const preview = await paymentsService.previewEarlyRepayment(USER_ID, CREDIT_ID, dto);
+
+    expect(result.credit.outstanding).toBe(0);
+    expect(preview.overpayment).toBe(100);
+    expect(preview.principalToBalance).toBe(80_000);
+
+    const events = mocks.tx.paymentEvent.create.mock.calls.map((call) => (call[0] as any).data);
+    expect(events.find((event) => event.kind === 'OVERPAYMENT')?.amount).toBe(100);
+    expect(events.reduce((sum, event) => sum + event.amount, 0)).toBe(dto.amount);
+
+    const creditUpdate = mocks.tx.credit.update.mock.calls.at(-1)?.[0] as any;
+    expect(creditUpdate.data.overpaymentBalance).toEqual({ increment: 100 });
   });
 
   it('writes interestPart = accruedInterest and principalPart = outstanding on full repayment', async () => {

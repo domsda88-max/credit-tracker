@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { FloatingNav } from './FloatingNav';
 import { OfflineBanner } from './OfflineBanner';
-import { useOfflineQueue, getOfflineActions } from '../hooks/useOfflineQueue';
+import {
+  useOfflineQueue,
+  getOfflineActions,
+  OFFLINE_QUEUE_CHANGED,
+} from '../hooks/useOfflineQueue';
 import { Onboarding } from './Onboarding';
 import { useOnboarding } from '../hooks/useOnboarding';
 
@@ -22,6 +26,12 @@ export function Layout() {
       }
     };
     updateCount();
+    window.addEventListener(OFFLINE_QUEUE_CHANGED, updateCount);
+    window.addEventListener('online', updateCount);
+    return () => {
+      window.removeEventListener(OFFLINE_QUEUE_CHANGED, updateCount);
+      window.removeEventListener('online', updateCount);
+    };
   }, [syncAll]);
 
   if (showOnboarding) {

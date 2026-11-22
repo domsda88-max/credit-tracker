@@ -6,8 +6,9 @@ import { formatMoney } from '../utils/format';
 
 /**
  * Денежный поток месяца: доход → обязательные платежи → свободный остаток.
- * Доход задаётся в настройках; платежи считает сервер по ближайшим платежам
- * всех активных долгов (у замороженных карт — сумма обновления периода).
+ * Доход задаётся в настройках; платежи считает сервер по платежам текущего
+ * календарного месяца. Резерв грейса показываем отдельно и НЕ включаем
+ * ни в регулярные платежи, ни в «Свободно».
  */
 export function MoneyFlow() {
   const { data } = useQuery({
@@ -52,7 +53,13 @@ export function MoneyFlow() {
 
       {graceTotal > 0 && (
         <p className="mt-2 text-micro text-t3">
-          С учётом обслуживания грейса: <span className="tabular font-medium text-t2">{formatMoney(payments + graceTotal)}</span> ₽
+          Отдельно: резерв грейса <span className="tabular font-medium text-t2">{formatMoney(graceTotal)}</span> — не входит в платежи
+        </p>
+      )}
+
+      {data.overpaymentBalance > 0 && (
+        <p className="mt-2 text-micro text-t3">
+          Принятая переплата <span className="tabular font-medium text-t2">{formatMoney(data.overpaymentBalance)}</span> — отдельно, не уменьшает долг
         </p>
       )}
 

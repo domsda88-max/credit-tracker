@@ -4,6 +4,7 @@ import { STATUS_LABELS } from '../utils/format';
 
 const styles: Record<InstallmentStatus, string> = {
   PENDING: 'bg-warning/15 text-warning-fg',
+  PARTIALLY_PAID: 'bg-warning/15 text-warning-fg',
   PAID: 'bg-success/15 text-success-fg',
   OVERDUE: 'bg-danger/15 text-danger-fg',
 };

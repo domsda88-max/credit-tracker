@@ -79,8 +79,11 @@ export function EditCreditForm({
       });
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['credit', credit.id] });
-      await queryClient.invalidateQueries({ queryKey: ['credits'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['credit', credit.id] }),
+        queryClient.invalidateQueries({ queryKey: ['credits'] }),
+        queryClient.invalidateQueries({ queryKey: ['summary'] }),
+      ]);
       onClose();
     },
     onError: (err) => setError(extractErrorMessage(err)),

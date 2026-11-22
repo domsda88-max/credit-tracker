@@ -91,6 +91,7 @@ const baseCredit: any = {
   status: 'ACTIVE',
   closedAt: null,
   totalPaid: 0,
+  overpaymentBalance: 0,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -138,5 +139,64 @@ describe('creditsService.summary — monthlyPayments по правилу 2', () 
 
     const result = await creditsService.summary('user-1');
     expect(result.monthlyPayments).toBe(5000);
+  });
+
+  it('все PENDING-платежи текущего месяца складываются, а не только первый', async () => {
+    mocks.utcToday.mockReturnValue(TODAY_NOV);
+    mockCredit = {
+      ...baseCredit,
+      schedule: [
+        installment(new Date(Date.UTC(2026, 10, 5)), 5000),
+        installment(new Date(Date.UTC(2026, 10, 20)), 3000),
+        installment(new Date(Date.UTC(2026, 10, 28)), 2000, 'PAID'),
+      ],
+    };
+    mocks.creditFindMany.mockResolvedValue([mockCredit]);
+
+    const result = await creditsService.summary('user-1');
+    expect(result.monthlyPayments).toBe(8000);
+  });
+
+  it('частично оплаченная строка учитывает только остаток, а переплата отдельно', async () => {
+    mocks.utcToday.mockReturnValue(TODAY_NOV);
+    mocks.userFindUnique.mockResolvedValue({ monthlyIncome: 100_000 });
+    const partial = {
+      ...installment(new Date(Date.UTC(2026, 10, 15)), 10_000, 'PARTIALLY_PAID'),
+      paidAmount: 3_000,
+    };
+    mockCredit = { ...baseCredit, overpaymentBalance: 500, schedule: [partial] };
+    mocks.creditFindMany.mockResolvedValue([mockCredit]);
+
+    const result = await creditsService.summary('user-1');
+    expect(result.monthlyPayments).toBe(7_000);
+    expect(result.freeMoney).toBe(93_000);
+    // Переплата не уменьшает долг и не считается погашением.
+    expect(result.overpaymentBalance).toBe(500);
+    expect(result.outstandingSum).toBe(225_500);
+  });
+
+  it('резерв грейса не входит в платежи и в свободные деньги', async () => {
+    mocks.utcToday.mockReturnValue(TODAY_NOV);
+    mocks.userFindUnique.mockResolvedValue({ monthlyIncome: 100_000 });
+    const frozenCard = {
+      ...baseCredit,
+      id: 'card-1',
+      type: 'CREDIT_CARD',
+      frozen: true,
+      freezeCycleDays: 30,
+      graceReplenishSum: 40_000,
+      nextFreezeCheckAt: new Date(Date.UTC(2026, 10, 20)),
+      schedule: [],
+    };
+    mockCredit = {
+      ...baseCredit,
+      schedule: [installment(new Date(Date.UTC(2026, 10, 15)), 10_000)],
+    };
+    mocks.creditFindMany.mockResolvedValue([mockCredit, frozenCard]);
+
+    const result = await creditsService.summary('user-1');
+    expect(result.monthlyPayments).toBe(10_000);
+    expect(result.freeMoney).toBe(90_000);
+    expect(result.graceReplenishTotal).toBe(40_000);
   });
 });

@@ -20,16 +20,8 @@ registerRoute(
   new NetworkFirst({ cacheName: 'pages', networkTimeoutSeconds: 3 }),
 );
 
-// API-запросы — stale-while-revalidate: отдаём кэш мгновенно, обновляем в фоне.
-// Это критично для офлайн-режима: пользователь видит последние загруженные данные
-// даже без сети, а при появлении сети данные синхронизируются.
-registerRoute(
-  ({ request }) => request.url.startsWith(self.location.origin) && request.url.includes('/api/'),
-  new StaleWhileRevalidate({
-    cacheName: 'api-cache',
-    plugins: [],
-  }),
-);
+// Финансовые GET-ответы НЕ кэшируем: даже network-first показывал устаревший
+// остаток при нестабильной сети. Свежие данные только с сервера.
 
 // Ассеты (иконки, картинки) — кэшируем по мере использования.
 registerRoute(
@@ -91,7 +83,8 @@ self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());
 });
 self.addEventListener('activate', (event) => {
-  event.waitUntil(Promise.all([self.clients.claim()]));
+  // Удаляем ответы финансовых API из старых версий SW.
+  event.waitUntil(Promise.all([self.clients.claim(), caches.delete('api-cache')]));
 });
 
 // При сообщении от клиента - принудительный skipWaiting

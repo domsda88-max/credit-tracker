@@ -1,4 +1,5 @@
 import type { CreditListItem, InstallmentStatus } from '../types';
+import { startOfUTCDay } from './date';
 
 export interface UpcomingPaymentItem {
   creditId: string;
@@ -15,8 +16,10 @@ export interface UpcomingPaymentItem {
  * затем платежи текущего месяца, сортировка по дате. Никаких новых расчётов.
  */
 export function getUpcomingPayments(credits: CreditListItem[]): UpcomingPaymentItem[] {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // График строится в UTC (Date.UTC в date.ts), поэтому «сегодня» и месяц
+  // считаем тоже в UTC. Раньше локальный setHours(0,0,0,0) в UTC+3/+5/+7
+  // давал предыдущий UTC-день, из-за чего платежи 1-го числа пропадали.
+  const today = startOfUTCDay();
   const curYear = today.getUTCFullYear();
   const curMonth = today.getUTCMonth();
 
@@ -26,7 +29,11 @@ export function getUpcomingPayments(credits: CreditListItem[]): UpcomingPaymentI
       creditId: c.id,
       creditName: c.name,
       dueDate: c.nextPayment!.dueDate,
-      amount: Number(c.nextPayment!.amount),
+      // PARTIALLY_PAID: в ближайшем платеже показываем только невнесённый остаток.
+      amount: Math.max(
+        0,
+        Number(c.nextPayment!.amount) - Number(c.nextPayment!.paidAmount ?? 0),
+      ),
       overdue: new Date(c.nextPayment!.dueDate).getTime() < today.getTime(),
       status: c.nextPayment!.status,
     }))

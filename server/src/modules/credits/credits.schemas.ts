@@ -84,8 +84,9 @@ export const createCreditSchema = z
 
     // ----- Рассрочка / Сплит -----
     if (data.type === 'INSTALLMENT') {
-      if (!data.termMonths || data.termMonths <= 0) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите срок в месяцах', path: ['termMonths'] });
+      // Форма работает в днях; API хранит месяцы. Достаточно одного из двух полей.
+      if ((!data.termMonths || data.termMonths <= 0) && (!data.termDays || data.termDays <= 0)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите срок', path: ['termMonths'] });
       }
       if (!data.paymentDay) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Укажите день платежа', path: ['paymentDay'] });
@@ -112,7 +113,12 @@ export const createCreditSchema = z
       // Ставка не обязательна — по умолчанию 0%. Срок не нужен.
       return;
     }
-  });
+  })
+  .transform((data) =>
+    data.type === 'INSTALLMENT' && (!data.termMonths || data.termMonths <= 0) && data.termDays
+      ? { ...data, termMonths: Math.max(1, Math.ceil(data.termDays / 30)) }
+      : data,
+  );
 
 export const updateCreditSchema = z
   .object({

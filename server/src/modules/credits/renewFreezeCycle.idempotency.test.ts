@@ -88,6 +88,12 @@ describe('renewFreezeCycle idempotency (mocked DB path)', () => {
       }),
     }));
     expect(txMocks.createPaymentEvent).toHaveBeenCalledTimes(1);
+
+    // Пополнение резерва грейса — не погашение тела: баланс не меняется.
+    const data = (txMocks.updateMany.mock.calls[0][0] as any).data;
+    expect(data).not.toHaveProperty('outstanding');
+    expect(data).not.toHaveProperty('totalPaid');
+    expect(data).toHaveProperty('nextFreezeCheckAt');
   });
 
   it('rejects an early renewal when nextFreezeCheckAt is in the future', async () => {

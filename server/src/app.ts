@@ -11,8 +11,6 @@ import { authRouter } from './modules/auth/auth.routes';
 import { creditsRouter } from './modules/credits/credits.routes';
 import { paymentsRouter } from './modules/payments/payments.routes';
 import { pushRouter } from './modules/push/push.routes';
-import { runMotivationJob } from './cron/jobs/motivation.job';
-import { runReminderJob } from './cron/jobs/reminder.job';
 
 /** Сборка Express-приложения (без listen — удобно для тестов). */
 export function createApp(): express.Express {
@@ -27,10 +25,8 @@ export function createApp(): express.Express {
   app.get('/api/health', async (_req, res) => {
     try {
       await prisma.$queryRaw`SELECT 1`;
-      setImmediate(() => {
-        void runReminderJob().catch(() => {});
-        void runMotivationJob().catch(() => {});
-      });
+      // Health-check должен быть read-only: cron запускается отдельно, иначе
+      // каждый мониторинг-опрос может инициировать рассылку push.
       res.json({ status: 'ok', db: 'ok', time: new Date().toISOString() });
     } catch {
       res.status(503).json({ status: 'degraded', db: 'down', time: new Date().toISOString() });

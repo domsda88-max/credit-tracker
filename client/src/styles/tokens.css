@@ -14,6 +14,10 @@
   --c-t2: 93 106 128; /* #5D6A80 */
   --c-t3: 86 99 120; /* #566378 — контрастный вторичный текст */
   --c-primary: 115 82 212; /* #7352D4 */
+  /* Грейс/лёд: холодный голубой, а не тёплый «живой» акцент. */
+  --c-grace: 56 130 220; /* #3882DC */
+  --c-grace-strong: 32 94 172; /* #205EAC */
+  --c-grace-soft: 232 242 255; /* #E8F2FF */
   --c-accent: 134 102 234; /* #8666EA */
   --c-success: 35 133 104; /* #238568 */
   --c-warning: 180 123 50; /* #B47B32 */
@@ -56,6 +60,9 @@
   --color-t3: rgb(var(--c-t3));
 
   --color-primary-fg: rgb(var(--c-primary-strong));
+  --color-grace: rgb(var(--c-grace));
+  --color-grace-fg: rgb(var(--c-grace-strong));
+  --color-grace-soft: rgb(var(--c-grace-soft));
   --color-success-fg: rgb(var(--c-success-strong));
   --color-warning-fg: rgb(var(--c-warning-strong));
   --color-danger-fg: rgb(var(--c-danger-strong));
@@ -63,7 +70,6 @@
   --color-critical-fg: rgb(var(--c-danger-strong));
 
   --color-chart: #7352d4;
-  --color-grace: #a69bcf;
   --color-grid: #dfe4ee;
   --color-scrim: 32 40 59;
 
@@ -91,6 +97,9 @@
   --c-t2: 161 168 181; /* #A1A8B5 */
   --c-t3: 161 168 181; /* #A1A8B5 */
   --c-primary: 166 155 207; /* #A69BCF */
+  --c-grace: 96 165 250; /* #60A5FA */
+  --c-grace-strong: 147 197 253; /* #93C5FD */
+  --c-grace-soft: 23 39 62; /* тёмная ледяная поверхность */
   --c-accent: 166 155 207; /* #A69BCF */
   --c-success: 84 185 151; /* #54B997 */
   --c-warning: 229 177 95; /* #E5B15F */
@@ -118,7 +127,6 @@
   --color-danger-fg: rgb(var(--c-danger));
 
   --color-chart: #a69bcf;
-  --color-grace: #6654a6;
   --color-grid: #303947;
   --color-scrim: 5 8 13;
 

@@ -13,7 +13,9 @@ export const authApi = {
   },
 
   async me(): Promise<User> {
-    const { data } = await api.get<User>('/auth/me');
+    // Проверка сессии при загрузке: 401 обрабатывает restoreSession, а не
+    // глобальный interceptor — иначе временный сбой сеть стирал бы токен.
+    const { data } = await api.get<User>('/auth/me', { skipAuthLogout: true });
     return data;
   },
 

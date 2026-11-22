@@ -5,6 +5,8 @@ export const earlyRepaymentSchema = z.object({
   amount: z.number().positive('Сумма должна быть больше 0'),
   mode: z.enum(['REDUCE_TERM']).optional(),
   note: z.string().max(200).optional(),
+  /** Защита от повторной отправки после сетевого таймаута. */
+  idempotencyKey: z.string().min(1).max(200).optional(),
   date: z.coerce
     .date()
     .optional()
@@ -21,6 +23,8 @@ export const earlyRepaymentSchema = z.object({
 export const payInstallmentSchema = z.object({
   amount: z.number().positive('Сумма должна быть больше 0').optional(),
   paidAt: z.coerce.date().optional(),
+  /** Клиентский ключ: повторный запрос не должен дважды списать деньги. */
+  idempotencyKey: z.string().min(1).max(200).optional(),
 });
 
 /** Дата без времени: клиент нормализует «ДД.ММ.ГГГГ» → «ГГГГ-ММ-ДД» до отправки. */

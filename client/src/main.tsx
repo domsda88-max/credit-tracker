@@ -56,6 +56,7 @@ if (splash) {
 // PWA: автообновление при новой версии Service Worker.
 if ('serviceWorker' in navigator) {
   let reloading = false;
+  let listeningForUpdates = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (reloading) return;
     reloading = true;
@@ -66,7 +67,10 @@ if ('serviceWorker' in navigator) {
     try {
       const registration = await navigator.serviceWorker.getRegistration();
       if (!registration) return;
-      registration.addEventListener('updatefound', () => console.log('[SW] updatefound'));
+      if (!listeningForUpdates) {
+        listeningForUpdates = true;
+        registration.addEventListener('updatefound', () => console.log('[SW] updatefound'));
+      }
       await registration.update();
       if (registration.waiting) {
         registration.waiting.postMessage({ type: 'SKIP_WAITING' });

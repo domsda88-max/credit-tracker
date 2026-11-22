@@ -5,7 +5,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useParams } from 'react-router-dom';
 import { z } from 'zod';
-import { extractErrorMessage } from '../api/client';
+import { extractErrorMessage, httpStatus } from '../api/client';
 import { creditsApi } from '../api/credits';
 import { paymentsApi } from '../api/payments';
 import { StatusBadge } from '../components/StatusBadge';
@@ -13,8 +13,15 @@ import { SkeletonCard } from '../components/Skeleton';
 import { BalanceChart } from '../components/BalanceChart';
 import { EditCreditForm } from '../components/EditCreditForm';
 import { useToast } from '../components/useToast';
-import type { EarlyPreview, EarlyRepaymentPayload, PaymentEvent } from '../types';
+import { useOfflineQueue } from '../hooks/useOfflineQueue';
+import type {
+  EarlyPreview,
+  EarlyRepaymentPayload,
+  PayInstallmentPayload,
+  PaymentEvent,
+} from '../types';
 import { maxPrepaymentDate } from '../utils/date';
+import { createIdempotencyKey } from '../utils/idempotency';
 import {
   CREDIT_TYPE_LABELS,
   PAYMENT_TYPE_LABELS,
@@ -31,6 +38,30 @@ const earlySchema = z.object({
 
 type EarlyFormValues = z.input<typeof earlySchema>;
 
+interface PayVariables extends PayInstallmentPayload {
+  installmentId: string;
+  idempotencyKey: string;
+}
+
+interface EarlyVariables {
+  values: EarlyFormValues;
+  /** Уже нормализованная сервером дата из предпросмотра. */
+  date: string;
+  idempotencyKey: string;
+}
+
+/** Ошибка связи: запрос мог дойти до сервера, поэтому нужен тот же ключ повтора. */
+function isOfflineFailure(error: unknown): boolean {
+  return !navigator.onLine || httpStatus(error) === undefined;
+}
+
+function isAlreadyApplied(error: unknown): boolean {
+  return (
+    httpStatus(error) === 409 &&
+    extractErrorMessage(error).toLowerCase().includes('уже применён')
+  );
+}
+
 const inputClass =
   'mt-1 w-full rounded-control border border-line bg-surface px-3 py-2.5 text-t1 outline-none transition focus:border-primary';
 
@@ -39,12 +70,14 @@ const EVENT_LABELS: Record<PaymentEvent['kind'], string> = {
   EARLY_PARTIAL: 'Досрочно',
   EARLY_FULL: 'Закрытие кредита',
   MIN_PAYMENT: 'Минимальный платёж',
+  OVERPAYMENT: 'Переплата',
 };
 
 export function CreditDetailPage() {
   const { id = '' } = useParams();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { enqueue } = useOfflineQueue();
   const [error, setError] = useState<string | null>(null);
   const [showAllPaid, setShowAllPaid] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -107,35 +140,94 @@ export function CreditDetailPage() {
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: ['credit', id] });
     await queryClient.invalidateQueries({ queryKey: ['credits'] });
+    // Сводка на главной и в аналитике тоже должна обновляться сразу после оплаты.
+    await queryClient.invalidateQueries({ queryKey: ['summary'] });
   };
 
   const payMutation = useMutation({
-    mutationFn: (vars: { installmentId: string; amount?: number; paidAt?: string }) =>
-      paymentsApi.payInstallment(vars.installmentId, { amount: vars.amount, paidAt: vars.paidAt }),
+    mutationFn: (vars: PayVariables) =>
+      paymentsApi.payInstallment(vars.installmentId, {
+        amount: vars.amount,
+        paidAt: vars.paidAt,
+        idempotencyKey: vars.idempotencyKey,
+      }),
     onSuccess: async () => {
       setPayingId(null);
+      setError(null);
       await invalidate();
       toast.show('Платёж отмечен');
     },
-    onError: (err) => setError(extractErrorMessage(err)),
+    onError: async (err, vars) => {
+      if (isOfflineFailure(err)) {
+        await enqueue({
+          type: 'pay_installment',
+          payload: {
+            installmentId: vars.installmentId,
+            amount: vars.amount,
+            paidAt: vars.paidAt,
+            idempotencyKey: vars.idempotencyKey,
+          },
+        });
+        setPayingId(null);
+        setError(null);
+        toast.show('Нет сети — платёж будет отправлен при подключении');
+        return;
+      }
+      if (isAlreadyApplied(err)) {
+        await invalidate();
+        setError(null);
+        toast.show('Платёж уже применён');
+        return;
+      }
+      setError(extractErrorMessage(err));
+    },
   });
 
   const earlyMutation = useMutation({
-    mutationFn: (values: EarlyFormValues) => {
-      const parsed = earlySchema.parse(values);
-      const date = preview && previewForDate === parsed.date ? preview.effectiveDate : parsed.date;
-      const payload: EarlyRepaymentPayload = { amount: parsed.amount, mode: parsed.mode, date };
+    mutationFn: (vars: EarlyVariables) => {
+      const parsed = earlySchema.parse(vars.values);
+      const payload: EarlyRepaymentPayload = {
+        amount: parsed.amount,
+        mode: parsed.mode,
+        date: vars.date,
+        idempotencyKey: vars.idempotencyKey,
+      };
       return paymentsApi.earlyRepayment(id, payload);
     },
     onSuccess: async () => {
       reset({ amount: undefined as unknown as number, mode: 'REDUCE_TERM', date: todayStr });
       setPreview(null);
       setPreviewForDate(null);
+      setError(null);
       await invalidate();
       toast.show('Досрочное погашение внесено');
       navigator.vibrate?.([30, 40, 30]);
     },
-    onError: (err) => setError(extractErrorMessage(err)),
+    onError: async (err, vars) => {
+      const parsed = earlySchema.safeParse(vars.values);
+      if (isOfflineFailure(err) && parsed.success) {
+        await enqueue({
+          type: 'early_repayment',
+          payload: {
+            creditId: id,
+            amount: parsed.data.amount,
+            mode: parsed.data.mode,
+            date: vars.date,
+            idempotencyKey: vars.idempotencyKey,
+          },
+        });
+        setError(null);
+        toast.show('Нет сети — платёж будет отправлен при подключении');
+        return;
+      }
+      if (isAlreadyApplied(err)) {
+        await invalidate();
+        setError(null);
+        toast.show('Платёж уже применён');
+        return;
+      }
+      setError(extractErrorMessage(err));
+    },
   });
 
   if (isPending && !credit) return <div className="page-stack"><SkeletonCard /><SkeletonCard /></div>;
@@ -154,7 +246,9 @@ export function CreditDetailPage() {
 
   const percent = debtPaidPercent(credit.principal, credit.outstanding);
   const principalPaid = Math.max(0, Number(credit.principal) - Number(credit.outstanding));
-  const interestPaid = Math.max(0, Number(credit.totalPaid) - principalPaid);
+  // Переплата лежит отдельно: она не уменьшает тело и не считается процентами.
+  const overpayment = Math.max(0, Number(credit.overpaymentBalance ?? 0));
+  const interestPaid = Math.max(0, Number(credit.totalPaid) - principalPaid - overpayment);
   const pending = credit.schedule.filter((item) => item.status !== 'PAID');
   const paid = credit.schedule.filter((item) => item.status === 'PAID');
   const earlyKeys = new Set(
@@ -270,12 +364,18 @@ export function CreditDetailPage() {
           </p>
           <p className="text-xs text-t3">
             Всего выплачено <span className="tabular text-t2">{formatMoney(credit.totalPaid)}</span>
-            {' '}(тело {formatMoney(principalPaid)} + проценты {formatMoney(interestPaid)})
+            {' '}(тело {formatMoney(principalPaid)} + проценты {formatMoney(interestPaid)}
+            {overpayment > 0 && <> + переплата {formatMoney(overpayment)}</>})
           </p>
           <p className="text-xs text-t3">
             Остаток долга <span className="tabular text-t2">{formatMoney(credit.outstanding)}</span>
             {' '}(<span className="tabular">{100 - percent}%</span> от первоначальной суммы)
           </p>
+          {overpayment > 0 && (
+            <p className="text-xs text-warning-fg">
+              Переплата <span className="tabular">{formatMoney(overpayment)}</span> учтена отдельно и не уменьшает остаток
+            </p>
+          )}
         </div>
 
         {credit.frozen && credit.nextFreezeCheckAt && (
@@ -299,7 +399,7 @@ export function CreditDetailPage() {
         />
       )}
 
-      {credit.status === 'ACTIVE' && credit.type !== 'LOAN' && credit.type !== 'CREDIT_CARD' && (
+      {credit.status === 'ACTIVE' && credit.type !== 'LOAN' && credit.type !== 'CREDIT_CARD' && credit.type !== 'MICROLOAN' && (
         <section className="rounded-card border border-line bg-surface p-4">
             <h2 className="font-medium text-t1">Досрочное погашение</h2>
           <p className="mt-0.5 text-xs text-t3">
@@ -310,12 +410,21 @@ export function CreditDetailPage() {
             onSubmit={handleSubmit((values) => {
               if (submitting.current) return;
               if (preview && !preview.coversInterest) return;
+              const parsed = earlySchema.parse(values);
+              const date = preview && previewForDate === parsed.date ? preview.effectiveDate : parsed.date;
               submitting.current = true;
-              earlyMutation.mutate(values, {
-                onSettled: () => {
-                  submitting.current = false;
+              earlyMutation.mutate(
+                {
+                  values,
+                  date,
+                  idempotencyKey: createIdempotencyKey('early', id),
                 },
-              });
+                {
+                  onSettled: () => {
+                    submitting.current = false;
+                  },
+                },
+              );
             })}
             className="mt-3 space-y-3"
           >
@@ -378,8 +487,14 @@ export function CreditDetailPage() {
           {preview && preview.coversInterest && (
             <div className="mt-3 rounded-control border border-success/30 bg-success/10 px-4 py-3 text-sm">
               <p className="text-xs text-success-fg">
-                Проценты за период: {formatMoney(preview.accruedInterest)} · в тело: {formatMoney(preview.principalPart)}
+                Проценты за период: {formatMoney(preview.accruedInterest)} · в тело:{' '}
+                {formatMoney(preview.principalToBalance ?? preview.principalPart)}
               </p>
+              {preview.overpayment !== undefined && preview.overpayment > 0 && (
+                <p className="mt-1 text-xs text-warning-fg">
+                  Переплата: {formatMoney(preview.overpayment)} — не уменьшит остаток долга
+                </p>
+              )}
               {preview.isFull ? (
                 <p className="flex items-center gap-1.5 font-medium text-success-fg">
                   <PartyPopper size={16} className="shrink-0" aria-hidden="true" />
@@ -412,7 +527,11 @@ export function CreditDetailPage() {
         </section>
       )}
 
-      {error && <p className="text-sm text-danger-fg">{error}</p>}
+      {error && (
+        <p role="alert" aria-live="assertive" className="text-sm text-danger-fg">
+          {error}
+        </p>
+      )}
 
       {credit.type !== 'LOAN' && (
       <section className="rounded-card border border-line bg-surface p-4">
@@ -445,6 +564,10 @@ export function CreditDetailPage() {
             const year = new Date(item.dueDate).getFullYear();
             const previousYear =
               index > 0 ? new Date(visible[index - 1].dueDate).getFullYear() : null;
+            const paidValue = Math.max(0, Number(item.paidAmount ?? 0));
+            const remainingValue = Math.max(0, Number(item.amount) - paidValue);
+            const isPartial = item.status === 'PARTIALLY_PAID';
+            const canCancel = item.status === 'PAID' || isPartial;
             return (
               <Fragment key={item.id}>
                 {year !== previousYear && (
@@ -463,31 +586,54 @@ export function CreditDetailPage() {
                     <p className="text-xs text-t3">
                       тело {formatMoney(item.principalPart)} · проценты {formatMoney(item.interestPart)}
                     </p>
+                    {isPartial && (
+                      <p className="text-xs text-warning-fg">
+                        Внесено {formatMoney(paidValue)} из {formatMoney(item.amount)} · осталось{' '}
+                        {formatMoney(remainingValue)}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex shrink-0 items-center gap-3">
                     <span className="tabular text-sm font-medium text-t1">
                       {formatMoney(item.amount)}
                     </span>
-                    {item.status === 'PAID' ? (
-                      <div className="flex items-center gap-2">
-                        {earlyKeys.has(`${new Date(item.paidAt ?? item.dueDate).toISOString().slice(0, 10)}|${Number(item.paidAmount ?? item.amount)}`) ? (
+                    {canCancel ? (
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        {isPartial ? (
+                          <StatusBadge status="PARTIALLY_PAID" />
+                        ) : earlyKeys.has(`${new Date(item.paidAt ?? item.dueDate).toISOString().slice(0, 10)}|${Number(item.paidAmount ?? item.amount)}`) ? (
                           <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary-fg">Досрочно</span>
                         ) : (
                           <StatusBadge status="PAID" />
                         )}
+                        {isPartial && (
+                          <button
+                            type="button"
+                            onClick={() => setPayingId(expanded ? null : item.id)}
+                            className="rounded-lg border border-primary/40 px-2 py-1 text-[11px] font-medium text-primary-fg transition hover:bg-primary/10"
+                          >
+                            {expanded ? 'Скрыть' : 'Доплатить'}
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={async () => {
-                            if (!window.confirm(`Отменить платёж ${formatMoney(item.amount)} от ${formatDate(item.dueDate)}? Статус изменится на «Не оплачен», график пересчитается.`)) return;
+                            const label = isPartial
+                              ? `частичную оплату ${formatMoney(paidValue)}`
+                              : `платёж ${formatMoney(paidValue)}`;
+                            if (!window.confirm(`Отменить ${label} от ${formatDate(item.dueDate)}? Статус вернётся к «Ожидает», деньги будут убраны из выплат.`)) return;
                             setCancelingId(item.id);
                             try {
                               await paymentsApi.cancelSchedule(item.id);
                               await queryClient.invalidateQueries({ queryKey: ['credit', id] });
                               await queryClient.invalidateQueries({ queryKey: ['credits'] });
                               await queryClient.invalidateQueries({ queryKey: ['summary'] });
+                              setError(null);
                               toast.show('Платёж отменён');
                             } catch (err) {
+                              // Сервер может отказать (например, платёж закрыл кредит) —
+                              // показываем его сообщение без сокрытия ошибки.
                               setError(extractErrorMessage(err));
                             } finally {
                               setCancelingId(null);
@@ -538,13 +684,19 @@ export function CreditDetailPage() {
                         installmentId: item.id,
                         amount,
                         paidAt: dateRaw ? new Date(dateRaw).toISOString() : undefined,
+                        idempotencyKey: createIdempotencyKey('pay', item.id),
                       });
                     }}
                   >
                     <p className="text-xs text-t2">
-                      Фактическая оплата. Оставьте как есть, если заплатили вовремя и всю сумму —
-                      тогда тело долга уменьшится на {formatMoney(item.principalPart)}.
+                      Фактическая оплата. Можно внести часть суммы — строка останется в графике с
+                      непогашенным остатком. В тело пойдёт только сумма, реально уменьшающая долг.
                     </p>
+                    {isPartial && (
+                      <p className="mt-1 text-xs text-warning-fg">
+                        Уже внесено {formatMoney(paidValue)} · осталось {formatMoney(remainingValue)}
+                      </p>
+                    )}
                     <div className="mt-2 grid grid-cols-2 gap-2">
                       <label className="block">
                         <span className="text-[11px] text-t3">Сумма, ₽</span>
@@ -553,7 +705,7 @@ export function CreditDetailPage() {
                           type="number"
                           step="0.01"
                           min="0"
-                          defaultValue={Number(item.amount)}
+                          defaultValue={remainingValue}
                           className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-2 text-sm text-t1 outline-none focus:border-primary"
                         />
                       </label>
@@ -590,10 +742,13 @@ export function CreditDetailPage() {
           <div className="mt-3 space-y-2">
             {credit.events.map((event) => (
               <div key={event.id} className="flex items-center justify-between text-sm">
-                <span className="text-t2">
+                <span className={`text-t2 ${event.cancelledAt ? 'text-t3 line-through' : ''}`}>
                   {formatDate(event.paidAt)} · {EVENT_LABELS[event.kind]}
+                  {event.cancelledAt ? ' · отменён' : ''}
                 </span>
-                <span className="tabular text-t1">{formatMoney(event.amount)}</span>
+                <span className={`tabular ${event.cancelledAt ? 'text-t3 line-through' : 'text-t1'}`}>
+                  {formatMoney(event.amount)}
+                </span>
               </div>
             ))}
           </div>

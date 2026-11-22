@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { CalendarDays, ChevronRight } from 'lucide-react';
 import { creditsApi } from '../api/credits';
 import { StatusBadge } from '../components/StatusBadge';
+import { startOfUTCDay } from '../utils/date';
 import { daysUntil, describeDueDate, formatDateShort, formatMoney } from '../utils/format';
 import { getUpcomingPayments, type UpcomingPaymentItem } from '../utils/upcoming';
 
@@ -61,8 +62,7 @@ export function PaymentsPage() {
   const items = getUpcomingPayments(list);
   const total = items.reduce((sum, item) => sum + item.amount, 0);
 
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const startOfToday = startOfUTCDay();
   const upcomingIds = new Set(items.map((item) => item.creditId));
   const later = list
     .filter(

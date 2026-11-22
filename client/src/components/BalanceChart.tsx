@@ -22,7 +22,17 @@ export function BalanceChart({ schedule, principal, outstanding }: Props) {
   const points: number[] = [start];
   let left = start;
   for (const item of schedule) {
-    left = Math.max(0, left - Number(item.principalPart));
+    // Частично оплаченная строка уменьшает долг только реально внесённым телом.
+    const isOpen = item.status === 'PAID' || item.status === 'PARTIALLY_PAID';
+    const actual = item.paidPrincipalPart;
+    const reduction = isOpen
+      ? actual !== null && actual !== undefined
+        ? Number(actual)
+        : item.status === 'PAID'
+          ? Number(item.principalPart)
+          : 0
+      : Number(item.principalPart);
+    left = Math.max(0, left - reduction);
     points.push(left);
   }
 

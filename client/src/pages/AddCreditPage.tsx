@@ -60,7 +60,7 @@ const schema = z
       .optional()
       .nullable()
       .transform((v) => (v === '' || v == null ? null : v)),
-    markPastAsPaid: z.boolean().default(true),
+    markPastAsPaid: z.boolean().default(false),
     outstanding: optionalNumber(0, Number.MAX_SAFE_INTEGER),
   })
   .superRefine((data, ctx) => {
@@ -184,7 +184,7 @@ export function AddCreditPage() {
       paymentType: 'ANNUITY',
       prepaymentMode: 'REDUCE_TERM',
       frozen: false,
-      markPastAsPaid: true,
+      markPastAsPaid: false,
     },
   });
 
@@ -208,7 +208,7 @@ export function AddCreditPage() {
         setValue('startDate', undefined);
         setValue('termMonths', undefined);
         setValue('termDays', undefined);
-        setValue('markPastAsPaid', true);
+        setValue('markPastAsPaid', false);
         setValue('outstanding', undefined);
         break;
       case 'CONSUMER':
@@ -233,7 +233,7 @@ export function AddCreditPage() {
         setValue('graceReplenishDay', undefined);
         setValue('frozen', false);
         setValue('freezeCycleDays', null);
-        setValue('markPastAsPaid', true);
+        setValue('markPastAsPaid', false);
         setValue('outstanding', undefined);
         break;
       case 'MICROLOAN':
@@ -247,7 +247,7 @@ export function AddCreditPage() {
         setValue('graceReplenishDay', undefined);
         setValue('frozen', false);
         setValue('freezeCycleDays', null);
-        setValue('markPastAsPaid', true);
+        setValue('markPastAsPaid', false);
         setValue('outstanding', undefined);
         break;
       case 'LOAN':
@@ -262,7 +262,7 @@ export function AddCreditPage() {
         setValue('graceReplenishDay', undefined);
         setValue('frozen', false);
         setValue('freezeCycleDays', null);
-        setValue('markPastAsPaid', true);
+        setValue('markPastAsPaid', false);
         setValue('outstanding', undefined);
         break;
     }
@@ -287,11 +287,18 @@ export function AddCreditPage() {
         paymentType: parsed.paymentType ?? 'ANNUITY',
         earlyRepayments: values.earlyRepayments,
         termMonths:
-          parsed.type === 'CREDIT_CARD' || parsed.type === 'MICROLOAN' ? undefined : parsed.termMonths,
+          parsed.type === 'CREDIT_CARD' || parsed.type === 'MICROLOAN'
+            ? undefined
+            : parsed.type === 'INSTALLMENT' && parsed.termDays
+              ? Math.max(1, Math.ceil(parsed.termDays / 30))
+              : parsed.termMonths,
       });
     },
     onSuccess: async (credit) => {
-      await queryClient.invalidateQueries({ queryKey: ['credits'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['credits'] }),
+        queryClient.invalidateQueries({ queryKey: ['summary'] }),
+      ]);
       navigate(`/credits/${credit.id}`);
     },
     onError: (err) => setError(extractErrorMessage(err)),

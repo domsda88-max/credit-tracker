@@ -1,3 +1,5 @@
+import { useCallback } from 'react';
+
 /**
  * Базовая аналитика: события регистрации, входа, добавления кредита,
  * оплаты платежа, досрочного погашения, открытия экрана.
@@ -51,9 +53,11 @@ function flush(): void {
 }
 
 export function useAnalytics() {
-  const track = (event: AnalyticsEvent) => {
+  // Стабильная ссылка: иначе useEffect в App срабатывает на каждый рендер
+  // и пишет screen_view для одного и того же экрана.
+  const track = useCallback((event: AnalyticsEvent) => {
     pushEvent(event);
-  };
+  }, []);
 
   const getEvents = () => loadEvents();
 

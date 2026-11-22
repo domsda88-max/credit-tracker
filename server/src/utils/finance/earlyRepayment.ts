@@ -1,8 +1,17 @@
 import { AppError } from '../../middlewares/errorHandler';
-import { buildAnnuitySchedule } from './annuity';
+import { annuityPayment, buildAnnuitySchedule } from './annuity';
 import { buildDifferentialSchedule } from './differential';
-import { addMonths, diffInDaysUTC, maxPrepaymentDate, monthsBetween, utcToday, withDayOfMonth } from './date';
-import { round2 } from './round';
+import {
+  addMonths,
+  buildDueDates,
+  daysInMonth,
+  diffInDaysUTC,
+  maxPrepaymentDate,
+  monthsBetween,
+  utcToday,
+  withDayOfMonth,
+} from './date';
+import { round2, toNumber } from './round';
 import type { PaymentType, ScheduleItem } from './types';
 
 /** Меньше копейки — считаем долг закрытым. */
@@ -47,7 +56,7 @@ export function rebuildSchedule(input: RebuildInput): ScheduleItem[] {
       part > 0 ? Math.max(1, Math.ceil(principal / part)) : remainingTerm;
     if (!Number.isFinite(months) || months < 1) months = remainingTerm;
     if (months > 600) throw new Error('Некорректный срок пересчёта');
-    const dates = makeDueDates(input.nextDueDate, months);
+    const dates = makeDueDates(input.nextDueDate, months, input.paymentDay);
     if (dates.length !== months) throw new Error('Ошибка построения дат графика');
 
     return buildDifferentialSchedule(principal, input.annualRate, months, dates);
@@ -68,16 +77,32 @@ export function rebuildSchedule(input: RebuildInput): ScheduleItem[] {
   months = Math.max(1, months);
 
   if (months > 600) throw new Error('Слишком большой срок пересчёта');
-  const dates = makeDueDates(input.nextDueDate, months);
+  const dates = makeDueDates(input.nextDueDate, months, input.paymentDay);
   if (dates.length !== months) throw new Error('Ошибка построения дат графика');
 
   return buildAnnuitySchedule(principal, input.annualRate, months, dates);
 }
 
-function makeDueDates(firstDueDate: Date, count: number): Date[] {
+/**
+ * Даты графика считаем от НЕПОДВИЖНОГО якоря (год/месяц первой даты + paymentDay).
+ * Раньше каждая следующая дата строилась от предыдущей, поэтому после февраля
+ * платёж 31-го числа «залипал» на 28-м: 31.01 → 28.02 → 28.03 → 28.04.
+ */
+function makeDueDates(firstDueDate: Date, count: number, paymentDay?: number | null): Date[] {
+  const anchor = new Date(Date.UTC(firstDueDate.getUTCFullYear(), firstDueDate.getUTCMonth(), 1));
+  const day = paymentDay && paymentDay > 0 ? paymentDay : firstDueDate.getUTCDate();
   const dates: Date[] = [];
   for (let k = 0; k < count; k++) {
-    dates.push(withDayOfMonth(addMonths(firstDueDate, k), null));
+    const month = addMonths(anchor, k);
+    dates.push(
+      new Date(
+        Date.UTC(
+          month.getUTCFullYear(),
+          month.getUTCMonth(),
+          Math.min(day, daysInMonth(month.getUTCFullYear(), month.getUTCMonth())),
+        ),
+      ),
+    );
   }
   return dates;
 }
@@ -87,9 +112,75 @@ export function nextScheduleStart(today: Date, paymentDay?: number | null): Date
   return withDayOfMonth(addMonths(today, 1), paymentDay);
 }
 
+/**
+ * Первая дата графика после досрочки.
+ * Если платёж внесён до очередной даты в этом месяце, следующий платёж остаётся
+ * в этом же месяце; если в саму дату или позже — переносимся на следующий месяц.
+ */
 function nextDueDateAfter(date: Date, paymentDay?: number | null): Date {
-  const base = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
-  return withDayOfMonth(base, paymentDay ?? date.getUTCDate());
+  const day = paymentDay ?? date.getUTCDate();
+  const currentMonth = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+  const candidate = withDayOfMonth(currentMonth, day);
+  if (candidate.getTime() > utcToday(date).getTime()) return candidate;
+  return withDayOfMonth(addMonths(currentMonth, 1), day);
+}
+
+/** Общие входные данные для пересборки графика при досрочке. */
+export interface PrepaymentCreditLike {
+  schedule: Array<{
+    status: string;
+    dueDate: Date;
+    amount: unknown;
+    principalPart: unknown;
+  }>;
+  startDate: Date;
+  termMonths: number;
+  paymentDay?: number | null;
+  paymentType: string;
+  annualRate: unknown;
+}
+
+/**
+ * Единственная точка построения графика после досрочки.
+ * Preview и apply обязаны вызывать её с одними и теми же данными — иначе
+ * пользователю показывается один прогноз, а в БД пишется другой.
+ */
+export function scheduleAfterPrepayment(
+  credit: PrepaymentCreditLike,
+  prepaymentDateUTC: Date,
+  newOutstanding: number,
+): ScheduleItem[] {
+  const pending = credit.schedule.filter((item) => item.status === 'PENDING');
+  const remainingTerm = Math.max(
+    1,
+    monthsBetween(prepaymentDateUTC, addMonths(credit.startDate, credit.termMonths)),
+  );
+  const nextDueDate = nextDueDateAfter(prepaymentDateUTC, credit.paymentDay);
+  const reference = pending[0] ?? null;
+  const annualRate = toNumber(credit.annualRate);
+
+  const previousPayment = credit.paymentType === 'DIFFERENTIAL'
+    ? (reference ? toNumber(reference.principalPart) : null)
+    : (reference
+        ? toNumber(reference.amount)
+        : (() => {
+            try {
+              return annuityPayment(newOutstanding, annualRate, remainingTerm);
+            } catch {
+              return null;
+            }
+          })());
+
+  return rebuildSchedule({
+    outstanding: newOutstanding,
+    annualRate,
+    paymentType: credit.paymentType as PaymentType,
+    remainingTermMonths: remainingTerm,
+    nextDueDate,
+    paymentDay: credit.paymentDay,
+    previousPayment,
+    previousPrincipalPart: reference ? toNumber(reference.principalPart) : null,
+  });
 }
 
 /** Нижняя и верхняя границы даты досрочного погашения. */
@@ -98,16 +189,35 @@ export function assertPrepaymentDate(date: Date, startDate: Date, now: Date = ne
   if (date > maxPrepaymentDate(now)) throw new AppError(400, 'Дата внесения не может быть позже чем на 1 год');
 }
 
-/** Максимальная сумма досрочного погашения: остаток долга + начисленные проценты. */
-export function assertAmountWithinOutstanding(
+export interface PrepaymentSplit {
+  /** Запрошенная сумма после вычета начисленных процентов (может быть отрицательной). */
+  principalPart: number;
+  /** Тело, которым реально уменьшается долг. */
+  principalToBalance: number;
+  /** Деньги сверх остатка долга — отдельный резерв, не погашение. */
+  overpayment: number;
+  /** Остаток после платежа (никогда не отрицательный). */
+  newOutstanding: number;
+}
+
+/**
+ * Единый расчёт досрочного платежа для preview и apply.
+ * Переплата принимается, но не уменьшает долг ниже нуля и не считается
+ * погашением несуществующего тела.
+ */
+export function splitPrepaymentAmount(
   amount: number,
   outstanding: number,
   accruedInterest: number,
-): void {
-  const maxAmount = round2(outstanding + accruedInterest);
-  if (round2(amount - maxAmount) > CLOSE_THRESHOLD) {
-    throw new AppError(400, `Сумма превышает остаток долга с начисленными процентами (${maxAmount.toFixed(2)} ₽)`);
-  }
+): PrepaymentSplit {
+  const principalPart = round2(amount - accruedInterest);
+  const balance = round2(Math.max(0, outstanding));
+  const positivePrincipal = round2(Math.max(0, principalPart));
+  const principalToBalance = round2(Math.min(positivePrincipal, balance));
+  const overpayment = round2(Math.max(0, positivePrincipal - balance));
+  const newOutstanding = round2(Math.max(0, balance - principalToBalance));
+
+  return { principalPart, principalToBalance, overpayment, newOutstanding };
 }
 
 /** Проценты, накопленные с anchor по дату погашения (UTC-дни). */
@@ -150,30 +260,45 @@ export function applyHistoricalPrepayments(
   paymentDay: number | null,
   earlyRepayments: Array<{ amount: number; date: Date }>,
 ): { outstanding: number; schedule: ScheduleItem[] } {
+  // График кредита начинается со следующего месяца после выдачи — как и в generateSchedule.
+  const dueDates0 = buildDueDates(startDate, termMonths, paymentDay);
+  const initialSchedule = paymentType === 'DIFFERENTIAL'
+    ? buildDifferentialSchedule(principal, annualRate, termMonths, dueDates0)
+    : buildAnnuitySchedule(principal, annualRate, termMonths, dueDates0);
+
   if (earlyRepayments.length === 0) {
-    const dueDates = Array.from({ length: termMonths }, (_, k) => withDayOfMonth(addMonths(startDate, k), null));
-    const schedule = paymentType === 'DIFFERENTIAL'
-      ? buildDifferentialSchedule(principal, annualRate, termMonths, dueDates)
-      : buildAnnuitySchedule(principal, annualRate, termMonths, dueDates);
-    return { outstanding: principal, schedule };
+    return { outstanding: principal, schedule: initialSchedule };
   }
 
   let outstanding = principal;
   let anchorDate = new Date(startDate);
-  const dueDates0 = Array.from({ length: termMonths }, (_, k) => withDayOfMonth(addMonths(startDate, k), null));
-  let schedule = paymentType === 'DIFFERENTIAL'
-    ? buildDifferentialSchedule(principal, annualRate, termMonths, dueDates0)
-    : buildAnnuitySchedule(principal, annualRate, termMonths, dueDates0);
-
+  let schedule = initialSchedule;
   const sorted = [...earlyRepayments].sort((a, b) => a.date.getTime() - b.date.getTime());
 
   for (const er of sorted) {
+    // До досрочки по графику уже шли обычные платежи — их тело нужно вычесть,
+    // иначе остаток и начисленные проценты завышены на месяцы амортизации.
+    const passed = schedule.filter(
+      (item) => item.dueDate.getTime() > anchorDate.getTime() && item.dueDate.getTime() <= er.date.getTime(),
+    );
+    for (const item of passed) {
+      outstanding = Math.max(0, round2(outstanding - item.principalPart));
+    }
+    if (passed.length > 0) {
+      anchorDate = new Date(passed[passed.length - 1].dueDate);
+    }
+
     const accruedInterest = accruedInterestBetween(outstanding, annualRate, anchorDate, er.date);
-    const principalPart = Math.max(0, er.amount - accruedInterest);
-    outstanding = Math.max(0, outstanding - principalPart);
+    const principalPart = Math.max(0, round2(er.amount - accruedInterest));
+    outstanding = Math.max(0, round2(outstanding - principalPart));
 
     const remainingMonths = Math.max(1, monthsBetween(er.date, addMonths(startDate, termMonths)));
     const nextDue = nextDueDateAfter(er.date, paymentDay);
+    // Сохраняем платёж, который был ДО пересборки: режим «сокращение срока».
+    const paymentBefore = passed.length > 0 && passed[passed.length - 1].amount > 0
+      ? passed[passed.length - 1].amount
+      : (schedule[0]?.amount ?? null);
+    const principalBefore = passed.length > 0 ? passed[passed.length - 1].principalPart : (schedule[0]?.principalPart ?? null);
 
     schedule = rebuildSchedule({
       outstanding,
@@ -182,8 +307,8 @@ export function applyHistoricalPrepayments(
       remainingTermMonths: remainingMonths,
       nextDueDate: nextDue,
       paymentDay,
-      previousPayment: schedule[0]?.amount ?? null,
-      previousPrincipalPart: schedule[0]?.principalPart ?? null,
+      previousPayment: paymentBefore,
+      previousPrincipalPart: principalBefore,
     });
 
     anchorDate = new Date(er.date);

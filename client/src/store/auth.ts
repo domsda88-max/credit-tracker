@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authApi } from '../api/auth';
+import { httpStatus } from '../api/client';
 import type { User } from '../types';
 
 interface AuthState {
@@ -11,11 +12,13 @@ interface AuthState {
   register: (email: string, password: string, name?: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User) => void;
+  /** Проверяет сохранённый токен через /auth/me. Возвращает true, если сессия жива. */
+  restoreSession: () => Promise<boolean>;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
@@ -36,6 +39,28 @@ export const useAuthStore = create<AuthState>()(
 
       setUser(user) {
         set({ user });
+      },
+
+      async restoreSession() {
+        const token = get().token;
+        if (!token) {
+          set({ user: null, token: null, isAuthenticated: false });
+          return false;
+        }
+
+        try {
+          const user = await authApi.me();
+          set({ user, token, isAuthenticated: true });
+          return true;
+        } catch (error) {
+          if (httpStatus(error) === 401) {
+            set({ user: null, token: null, isAuthenticated: false });
+            return false;
+          }
+          // Сеть/500: сохраняем последнюю известную сессию, чтобы временный
+          // сбой сервера не выгонял пользователя из приложения.
+          return Boolean(get().token && get().user);
+        }
       },
     }),
     { name: 'credit-tracker-auth' },

@@ -2,8 +2,8 @@ export type CreditType = 'CREDIT_CARD' | 'CONSUMER' | 'MORTGAGE' | 'INSTALLMENT'
 export type PaymentType = 'ANNUITY' | 'DIFFERENTIAL' | 'MIN_PAYMENT';
 export type PrepaymentMode = 'REDUCE_TERM';
 export type CreditStatus = 'ACTIVE' | 'CLOSED';
-export type InstallmentStatus = 'PENDING' | 'PAID' | 'OVERDUE';
-export type PaymentEventKind = 'SCHEDULED' | 'EARLY_PARTIAL' | 'EARLY_FULL' | 'MIN_PAYMENT';
+export type InstallmentStatus = 'PENDING' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE';
+export type PaymentEventKind = 'SCHEDULED' | 'EARLY_PARTIAL' | 'EARLY_FULL' | 'MIN_PAYMENT' | 'OVERPAYMENT';
 
 export interface User {
   id: string;
@@ -38,15 +38,22 @@ export interface PaymentScheduleItem {
   status: InstallmentStatus;
   paidAt: string | null;
   paidAmount: Money | null;
+  paidPrincipalPart?: Money | null;
+  paidInterestPart?: Money | null;
+  paidOverpayment?: Money | null;
 }
 
 export interface PaymentEvent {
   id: string;
   creditId: string;
+  /** Строка графика, к которой относится платёж (заполняется для новых операций). */
+  scheduleId?: string | null;
   kind: PaymentEventKind;
   amount: Money;
   paidAt: string;
   note: string | null;
+  /** Отменённые события остаются в истории, но помечаются. */
+  cancelledAt?: string | null;
 }
 
 export interface Credit {
@@ -72,6 +79,8 @@ export interface Credit {
   status: CreditStatus;
   closedAt: string | null;
   totalPaid: Money;
+  /** Деньги сверх остатка долга — не погашение тела. */
+  overpaymentBalance: Money;
   createdAt: string;
 }
 
@@ -96,6 +105,8 @@ export interface CreditSummary {
   outstandingSum: number;
   paidByPrincipal: number;
   totalPaidSum: number;
+  /** Сумма принятых переплат по всем кредитам — не является погашением долга. */
+  overpaymentBalance: number;
   scheduledTotal: number;
   overpay: number;
   debtFreeDate: string | null;
@@ -153,6 +164,14 @@ export interface EarlyRepaymentPayload {
   mode?: PrepaymentMode;
   note?: string;
   date?: string;
+  /** Повтор после таймаута не должен создать второй платёж. */
+  idempotencyKey?: string;
+}
+
+export interface PayInstallmentPayload {
+  amount?: number;
+  paidAt?: string;
+  idempotencyKey?: string;
 }
 
 /** Early repayment preview response (POST /payments/credits/:id/early-preview). */
@@ -170,6 +189,10 @@ export interface EarlyPreview {
   monthsAfter?: number;
   accruedInterest: number;
   principalPart: number;
+  /** Тело, которым реально уменьшен остаток (без переплаты). */
+  principalToBalance?: number;
+  /** Деньги сверх остатка долга — отдельный резерв. */
+  overpayment?: number;
   days: number;
   coversInterest: boolean;
   minAmount: number;

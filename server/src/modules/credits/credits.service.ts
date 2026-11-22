@@ -183,6 +183,8 @@ export const creditsService = {
         },
       });
 
+      let resultCredit = credit;
+
       await tx.paymentSchedule.createMany({
         data: schedule.map((item, index) => {
           const isPast = past !== null && index < past.paidCount;
@@ -214,22 +216,38 @@ export const creditsService = {
       }
 
       if (dto.earlyRepayments && dto.earlyRepayments.length > 0) {
+        const startDate = dto.startDate ?? new Date();
         const { outstanding: newOutstanding, schedule: newSchedule } = applyHistoricalPrepayments(
           dto.principal,
           dto.annualRate ?? 0,
           dto.paymentType!,
-          dto.startDate ?? new Date(),
+          startDate,
           dto.termMonths ?? 0,
           dto.paymentDay ?? null,
           dto.earlyRepayments.map((er) => ({ amount: er.amount, date: new Date(er.date) })),
         );
-
-        await tx.credit.update({
+        const earlyTotal = round2(dto.earlyRepayments.reduce((sum, er) => sum + er.amount, 0));
+        const updated = await tx.credit.update({
           where: { id: credit.id },
-          data: { outstanding: newOutstanding },
+          data: {
+            outstanding: newOutstanding,
+            totalPaid: { increment: earlyTotal },
+          },
         });
 
-        await tx.paymentSchedule.deleteMany({ where: { creditId: credit.id } });
+        // Отдаём наружу состояние ПОСЛЕ пересчёта, а не stale-объект из create().
+        resultCredit = {
+          ...credit,
+          ...updated,
+          outstanding: newOutstanding as unknown as Credit['outstanding'],
+          totalPaid: round2(toNumber(credit.totalPaid) + earlyTotal) as unknown as Credit['totalPaid'],
+        };
+
+        // Удаляем только будущие строки: уже отмеченные как оплаченные платежи
+        // обязаны остаться в графике и в журнале.
+        await tx.paymentSchedule.deleteMany({
+          where: { creditId: credit.id, status: 'PENDING' },
+        });
         await tx.paymentSchedule.createMany({
           data: newSchedule.map((item) => ({
             creditId: credit.id,
@@ -239,10 +257,11 @@ export const creditsService = {
             interestPart: item.interestPart,
             status: 'PENDING',
           })),
+          skipDuplicates: true,
         });
       }
 
-      return credit;
+      return resultCredit;
     });
   },
 
@@ -253,7 +272,8 @@ export const creditsService = {
       orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
       include: {
         schedule: {
-          where: { status: 'PENDING' },
+          // Частично оплаченная строка остаётся ближайшим обязательным платежом.
+          where: { status: { in: ['PENDING', 'PARTIALLY_PAID'] } },
           orderBy: { dueDate: 'asc' },
           take: 1,
         },
@@ -282,6 +302,7 @@ export const creditsService = {
     let principalSum = 0;
     let outstandingSum = 0;
     let totalPaidSum = 0;
+    let overpaymentBalanceSum = 0;
     let scheduledTotal = 0; // сколько всего ещё и уже запланировано по графику
     let lastDueDate: Date | null = null;
     let monthlyPayments = 0; // ближайшие обязательные платежи по всем активным долгам
@@ -292,6 +313,8 @@ export const creditsService = {
       principalSum += toNumber(c.principal);
       outstandingSum += Math.max(0, toNumber(c.outstanding));
       totalPaidSum += toNumber(c.totalPaid);
+      // Переплата не является погашением и не уменьшает outstanding.
+      overpaymentBalanceSum += toNumber((c as any).overpaymentBalance ?? 0);
 
       for (const item of c.schedule) {
         scheduledTotal += toNumber(item.amount);
@@ -308,20 +331,27 @@ export const creditsService = {
       const curMonth = today.getUTCMonth();
       const isCreditCard = c.type === 'CREDIT_CARD';
       if (!(c.frozen && isCreditCard)) {
-        const pending = (c.schedule || []).filter((i: any) => i.status === 'PENDING');
-        const thisMonth = pending.filter((i: any) => {
+        // PARTIALLY_PAID остаётся открытой строкой: в нагрузку входит только
+        // невнесённая разница, а не полная сумма платежа.
+        const openInstallments = (c.schedule || []).filter(
+          (i: any) => i.status === 'PENDING' || i.status === 'PARTIALLY_PAID',
+        );
+        const remainingFor = (i: any) =>
+          round2(Math.max(0, toNumber(i.amount) - toNumber(i.paidAmount ?? 0)));
+        const thisMonth = openInstallments.filter((i: any) => {
           const d = new Date(i.dueDate);
           return d.getUTCFullYear() === curYear && d.getUTCMonth() === curMonth;
         });
         let mp = 0;
         if (isCreditCard) {
-          const nonGrace = thisMonth.find((i: any) => !(toNumber(i.interestPart) === 0 && toNumber(i.amount) === toNumber(c.graceReplenishSum)));
-          if (nonGrace) mp = toNumber(nonGrace.amount);
-          else if (thisMonth.length > 0) mp = 0; // в грейсе — живёт в блоке грейса
+          // Резерв грейса не является обязательным платежом и не попадает
+          // ни в месячную нагрузку, ни в «Свободно» — он живёт отдельным блоком.
+          const nonGrace = thisMonth.filter((i: any) => !(toNumber(i.interestPart) === 0 && toNumber(i.amount) === toNumber(c.graceReplenishSum)));
+          if (nonGrace.length > 0) mp = round2(nonGrace.reduce((sum: number, i: any) => sum + remainingFor(i), 0));
+          else if (thisMonth.length > 0) mp = 0; // только грейс — обязательных платежей нет
           else mp = toNumber(c.minPayment ?? 0);
         } else {
-          const first = thisMonth[0];
-          if (first) mp = toNumber(first.amount);
+          mp = round2(thisMonth.reduce((sum: number, i: any) => sum + remainingFor(i), 0));
         }
         monthlyPayments += mp;
       }
@@ -372,12 +402,14 @@ export const creditsService = {
           const balance = Math.max(0, toNumber(c.outstanding));
           if (balance <= 0) return null;
 
-          const next = c.schedule.find((s) => s.status === 'PENDING');
+          const next = c.schedule.find(
+            (s) => s.status === 'PENDING' || s.status === 'PARTIALLY_PAID',
+          );
           const isFreezeCycle = c.frozen && c.freezeCycleDays !== null;
           const minPayment = isFreezeCycle
             ? 0
             : next
-              ? toNumber(next.amount)
+              ? round2(Math.max(0, toNumber(next.amount) - toNumber((next as any).paidAmount ?? 0)))
               : Math.max(balance * 0.03, 0);
 
           return {
@@ -398,6 +430,8 @@ export const creditsService = {
       outstandingSum: round2(outstandingSum),
       paidByPrincipal: round2(Math.max(0, principalSum - outstandingSum)),
       totalPaidSum: round2(totalPaidSum),
+      // Принятая переплата — не погашение и не часть Free money.
+      overpaymentBalance: round2(overpaymentBalanceSum),
       scheduledTotal: round2(scheduledTotal),
       overpay: round2(Math.max(0, overpay)),
       debtFreeDate: lastDueDate ? lastDueDate.toISOString() : null,
@@ -461,14 +495,16 @@ export const creditsService = {
       }
     }
 
-    const freezeChanged = dto.frozen !== undefined && dto.frozen !== current.frozen;
     const financialChanged =
       FINANCIAL_FIELDS.some((field) => dto[field] !== undefined) || dto.outstanding !== undefined || dto.markPastAsPaid !== undefined;
 
     // Меняются сами условия (сумма/ставка/дата/срок) — тогда график действительно пересобираем.
-    // Заморозка меняет эффективную ставку (🧊 = 0%), поэтому тоже требует пересборки.
+    // Одна только заморозка 🧊 баланс и график НЕ трогает: freeze/unfreeze меняют
+    // только даты цикла и эффективную ставку в расчётах, но не уже уплаченное.
+    // Ручная правка только остатка НЕ пересобирает график: для этого нужны
+    // финансовые условия или явное подтверждение «прошедшее оплачено».
     const termsChanged =
-      FINANCIAL_FIELDS.some((field) => dto[field] !== undefined) || dto.outstanding !== undefined || dto.markPastAsPaid !== undefined;
+      FINANCIAL_FIELDS.some((field) => dto[field] !== undefined) || dto.markPastAsPaid === true;
 
     // Управление «снежинкой» 🧊
     if (dto.frozen !== undefined) {
@@ -489,11 +525,20 @@ export const creditsService = {
 
       if (!financialChanged) return updated;
 
-      const paidCount = await tx.paymentSchedule.count({
+      const paidRows = await tx.paymentSchedule.findMany({
         where: { creditId, status: 'PAID' },
+        orderBy: { dueDate: 'asc' },
       });
+      const paidCount = paidRows.length;
+      const lastPaidDueDate = paidCount ? paidRows[paidCount - 1].dueDate : null;
+      // Первый ещё неоплаченный платёж: только он является точкой пересборки.
+      // PAID-строки (включая исторические досрочки) сохраняем как есть.
       const nextPending = await tx.paymentSchedule.findFirst({
-        where: { creditId, status: 'PENDING' },
+        where: {
+          creditId,
+          status: 'PENDING',
+          ...(lastPaidDueDate ? { dueDate: { gt: lastPaidDueDate } } : {}),
+        },
         orderBy: { dueDate: 'asc' },
       });
 
@@ -519,6 +564,12 @@ export const creditsService = {
       // Значения прошедших платежей для записи в кредит (числа, а не Decimal).
       let totalPaidValue: number | undefined;
       let outstandingValue: number | undefined = dto.outstanding ?? undefined;
+      // При пересборке с нуля не перезаписываем уже учтённую оплату из PaymentEvent:
+      // totalPaid увеличиваем только на реально добавленные PAID-строки.
+      const existingPaidTotal = paidRows.reduce(
+        (sum, row) => sum + toNumber(row.paidAmount ?? row.amount),
+        0,
+      );
 
       // Готовим план пересборки графика.
       const mergeInput = {
@@ -553,9 +604,15 @@ export const creditsService = {
               const pastPlan = planPastPayments(rebuilt, undefined, {
                 assumeAllDuePaid: dto.markPastAsPaid === true,
               });
-              totalPaidValue = pastPlan.paidTotal;
-              outstandingValue = dto.outstanding ?? pastPlan.outstanding;
+              // pastPlan.paidTotal — это планируемая оплата с начала графика.
+              // Уже оплаченное в БД сохраняем, добавляя только новые PAID-строки.
               pastToMark = pastPlan.paidCount;
+              const plannedPaidTotal = rebuilt
+                .slice(0, pastToMark)
+                .reduce((sum, row) => sum + row.amount, 0);
+              const newlyPaidTotal = Math.max(0, round2(plannedPaidTotal - existingPaidTotal));
+              totalPaidValue = round2(existingPaidTotal + newlyPaidTotal);
+              outstandingValue = dto.outstanding ?? pastPlan.outstanding;
             } else {
               totalPaidValue = undefined;
               outstandingValue = dto.outstanding !== undefined ? (dto.outstanding ?? undefined) : outstandingValue;
@@ -590,25 +647,69 @@ export const creditsService = {
         return updated;
       }
 
-      // Все ранее оплаченные строки заменяются новыми — старые удаляем целиком.
-      await tx.paymentSchedule.deleteMany({ where: { creditId } });
-      await tx.paymentSchedule.createMany({
-        data: items.map((item, index) => {
+      // Удаляем только неоплаченные строки. Оплаченные (включая исторические
+      // досрочки) остаются в графике и больше не пересоздаются.
+      const paidDueDateKeys = new Set(
+        paidRows.map((row) => new Date(row.dueDate).toISOString().slice(0, 10)),
+      );
+      const lastPaidTime = lastPaidDueDate ? new Date(lastPaidDueDate).getTime() : null;
+
+      const rowsToCreate = items
+        .map((item, index) => {
           const isPast = index < pastToMark;
+          const dueTime = new Date(item.dueDate).getTime();
           return {
             creditId,
             dueDate: item.dueDate,
             amount: item.amount,
             principalPart: item.principalPart,
             interestPart: item.interestPart,
-            status: isPast ? 'PAID' : 'PENDING',
+            status: isPast ? ('PAID' as const) : ('PENDING' as const),
             paidAt: isPast ? item.dueDate : null,
             paidAmount: isPast ? item.amount : null,
+            _dueTime: dueTime,
+            _isPast: isPast,
           };
-        }),
-      });
+        })
+        .filter((row) => {
+          const key = new Date(row._dueTime).toISOString().slice(0, 10);
+          if (paidDueDateKeys.has(key)) return false;
+          // Не воскрешаем платежи, которые уже закрыты досрочкой/оплатой.
+          if (!row._isPast && lastPaidTime !== null && row._dueTime <= lastPaidTime) return false;
+          return true;
+        })
+        .map((row) => ({
+          creditId: row.creditId,
+          dueDate: row.dueDate,
+          amount: row.amount,
+          principalPart: row.principalPart,
+          interestPart: row.interestPart,
+          status: row.status,
+          paidAt: row.paidAt,
+          paidAmount: row.paidAmount,
+        }));
 
-      await tx.credit.update({
+      await tx.paymentSchedule.deleteMany({ where: { creditId, status: 'PENDING' } });
+      if (rowsToCreate.length) {
+        await tx.paymentSchedule.createMany({ data: rowsToCreate, skipDuplicates: true });
+      }
+
+      // totalPaid и outstanding считаем по тем строкам, которые реально созданы,
+      // чтобы сохранённая история не завышала оплату и не занижала долг.
+      if (totalPaidValue !== undefined) {
+        const createdPaidTotal = rowsToCreate
+          .filter((row) => row.status === 'PAID')
+          .reduce((sum, row) => sum + row.amount, 0);
+        totalPaidValue = round2(existingPaidTotal + createdPaidTotal);
+        if (dto.outstanding === undefined && paidCount > 0) {
+          const createdPaidPrincipal = rowsToCreate
+            .filter((row) => row.status === 'PAID')
+            .reduce((sum, row) => sum + row.principalPart, 0);
+          outstandingValue = round2(Math.max(0, toNumber(current.outstanding) - createdPaidPrincipal));
+        }
+      }
+
+      const recalculated = await tx.credit.update({
         where: { id: creditId },
         data: {
           ...(totalPaidValue !== undefined ? { totalPaid: totalPaidValue } : {}),
@@ -616,7 +717,7 @@ export const creditsService = {
         },
       });
 
-      return updated;
+      return recalculated;
     });
   },
 
@@ -655,12 +756,8 @@ export const creditsService = {
         data: {
           freezeStartedAt: today,
           nextFreezeCheckAt: addUTCDays(today, cycleDays),
-          ...(amount > 0
-            ? {
-                totalPaid: { increment: amount },
-                outstanding: { decrement: Math.min(amount, toNumber(credit.outstanding)) },
-              }
-            : {}),
+          // Обновление грейса — это отдельный резерв на обслуживание льготного
+          // периода, а не погашение тела долга. Баланс/график не трогаем.
         },
       });
 

@@ -1,18 +1,13 @@
-import type { PaymentType, Prisma, PrepaymentMode } from '@prisma/client';
+import type { PaymentType, Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../middlewares/errorHandler';
-import { annuityPayment } from '../../utils/finance/annuity';
 import { addMonths, daysInMonth, isoDate, monthsBetween, parseISODateOnly, utcToday, withDayOfMonth } from '../../utils/finance/date';
-import { accruedInterestFor, assertAmountWithinOutstanding, assertPrepaymentDate, CLOSE_THRESHOLD, prepaymentAnchorDate, rebuildSchedule } from '../../utils/finance/earlyRepayment';
+import { accruedInterestFor, assertPrepaymentDate, CLOSE_THRESHOLD, prepaymentAnchorDate, scheduleAfterPrepayment, splitPrepaymentAmount } from '../../utils/finance/earlyRepayment';
+import { allocatePayment } from '../../utils/finance/paymentAllocation';
 import { crossedMilestone, milestoneMessage, paidPercent } from '../../utils/finance/milestones';
 import { round2, toNumber } from '../../utils/finance/round';
 import { sendUniquePush } from '../push/push.service';
 import type { EarlyRepaymentDto, ImportPaymentsDto, PayInstallmentDto } from './payments.schemas';
-
-function nextDueDateAfter(date: Date, paymentDay?: number | null): Date {
-  const base = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
-  return withDayOfMonth(base, paymentDay ?? date.getUTCDate());
-}
 
 /** Отправка мотивационного уведомления о достижении отметки (не роняет основной поток). */
 async function notifyMilestone(
@@ -33,11 +28,107 @@ async function notifyMilestone(
   }).catch((err) => console.error('[milestone] Не удалось отправить push:', err));
 }
 
+interface CreditSnapshot {
+  id: string;
+  status: string;
+  outstanding: unknown;
+  totalPaid?: unknown;
+  overpaymentBalance?: unknown;
+}
+
+/** Ключ идемпотентности всегда ограничен пользователем и типом операции. */
+function scopedIdempotencyKey(
+  userId: string,
+  scope: string,
+  rawKey: string | undefined,
+): string | undefined {
+  if (!rawKey) return undefined;
+  return `${userId}:${scope}:${rawKey}`;
+}
+
+/**
+ * Повтор после сетевого таймаута должен вернуть 409, а не второй платёж.
+ * Уникальный индекс в БД — вторая линия защиты при параллельных запросах.
+ */
+async function assertNoDuplicateEvent(
+  tx: Prisma.TransactionClient,
+  idempotencyKey: string | undefined,
+): Promise<void> {
+  if (!idempotencyKey) return;
+  const existing = await tx.paymentEvent.findFirst({ where: { idempotencyKey } });
+  if (existing) {
+    throw new AppError(409, 'Платёж уже применён, повторная отправка проигнорирована');
+  }
+}
+
+/**
+ * Сравниваем состояние кредита с данными, которые читал запрос. Если пока
+ * читали, другой платёж изменил outstanding/баланс — транзакция откатывается.
+ */
+async function claimCreditUnchanged(
+  tx: Prisma.TransactionClient,
+  credit: CreditSnapshot,
+  includeTotals = false,
+): Promise<void> {
+  const where: Prisma.CreditWhereInput = {
+    id: credit.id,
+    status: credit.status as any,
+    outstanding: credit.outstanding as any,
+  };
+  if (includeTotals) {
+    where.totalPaid = credit.totalPaid as any;
+    where.overpaymentBalance = (credit.overpaymentBalance ?? 0) as any;
+  }
+
+  const claimed = await tx.credit.updateMany({
+    where,
+    // No-op обновление: само совпадение where и есть оптимистичная блокировка.
+    data: { outstanding: credit.outstanding as any },
+  });
+  if (claimed.count !== 1) {
+    throw new AppError(409, 'Данные кредита изменились, попробуйте обновить страницу');
+  }
+}
+
+interface ImportCreditState {
+  id: string;
+  status: string;
+  paymentType: PaymentType;
+  outstanding: unknown;
+}
+
+/**
+ * Импорт применяет много строк подряд — остаток надо перечитывать внутри
+ * транзакции, иначе вторая строка увидит баланс до первой и переплата будет
+ * посчитана неверно.
+ */
+async function importCreditState(
+  tx: Prisma.TransactionClient,
+  creditId: string,
+): Promise<ImportCreditState> {
+  const credit = await tx.credit.findUnique({
+    where: { id: creditId },
+    select: { id: true, status: true, paymentType: true, outstanding: true },
+  });
+  if (!credit) throw new AppError(404, 'Кредит не найден');
+  return credit as ImportCreditState;
+}
+
 interface ApplyPaymentArgs {
-  installment: { id: string; amount: unknown; principalPart: unknown };
-  credit: { id: string; paymentType: PaymentType };
+  installment: {
+    id: string;
+    amount: unknown;
+    principalPart: unknown;
+    interestPart: unknown;
+    paidAmount?: unknown;
+    paidPrincipalPart?: unknown;
+    paidInterestPart?: unknown;
+    paidOverpayment?: unknown;
+  };
+  credit: { id: string; paymentType: PaymentType; outstanding: unknown };
   amount: number;
   paidAt: Date;
+  idempotencyKey?: string;
 }
 
 /**
@@ -47,20 +138,40 @@ interface ApplyPaymentArgs {
  */
 async function applyPayment(
   tx: Prisma.TransactionClient,
-  { installment, credit, amount, paidAt }: ApplyPaymentArgs,
+  { installment, credit, amount, paidAt, idempotencyKey }: ApplyPaymentArgs,
   guardPending = false,
 ) {
-  const scheduledAmount = toNumber(installment.amount);
-  const scheduledPrincipal = toNumber(installment.principalPart);
-  const ratio = scheduledAmount > 0 ? amount / scheduledAmount : 1;
-  const principalPart = round2(scheduledPrincipal * ratio);
+  const allocation = allocatePayment({
+    scheduledAmount: toNumber(installment.amount),
+    scheduledPrincipal: toNumber(installment.principalPart),
+    scheduledInterest: toNumber(installment.interestPart),
+    paidBefore: toNumber(installment.paidAmount ?? 0),
+    paidPrincipalBefore: toNumber(installment.paidPrincipalPart ?? 0),
+    paidInterestBefore: toNumber(installment.paidInterestPart ?? 0),
+    paidOverpaymentBefore: toNumber(installment.paidOverpayment ?? 0),
+    amount,
+    outstanding: toNumber(credit.outstanding),
+  });
 
-  const data = { status: 'PAID' as const, paidAt, paidAmount: amount };
+  const data = {
+    status: allocation.status,
+    paidAt,
+    paidAmount: allocation.totalPaid,
+    paidPrincipalPart: allocation.totalPrincipal,
+    paidInterestPart: allocation.totalInterest,
+    paidOverpayment: allocation.totalOverpayment,
+  };
   let updatedInstallment = null;
 
   if (guardPending) {
+    // Атомарный claim: статус и предыдущая сумма должны совпадать с прочитанной.
+    // Второй параллельный запрос (или повтор после таймаута) получит count=0.
     const claimed = await tx.paymentSchedule.updateMany({
-      where: { id: installment.id, status: 'PENDING' },
+      where: {
+        id: installment.id,
+        status: { in: ['PENDING', 'PARTIALLY_PAID'] },
+        paidAmount: installment.paidAmount ?? null,
+      },
       data,
     });
     if (claimed.count === 0) return null;
@@ -72,18 +183,43 @@ async function applyPayment(
     where: { id: credit.id },
     data: {
       totalPaid: { increment: amount },
-      outstanding: { decrement: principalPart },
+      // Переплата НЕ уменьшает тело долга — она лежит отдельным остатком.
+      outstanding: { decrement: allocation.principalToBalance },
+      overpaymentBalance: { increment: allocation.overpayment },
     },
   });
 
+  // События в сумме дают фактически внесённые деньги: основное событие — всё,
+  // что пошло в долг/проценты, отдельное — только излишек сверх остатка.
   await tx.paymentEvent.create({
     data: {
       creditId: credit.id,
+      scheduleId: installment.id,
       kind: credit.paymentType === 'MIN_PAYMENT' ? 'MIN_PAYMENT' : 'SCHEDULED',
-      amount,
+      amount: round2(amount - allocation.overpayment),
       paidAt,
+      note:
+        allocation.status === 'PARTIALLY_PAID'
+          ? 'Частичная оплата по графику'
+          : allocation.overpayment > 0
+            ? `В погашение ${round2(amount - allocation.overpayment).toFixed(2)}, переплата ${allocation.overpayment.toFixed(2)}`
+            : null,
+      idempotencyKey,
     },
   });
+
+  if (allocation.overpayment > 0) {
+    await tx.paymentEvent.create({
+      data: {
+        creditId: credit.id,
+        scheduleId: installment.id,
+        kind: 'OVERPAYMENT',
+        amount: allocation.overpayment,
+        paidAt,
+        note: 'Излишек сверх остатка долга — не погашение тела',
+      },
+    });
+  }
 
   // Полное закрытие
   if (toNumber(updatedCredit.outstanding) <= CLOSE_THRESHOLD) {
@@ -97,9 +233,38 @@ async function applyPayment(
   return { updatedInstallment, updatedCredit };
 }
 
+/**
+ * Отказ в отмене закрывающего платежа фиксируется в аудите, но НЕ меняет
+ * кредит, график и исходный PaymentEvent. Повтор попытки обновляет ту же запись
+ * (dedupKey), а не создаёт копии.
+ */
+async function recordBlockedCancelAudit(
+  userId: string,
+  creditId: string,
+  installmentId: string,
+  reason: string,
+): Promise<void> {
+  const dedupKey = `${userId}:CANCEL_BLOCKED:${installmentId}`;
+  try {
+    await prisma.auditEvent.upsert({
+      where: { dedupKey },
+      create: { userId, creditId, installmentId, kind: 'CANCEL_BLOCKED', reason, dedupKey },
+      update: { reason, creditId },
+    });
+  } catch (err) {
+    // Аудит не должен менять финансовый ответ: основная ошибка 409 остаётся.
+    console.error('[audit] Не удалось записать отказ отмены:', err);
+  }
+}
+
 export const paymentsService = {
   /** «Я оплатил» — отметить платёж по графику. Можно указать фактическую сумму и дату. */
-  async payInstallment(userId: string, installmentId: string, dto: PayInstallmentDto = {}) {
+  async payInstallment(
+    userId: string,
+    installmentId: string,
+    dto: PayInstallmentDto = {},
+    idempotencyKey?: string,
+  ) {
     const installment = await prisma.paymentSchedule.findUnique({
       where: { id: installmentId },
       include: { credit: true },
@@ -111,16 +276,33 @@ export const paymentsService = {
     if (installment.status === 'PAID') {
       throw new AppError(409, 'Этот платёж уже отмечен как оплаченный');
     }
+    if (installment.status !== 'PENDING' && installment.status !== 'PARTIALLY_PAID') {
+      throw new AppError(409, 'Платёж нельзя оплатить в текущем статусе');
+    }
 
     const credit = installment.credit;
     // Фактически внесённая сумма (по умолчанию — как в графике).
     const amount = round2(dto.amount ?? toNumber(installment.amount));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new AppError(400, 'Сумма платежа должна быть больше нуля');
+    }
+    // Переплата принимается и учитывается отдельно (overpaymentBalance + событие),
+    // но никогда не уменьшает outstanding ниже нуля.
     const prevPercent = paidPercent(toNumber(credit.principal), toNumber(credit.outstanding));
     const paidAt = dto.paidAt ?? new Date();
+    const eventKey = scopedIdempotencyKey(userId, `pay:${installmentId}`, idempotencyKey);
 
-    const result = await prisma.$transaction((tx) =>
-      applyPayment(tx, { installment, credit, amount, paidAt }),
-    );
+    // Два металлических замка: CAS по строке графика (guardPending) и CAS по
+    // состоянию кредита. Плюс ключ идемпотентности против повтора после таймаута.
+    const result = await prisma.$transaction(async (tx) => {
+      await assertNoDuplicateEvent(tx, eventKey);
+      await claimCreditUnchanged(tx, credit);
+      return applyPayment(
+        tx,
+        { installment, credit, amount, paidAt, idempotencyKey: eventKey },
+        true,
+      );
+    });
 
     if (!result) {
       throw new AppError(409, 'Этот платёж уже отмечен как оплаченный');
@@ -148,7 +330,7 @@ export const paymentsService = {
 
     const credits = await prisma.credit.findMany({
       where: { userId },
-      select: { id: true, name: true, status: true, paymentType: true },
+      select: { id: true, name: true, status: true, paymentType: true, outstanding: true },
     });
 
     // 1. Сопоставляем строки с кредитами и проверяем даты.
@@ -217,6 +399,11 @@ export const paymentsService = {
             dueDate: true,
             amount: true,
             principalPart: true,
+            interestPart: true,
+            paidAmount: true,
+            paidPrincipalPart: true,
+            paidInterestPart: true,
+            paidOverpayment: true,
             status: true,
           },
         })
@@ -267,17 +454,33 @@ export const paymentsService = {
         const result = await prisma.$transaction(
           async (tx) => {
             const applied: Array<{ row: number; ok: boolean }> = [];
+            const creditStates = new Map<string, ImportCreditState>();
             for (const item of chunk) {
+              let credit = creditStates.get(item.credit.id);
+              if (!credit) {
+                credit = await importCreditState(tx, item.credit.id);
+                creditStates.set(credit.id, credit);
+              }
+              if (credit.status === 'CLOSED') {
+                applied.push({ row: item.row, ok: false });
+                continue;
+              }
               const payment = await applyPayment(
                 tx,
                 {
                   installment: item.installment,
-                  credit: item.credit,
+                  credit,
                   amount: item.amount,
                   paidAt: item.paidAt,
                 },
                 true,
               );
+              if (payment) {
+                creditStates.set(credit.id, {
+                  ...credit,
+                  outstanding: payment.updatedCredit.outstanding,
+                });
+              }
               applied.push({ row: item.row, ok: payment !== null });
             }
             return applied;
@@ -294,18 +497,20 @@ export const paymentsService = {
         console.error('[payments.import] чанк не сохранён, повторяю построчно:', error);
         for (const item of chunk) {
           try {
-            const payment = await prisma.$transaction((tx) =>
-              applyPayment(
+            const payment = await prisma.$transaction(async (tx) => {
+              const credit = await importCreditState(tx, item.credit.id);
+              if (credit.status === 'CLOSED') return null;
+              return applyPayment(
                 tx,
                 {
                   installment: item.installment,
-                  credit: item.credit,
+                  credit,
                   amount: item.amount,
                   paidAt: item.paidAt,
                 },
                 true,
-              ),
-            );
+              );
+            });
             if (payment) created += 1;
             else skipped += 1;
           } catch (rowError) {
@@ -332,29 +537,69 @@ export const paymentsService = {
     if (!installment || installment.credit.userId !== userId) {
       throw new AppError(404, 'Платёж не найден');
     }
-    if (installment.status !== 'PAID') {
+    if (installment.status !== 'PAID' && installment.status !== 'PARTIALLY_PAID') {
       throw new AppError(400, 'Платёж ещё не оплачен');
     }
 
     const credit = installment.credit;
+    // Отказ — не отмена: Credit, график и исходный PaymentEvent остаются нетронутыми.
+    if (credit.status === 'CLOSED') {
+      const reason = 'Платёж закрыл кредит; PENDING-строки графика удалены при закрытии';
+      await recordBlockedCancelAudit(userId, credit.id, installmentId, reason);
+      throw new AppError(409, 'Нельзя отменить платёж, которым был полностью закрыт кредит');
+    }
+
     const amount = round2(toNumber(installment.paidAmount ?? installment.amount));
-    const principalPart = round2(toNumber(installment.principalPart));
-    const newOutstanding = round2(toNumber(credit.outstanding) + principalPart);
-    const newTotalPaid = round2(Math.max(0, toNumber(credit.totalPaid) - amount));
+    // Для старых строк без разбивки используем плановое тело (legacy-поведение).
+    const principalToRestore = round2(
+      toNumber(installment.paidPrincipalPart ?? installment.principalPart),
+    );
+    const overpaymentToRestore = round2(
+      Math.min(toNumber(installment.paidOverpayment ?? 0), toNumber(credit.overpaymentBalance ?? 0)),
+    );
+    const totalPaidToRestore = round2(Math.min(amount, toNumber(credit.totalPaid)));
 
     const result = await prisma.$transaction(async (tx) => {
+      // CAS по кредиту и по строке графика: параллельная оплата или повтор отмены
+      // изменят прочитанные значения и не пройдут guard.
+      await claimCreditUnchanged(tx, credit, true);
+      const claimed = await tx.paymentSchedule.updateMany({
+        where: {
+          id: installmentId,
+          status: { in: ['PAID', 'PARTIALLY_PAID'] },
+          paidAmount: installment.paidAmount ?? null,
+        },
+        data: { status: 'PENDING', paidAt: null, paidAmount: null },
+      });
+      if (claimed.count !== 1) {
+        throw new AppError(409, 'Платёж уже изменён, попробуйте обновить страницу');
+      }
+
+      await tx.paymentSchedule.update({
+        where: { id: installmentId },
+        data: {
+          paidPrincipalPart: null,
+          paidInterestPart: null,
+          paidOverpayment: null,
+        },
+      });
+
       const updatedCredit = await tx.credit.update({
         where: { id: credit.id },
         data: {
-          outstanding: newOutstanding,
-          totalPaid: newTotalPaid,
-          status: newOutstanding <= 0.01 ? 'CLOSED' : 'ACTIVE',
+          outstanding: { increment: principalToRestore },
+          totalPaid: { decrement: totalPaidToRestore },
+          overpaymentBalance: { decrement: overpaymentToRestore },
+          status: 'ACTIVE',
         },
       });
-      await tx.paymentSchedule.update({
-        where: { id: installmentId },
-        data: { status: 'PENDING', paidAt: null, paidAmount: null },
+
+      // Историю не удаляем: помечаем только события отменяемого платежа.
+      await tx.paymentEvent.updateMany({
+        where: { scheduleId: installmentId, cancelledAt: null },
+        data: { cancelledAt: new Date() },
       });
+
       return updatedCredit;
     });
 
@@ -362,8 +607,12 @@ export const paymentsService = {
   },
 
   /** Досрочное погашение (частичное или полное) с пересборкой графика. */
-  async earlyRepayment(userId: string, creditId: string, dto: EarlyRepaymentDto) {
-    console.log('earlyRepayment start', { creditId, amount: dto.amount, date: dto.date });
+  async earlyRepayment(
+    userId: string,
+    creditId: string,
+    dto: EarlyRepaymentDto,
+    idempotencyKey?: string,
+  ) {
     const credit = await prisma.credit.findFirst({
       where: { id: creditId, userId },
       include: {
@@ -376,11 +625,11 @@ export const paymentsService = {
     if (credit.status === 'CLOSED') throw new AppError(409, 'Кредит уже закрыт');
     if (credit.type === 'LOAN') throw new AppError(400, 'Для частного займа досрочное погашение не поддерживается');
     if (credit.type === 'CREDIT_CARD') throw new AppError(400, 'Для кредитной карты досрочное погашение недоступно');
+    if (credit.type === 'MICROLOAN') throw new AppError(400, 'Для микрозайма досрочное погашение с пересчётом графика недоступно');
     if (!credit.termMonths || Number(credit.termMonths) <= 0) throw new AppError(400, 'Невозможно пересчитать график: не указан срок кредита');
 
     const amount = round2(toNumber(dto.amount));
     if (!amount || amount <= 0) throw new AppError(400, 'Сумма должна быть больше 0');
-    console.log('earlyRepayment amount normalized', { amount });
 
     const prepaymentDate = dto.date ? new Date(dto.date) : utcToday();
     const prepaymentDateUTC = utcToday(prepaymentDate);
@@ -396,46 +645,79 @@ export const paymentsService = {
     // графика со сроком <= даты погашения, иначе дата выдачи.
     const anchorDate = prepaymentAnchorDate(credit.schedule, prepaymentDateUTC, startDateUTC);
     const { accruedInterest, days } = accruedInterestFor(outstanding, annualRate, anchorDate, prepaymentDateUTC);
-    console.log('accruedInterest calculated', { accruedInterest, days, anchor: anchorDate.toISOString(), outstanding });
-    const principalPart = round2(amount - accruedInterest);
+    const split = splitPrepaymentAmount(amount, outstanding, accruedInterest);
+    const { principalPart, principalToBalance, overpayment, newOutstanding } = split;
 
     if (principalPart <= 0) {
       throw new AppError(400, `Сумма не покрывает начисленные проценты (${accruedInterest.toFixed(2)} ₽)`);
     }
 
-    const newOutstanding = round2(outstanding - principalPart);
-    console.log('principalPart calculated', { principalPart, accruedInterest, newOutstanding });
-    assertAmountWithinOutstanding(amount, outstanding, accruedInterest);
     const isFull = newOutstanding <= CLOSE_THRESHOLD;
-    const mode: PrepaymentMode = 'REDUCE_TERM';
     const prevPercent = paidPercent(toNumber(credit.principal), toNumber(credit.outstanding));
+    const eventKey = scopedIdempotencyKey(userId, `early:${creditId}`, idempotencyKey);
+    const debtPart = round2(amount - overpayment);
 
     const result = await prisma.$transaction(async (tx) => {
+      await assertNoDuplicateEvent(tx, eventKey);
+      await claimCreditUnchanged(tx, credit);
+
+      // В истории: основное событие — деньги, пошедшие в долг/проценты;
+      // отдельное событие — только излишек. Вместе они равны фактической сумме.
       await tx.paymentEvent.create({
         data: {
           creditId,
           kind: isFull ? 'EARLY_FULL' : 'EARLY_PARTIAL',
-          amount,
+          amount: debtPart,
           paidAt: prepaymentDateUTC,
-          note: `проценты ${accruedInterest.toFixed(2)}, тело ${principalPart.toFixed(2)}${dto.note ? `; ${dto.note}` : ''}`,
+          note: `проценты ${accruedInterest.toFixed(2)}, тело ${principalToBalance.toFixed(2)}${overpayment > 0 ? `, переплата ${overpayment.toFixed(2)}` : ''}${dto.note ? `; ${dto.note}` : ''}`,
+          idempotencyKey: eventKey,
         },
       });
+      if (overpayment > 0) {
+        await tx.paymentEvent.create({
+          data: {
+            creditId,
+            kind: 'OVERPAYMENT',
+            amount: overpayment,
+            paidAt: prepaymentDateUTC,
+            note: 'Излишек сверх остатка долга — не погашение тела',
+          },
+        });
+      }
 
       if (isFull) {
         const existingFull = await tx.paymentSchedule.findUnique({
           where: { creditId_dueDate: { creditId, dueDate: prepaymentDateUTC } },
         });
         if (existingFull) {
+          // Если строка уже оплачена — это дополнительный платёж. Если она ещё ожидала
+          // оплаты, досрочка ЗАМЕНЯЕТ её: инкремент удваивал бы сумму в графике.
+          const alreadyPaid = existingFull.status === 'PAID';
           await tx.paymentSchedule.update({
             where: { id: existingFull.id },
-            data: {
-              amount: { increment: amount },
-              principalPart: { increment: round2(outstanding) },
-              interestPart: { increment: round2(accruedInterest) },
-              paidAmount: { increment: amount },
-              paidAt: prepaymentDateUTC,
-              status: 'PAID',
-            },
+            data: alreadyPaid
+              ? {
+                  amount: { increment: amount },
+                  principalPart: { increment: principalToBalance },
+                  interestPart: { increment: accruedInterest },
+                  paidAmount: { increment: amount },
+                  paidPrincipalPart: { increment: principalToBalance },
+                  paidInterestPart: { increment: accruedInterest },
+                  paidOverpayment: { increment: overpayment },
+                  paidAt: prepaymentDateUTC,
+                  status: 'PAID',
+                }
+              : {
+                  amount,
+                  principalPart: principalToBalance,
+                  interestPart: accruedInterest,
+                  paidAmount: amount,
+                  paidPrincipalPart: principalToBalance,
+                  paidInterestPart: accruedInterest,
+                  paidOverpayment: overpayment,
+                  paidAt: prepaymentDateUTC,
+                  status: 'PAID',
+                },
           });
         } else {
           await tx.paymentSchedule.create({
@@ -443,11 +725,14 @@ export const paymentsService = {
               creditId,
               dueDate: prepaymentDateUTC,
               amount,
-              principalPart: round2(outstanding),
-              interestPart: round2(accruedInterest),
+              principalPart: principalToBalance,
+              interestPart: accruedInterest,
+              paidAmount: amount,
+              paidPrincipalPart: principalToBalance,
+              paidInterestPart: accruedInterest,
+              paidOverpayment: overpayment,
               status: 'PAID',
               paidAt: prepaymentDateUTC,
-              paidAmount: amount,
             },
           });
         }
@@ -456,84 +741,81 @@ export const paymentsService = {
           data: {
             outstanding: 0,
             totalPaid: { increment: amount },
+            overpaymentBalance: { increment: overpayment },
             status: 'CLOSED',
             closedAt: new Date(),
           },
         });
-        console.log('schedule updated/merged done');
-      await tx.paymentSchedule.deleteMany({ where: { creditId, status: 'PENDING' } });
+        await tx.paymentSchedule.deleteMany({ where: { creditId, status: 'PENDING' } });
         return { credit: closed, schedule: [] as { dueDate: Date; amount: number }[] };
       }
 
       const updated = await tx.credit.update({
         where: { id: creditId },
-        data: { outstanding: newOutstanding, totalPaid: { increment: amount } },
+        data: {
+          outstanding: newOutstanding,
+          totalPaid: { increment: amount },
+          overpaymentBalance: { increment: overpayment },
+        },
       });
 
       // Early repayment on the prepayment date (includes accrued interest).
+      // Если в этот день уже есть НЕоплаченная строка графика, досрочка заменяет
+      // её, а не прибавляется к ней: иначе paidAmount удваивался, а остаток — нет.
+      const existingOnDate = await tx.paymentSchedule.findUnique({
+        where: { creditId_dueDate: { creditId, dueDate: prepaymentDateUTC } },
+      });
+      const alreadyPaid = existingOnDate?.status === 'PAID';
+      const updateData: Prisma.PaymentScheduleUpdateInput = alreadyPaid
+        ? {
+            status: 'PAID',
+            paidAt: prepaymentDateUTC,
+            amount: { increment: amount },
+            paidAmount: { increment: amount },
+            principalPart: { increment: principalToBalance },
+            interestPart: { increment: accruedInterest },
+            paidPrincipalPart: { increment: principalToBalance },
+            paidInterestPart: { increment: accruedInterest },
+            paidOverpayment: { increment: overpayment },
+          }
+        : {
+            status: 'PAID',
+            paidAt: prepaymentDateUTC,
+            amount,
+            paidAmount: amount,
+            principalPart: principalToBalance,
+            interestPart: accruedInterest,
+            paidPrincipalPart: principalToBalance,
+            paidInterestPart: accruedInterest,
+            paidOverpayment: overpayment,
+          };
+
       await tx.paymentSchedule.upsert({
         where: { creditId_dueDate: { creditId, dueDate: prepaymentDateUTC } },
-        update: {
-          status: 'PAID',
-          paidAt: prepaymentDateUTC,
-          amount: { increment: amount },
-          paidAmount: { increment: amount },
-          principalPart: { increment: principalPart },
-          interestPart: { increment: accruedInterest },
-        },
+        update: updateData,
         create: {
           creditId,
           dueDate: prepaymentDateUTC,
           amount,
-          principalPart,
+          principalPart: principalToBalance,
           interestPart: accruedInterest,
+          paidAmount: amount,
+          paidPrincipalPart: principalToBalance,
+          paidInterestPart: accruedInterest,
+          paidOverpayment: overpayment,
           status: 'PAID',
           paidAt: prepaymentDateUTC,
-          paidAmount: amount,
         },
       });
 
       await tx.paymentSchedule.deleteMany({ where: { creditId, status: 'PENDING' } });
 
-      const remainingTerm = Math.max(
-        1,
-        monthsBetween(prepaymentDateUTC, addMonths(credit.startDate, credit.termMonths)),
-      );
-      const nextDueDate = nextDueDateAfter(prepaymentDateUTC, credit.paymentDay);
-
-      const pending = credit.schedule.filter((s) => s.status === 'PENDING');
-      const lastPaid = [...credit.schedule]
-        .filter((s) => s.status === 'PAID')
-        .sort((a, b) => b.dueDate.getTime() - a.dueDate.getTime())[0];
-      const referencePayment = lastPaid ?? pending[0] ?? null;
-      const referenceAnnuity = credit.paymentType === 'DIFFERENTIAL'
-        ? null
-        : (() => {
-            try {
-              return round2(annuityPayment(newOutstanding, annualRate, remainingTerm));
-            } catch {
-              return null;
-            }
-          })();
-
       let items;
       try {
-        items = rebuildSchedule({
-          outstanding: newOutstanding,
-          annualRate,
-          paymentType: credit.paymentType as PaymentType,
-          remainingTermMonths: remainingTerm,
-          nextDueDate,
-          paymentDay: credit.paymentDay,
-          previousPayment: credit.paymentType === 'DIFFERENTIAL'
-            ? (referencePayment ? toNumber(referencePayment.principalPart) : null)
-            : (referenceAnnuity ?? (referencePayment ? toNumber(referencePayment.amount) : null)),
-          previousPrincipalPart: credit.paymentType === 'DIFFERENTIAL'
-            ? (referencePayment ? toNumber(referencePayment.principalPart) : null)
-            : (referencePayment ? toNumber(referencePayment.principalPart) : null),
-        });
+        // Та же функция, что и в preview: прогноз и запись всегда совпадают.
+        items = scheduleAfterPrepayment(credit, prepaymentDateUTC, newOutstanding);
       } catch (err) {
-        console.error('rebuildSchedule failed', err);
+        console.error('scheduleAfterPrepayment failed', err);
         throw new AppError(400, 'Не удалось пересчитать график досрочного погашения. Проверьте параметры кредита.');
       }
 
@@ -563,7 +845,6 @@ export const paymentsService = {
     );
     await notifyMilestone(userId, creditId, credit.name, prevPercent, newPercent);
 
-    console.log('earlyRepayment success');
     return result;
   },
 
@@ -584,6 +865,7 @@ export const paymentsService = {
     if (credit.status === 'CLOSED') throw new AppError(409, 'Кредит уже закрыт');
     if (credit.type === 'LOAN') throw new AppError(400, 'Для частного займа досрочное погашение не поддерживается');
     if (credit.type === 'CREDIT_CARD') throw new AppError(400, 'Для кредитной карты досрочное погашение недоступно');
+    if (credit.type === 'MICROLOAN') throw new AppError(400, 'Для микрозайма досрочное погашение с пересчётом графика недоступно');
     if (!credit.termMonths || Number(credit.termMonths) <= 0) throw new AppError(400, 'Невозможно пересчитать график: не указан срок кредита');
 
     const amount = round2(toNumber(dto.amount));
@@ -601,8 +883,8 @@ export const paymentsService = {
 
     const anchorDate = prepaymentAnchorDate(credit.schedule, prepaymentDateUTC, startDateUTC);
     const { accruedInterest, days } = accruedInterestFor(outstanding, annualRate, anchorDate, prepaymentDateUTC);
-    const principalPart = round2(amount - accruedInterest);
-    assertAmountWithinOutstanding(amount, outstanding, accruedInterest);
+    const split = splitPrepaymentAmount(amount, outstanding, accruedInterest);
+    const { principalPart, principalToBalance, overpayment, newOutstanding } = split;
 
     const pending = credit.schedule.filter((item) => item.status === 'PENDING');
 
@@ -615,6 +897,7 @@ export const paymentsService = {
     const effectiveDate = isoDate(prepaymentDateUTC);
     const minAmount = round2(accruedInterest + 0.01);
     const coversInterest = principalPart > 0;
+    const isFull = newOutstanding <= CLOSE_THRESHOLD;
     const paymentBefore = pending[0] ? round2(toNumber(pending[0].amount)) : 0;
 
     if (!coversInterest) {
@@ -632,15 +915,14 @@ export const paymentsService = {
         monthsAfter: pending.length,
         accruedInterest,
         principalPart,
+        principalToBalance: 0,
+        overpayment: 0,
         days,
         coversInterest,
         minAmount,
         effectiveDate,
       };
     }
-
-    const newOutstanding = round2(outstanding - principalPart);
-    const isFull = newOutstanding <= CLOSE_THRESHOLD;
 
     if (isFull) {
       return {
@@ -654,8 +936,11 @@ export const paymentsService = {
         currentTotal,
         paymentBefore,
         paymentAfter: 0,
+        monthsAfter: 0,
         accruedInterest,
         principalPart: round2(outstanding),
+        principalToBalance: round2(outstanding),
+        overpayment,
         days,
         coversInterest,
         minAmount,
@@ -663,22 +948,14 @@ export const paymentsService = {
       };
     }
 
-    const nextDueDate = pending[0]?.dueDate ?? addMonths(prepaymentDateUTC, 1);
-    const remainingTerm = Math.max(
-      1,
-      monthsBetween(prepaymentDateUTC, addMonths(credit.startDate, credit.termMonths)),
-    );
-
-    const items = rebuildSchedule({
-      outstanding: newOutstanding,
-      annualRate,
-      paymentType: credit.paymentType as PaymentType,
-      remainingTermMonths: remainingTerm,
-      nextDueDate,
-      paymentDay: credit.paymentDay,
-      previousPayment: pending[0] ? toNumber(pending[0].amount) : null,
-      previousPrincipalPart: pending[0] ? toNumber(pending[0].principalPart) : null,
-    });
+    let items;
+    try {
+      // та же функция, что и при применении: предпросмотр и запись совпадают.
+      items = scheduleAfterPrepayment(credit, prepaymentDateUTC, newOutstanding);
+    } catch (err) {
+      console.error('scheduleAfterPrepayment failed', err);
+      throw new AppError(400, 'Не удалось пересчитать график досрочного погашения. Проверьте параметры кредита.');
+    }
 
     const newInterest = round2(items.reduce((acc, item) => acc + item.interestPart, 0));
     const newTotal = round2(items.reduce((acc, item) => acc + item.amount, 0));
@@ -697,6 +974,8 @@ export const paymentsService = {
       monthsAfter: items.length,
       accruedInterest,
       principalPart,
+      principalToBalance,
+      overpayment,
       days,
       coversInterest,
       minAmount,

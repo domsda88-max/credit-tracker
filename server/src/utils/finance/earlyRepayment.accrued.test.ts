@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { AppError } from '../../middlewares/errorHandler';
 import {
   accruedInterestFor,
-  assertAmountWithinOutstanding,
   assertPrepaymentDate,
   prepaymentAnchorDate,
+  splitPrepaymentAmount,
 } from './earlyRepayment';
 
 describe('accruedInterestFor', () => {
@@ -83,16 +83,32 @@ describe('assertPrepaymentDate', () => {
   });
 });
 
-describe('assertAmountWithinOutstanding', () => {
-  it('accepts the exact outstanding + accrued amount', () => {
-    expect(() => assertAmountWithinOutstanding(80_368.22, 80_000, 368.22)).not.toThrow();
+describe('splitPrepaymentAmount', () => {
+  it('splits the exact debt + interest without overpayment', () => {
+    expect(splitPrepaymentAmount(80_368.22, 80_000, 368.22)).toEqual({
+      principalPart: 80_000,
+      principalToBalance: 80_000,
+      overpayment: 0,
+      newOutstanding: 0,
+    });
   });
 
-  it('accepts a one-kopeck rounding excess', () => {
-    expect(() => assertAmountWithinOutstanding(80_368.23, 80_000, 368.22)).not.toThrow();
+  it('keeps a small rounding excess separate from the balance', () => {
+    expect(splitPrepaymentAmount(80_368.23, 80_000, 368.22).overpayment).toBe(0.01);
   });
 
-  it('rejects an amount above the one-kopeck tolerance', () => {
-    expect(() => assertAmountWithinOutstanding(80_368.24, 80_000, 368.22)).toThrow(AppError);
+  it('never reduces outstanding below zero when a real overpayment arrives', () => {
+    const result = splitPrepaymentAmount(80_400, 80_000, 368.22);
+    expect(result.principalToBalance).toBe(80_000);
+    expect(result.overpayment).toBe(31.78);
+    expect(result.newOutstanding).toBe(0);
+  });
+
+  it('does not treat an amount below interest as an overpayment', () => {
+    const result = splitPrepaymentAmount(100, 80_000, 368.22);
+    expect(result.principalPart).toBe(-268.22);
+    expect(result.principalToBalance).toBe(0);
+    expect(result.overpayment).toBe(0);
+    expect(result.newOutstanding).toBe(80_000);
   });
 });

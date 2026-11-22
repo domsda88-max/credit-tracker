@@ -6,6 +6,12 @@ import type {
 } from './payments.schemas';
 import { paymentsService } from './payments.service';
 
+/** Ключ идемпотентности: заголовок приоритетнее тела (офлайн-очередь шлёт оба). */
+function idempotencyKey(req: Request, body: { idempotencyKey?: string }): string | undefined {
+  const header = req.header('Idempotency-Key');
+  return header?.trim() || body.idempotencyKey?.trim() || undefined;
+}
+
 export const paymentsController = {
   async cancelPayment(req: Request, res: Response) {
     const result = await paymentsService.cancelPayment(req.user!.sub, req.params.installmentId);
@@ -13,19 +19,23 @@ export const paymentsController = {
   },
 
   async payInstallment(req: Request, res: Response) {
+    const body = req.body as PayInstallmentDto;
     const result = await paymentsService.payInstallment(
       req.user!.sub,
       req.params.installmentId,
-      req.body as PayInstallmentDto,
+      body,
+      idempotencyKey(req, body),
     );
     res.json(result);
   },
 
   async earlyRepayment(req: Request, res: Response) {
+    const body = req.body as EarlyRepaymentDto;
     const result = await paymentsService.earlyRepayment(
       req.user!.sub,
       req.params.creditId,
-      req.body as EarlyRepaymentDto,
+      body,
+      idempotencyKey(req, body),
     );
     res.json(result);
   },

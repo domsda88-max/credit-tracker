@@ -192,10 +192,15 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Seed Zustand persist auth + theme before the app boots. */
-export async function seedApp(page: Page, theme: 'light' | 'dark' = 'dark') {
+/**
+ * Seed Zustand persist auth + theme before the app boots.
+ * `once` — seeding только при первом открытии вкладки; дальше состояние живёт
+ * в localStorage и проверяется после reload (нужно для стресс-тестов сохранения).
+ */
+export async function seedApp(page: Page, theme: 'light' | 'dark' = 'dark', once = false) {
   await page.addInitScript(
-    ({ user, selectedTheme }) => {
+    ({ user, selectedTheme, seedOnce }) => {
+      if (seedOnce && sessionStorage.getItem('credit-tracker-audit-seeded')) return;
       localStorage.setItem(
         'credit-tracker-auth',
         JSON.stringify({
@@ -206,8 +211,9 @@ export async function seedApp(page: Page, theme: 'light' | 'dark' = 'dark') {
       localStorage.setItem('credit-tracker-theme', selectedTheme);
       // Пропускаем онбординг, чтобы тесты сразу видели приложение.
       localStorage.setItem('credit-tracker-onboarded', '1');
+      if (seedOnce) sessionStorage.setItem('credit-tracker-audit-seeded', '1');
     },
-    { user: USER, selectedTheme: theme },
+    { user: USER, selectedTheme: theme, seedOnce: once },
   );
 }
 

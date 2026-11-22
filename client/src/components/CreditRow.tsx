@@ -95,6 +95,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['credits'], refetchType: 'none' });
       queryClient.invalidateQueries({ queryKey: ['summary'], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['credit', credit.id], refetchType: 'none' });
     },
   });
 
@@ -121,8 +122,11 @@ export function CreditRow({ credit, index = 0 }: Props) {
   const renewCycle = async () => {
     try {
       await creditsApi.renewFreezeCycle(credit.id);
-      await queryClient.invalidateQueries({ queryKey: ['credits'] });
-      await queryClient.invalidateQueries({ queryKey: ['summary'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['credits'] }),
+        queryClient.invalidateQueries({ queryKey: ['summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['credit', credit.id] }),
+      ]);
       toast.show('Период обновлён — цикл сдвинут');
       setOpen(false);
     } catch (err) {
@@ -152,6 +156,7 @@ export function CreditRow({ credit, index = 0 }: Props) {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['credits'] });
       queryClient.invalidateQueries({ queryKey: ['summary'] });
+      queryClient.invalidateQueries({ queryKey: ['credit', credit.id] });
     },
   });
 

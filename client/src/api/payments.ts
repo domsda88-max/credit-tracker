@@ -3,28 +3,41 @@ import type {
   EarlyPreview,
   ImportPaymentRowPayload,
   ImportPaymentsResult,
+  PayInstallmentPayload,
 } from '../types';
 import { api } from './client';
+
+/** Общий заголовок идемпотентности: сервер читает его даже если тело потерялось. */
+function keyConfig(idempotencyKey?: string) {
+  return idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : undefined;
+}
 
 export const paymentsApi = {
   /**
    * «Я оплатил» — отметить платёж по графику.
-   * Можно передать фактическую сумму и реальную дату платежа
-   * (например, если заплатили меньше или позже).
+   * Можно передать фактическую сумму, реальную дату и ключ идемпотентности.
    */
-  async payInstallment(installmentId: string, payload?: { amount?: number; paidAt?: string }) {
-    const { data } = await api.post(`/payments/installments/${installmentId}/pay`, payload ?? {});
+  async payInstallment(installmentId: string, payload: PayInstallmentPayload = {}) {
+    const { data } = await api.post(
+      `/payments/installments/${installmentId}/pay`,
+      payload,
+      keyConfig(payload.idempotencyKey),
+    );
     return data;
   },
 
-  /** Досрочное погашение (частичное или полное) с пересчётом графика. */
+  /** Отмена оплаты по графику (не путать с удалением строки). */
   async cancelSchedule(installmentId: string) {
     const { data } = await api.post(`/payments/schedule/${installmentId}/cancel`);
     return data;
   },
 
   async earlyRepayment(creditId: string, payload: EarlyRepaymentPayload) {
-    const { data } = await api.post(`/payments/credits/${creditId}/early-repayment`, payload);
+    const { data } = await api.post(
+      `/payments/credits/${creditId}/early-repayment`,
+      payload,
+      keyConfig(payload.idempotencyKey),
+    );
     return data;
   },
 
@@ -33,6 +46,8 @@ export const paymentsApi = {
     const { data } = await api.post<EarlyPreview>(
       `/payments/credits/${creditId}/early-preview`,
       payload,
+      // Фоновый предпросмотр не должен разлогинивать при 401.
+      { skipAuthLogout: true },
     );
     return data;
   },

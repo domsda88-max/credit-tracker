@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { TriangleAlert } from 'lucide-react';
 import type { CreditListItem } from '../types';
+import { startOfUTCDay } from '../utils/date';
 import { describeDueDate, formatDate, formatMoney } from '../utils/format';
 
 interface Props {
@@ -12,8 +13,7 @@ interface Props {
  * главная боль пользователя — не пропустить платёж.
  */
 export function OverdueAlert({ credits }: Props) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = startOfUTCDay();
 
   const overdue = credits
     .filter((c) => c.status === 'ACTIVE' && c.nextPayment)

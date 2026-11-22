@@ -39,12 +39,12 @@ function untilLabel(iso: string): string {
 }
 
 export function FreedomPage() {
-  const { data: summary } = useQuery({
+  const { data: summary, isPending: summaryPending } = useQuery({
     queryKey: ['summary'],
     queryFn: () => creditsApi.summary(),
     placeholderData: keepPreviousData,
   });
-  const { data: credits } = useQuery({
+  const { data: credits, isPending: creditsPending } = useQuery({
     queryKey: ['credits'],
     queryFn: () => creditsApi.list(),
     placeholderData: keepPreviousData,
@@ -99,6 +99,17 @@ export function FreedomPage() {
     if (res) lastAccel.current = res;
     return res ?? lastAccel.current;
   }, [credits, extra, baselineMonths]);
+
+  // Пока данные загружаются, не показываем ложное «все долги погашены».
+  if (summaryPending || creditsPending) {
+    return (
+      <div className="page-stack">
+        <div className="skeleton h-28 rounded-card" />
+        <div className="skeleton h-28 rounded-card" />
+        <div className="skeleton h-28 rounded-card" />
+      </div>
+    );
+  }
 
   if (!summary || summary.activeCount === 0) {
     return (

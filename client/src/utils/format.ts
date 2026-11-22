@@ -1,4 +1,5 @@
 import type { CreditType, InstallmentStatus, PaymentType } from '../types';
+import { startOfUTCDay } from './date';
 
 /** Копейки показываем только когда они есть: 7 965,65 ₽ но 40 000 ₽ */
 export function formatMoney(value: string | number | null | undefined): string {
@@ -42,11 +43,10 @@ export function urgencyTone(days: number): 'danger' | 'warm' | 'muted' {
 /** Сколько дней до даты (отрицательное — просрочка). */
 export function daysUntil(value: string | Date): number {
   const target = typeof value === 'string' ? new Date(value) : value;
-  const today = new Date();
   const msPerDay = 24 * 60 * 60 * 1000;
-  const t = Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate());
-  const n = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
-  return Math.round((t - n) / msPerDay);
+  // Одна UTC-шкала с графиком и getUpcomingPayments: иначе в UTC+3 на дату
+  // платежа daysUntil говорил «завтра», а overdue уже был false.
+  return Math.round((startOfUTCDay(target).getTime() - startOfUTCDay().getTime()) / msPerDay);
 }
 
 /** Человеческий срок: «через 3 дня», «сегодня», «просрочка 2 дня». */
@@ -96,6 +96,7 @@ export const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
 
 export const STATUS_LABELS: Record<InstallmentStatus, string> = {
   PENDING: 'Ожидает',
+  PARTIALLY_PAID: 'Частично оплачен',
   PAID: 'Оплачен',
   OVERDUE: 'Просрочен',
 };
