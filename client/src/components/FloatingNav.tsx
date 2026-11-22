@@ -35,9 +35,9 @@ export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
   return (
     <nav
       aria-label="Основная навигация"
-      className="glass-bar floating-nav fixed bottom-[max(8px,calc(env(safe-area-inset-bottom)-12px))] left-1/2 z-[60] w-[302px] max-w-[calc(100vw-32px)] -translate-x-1/2 rounded-[20px] border px-2 py-1.5 shadow-nav"
+      className="glass-bar floating-nav fixed bottom-[max(6px,calc(env(safe-area-inset-bottom)-22px))] left-1/2 z-[60] w-[302px] max-w-[calc(100vw-32px)] -translate-x-1/2 rounded-[20px] border px-2 py-1.5 shadow-nav"
     >
-      <div className="floating-nav__items grid grid-cols-4 gap-1">
+      <div className="floating-nav__items relative grid grid-cols-4 gap-1">
         <span
           aria-hidden="true"
           className="floating-nav__active-pill"
