@@ -21,14 +21,14 @@ async function callTelegram(method: string, payload: Record<string, unknown>): P
 export async function sendTelegramToUser(userId: string, payload: { title: string; body: string; url?: string }): Promise<void> {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { telegramChatId: true } });
   if (!user?.telegramChatId || !env.TELEGRAM_BOT_TOKEN) return;
-  const link = payload.url && env.PUBLIC_BASE_URL ? `\\n\\nОткрыть Credit Tracker: ${env.PUBLIC_BASE_URL.replace(/\\/$/, '')}${payload.url}` : '';
-  try { await callTelegram('sendMessage', { chat_id: user.telegramChatId, text: `${payload.title}\\n${payload.body}${link}`, disable_web_page_preview: true }); }
+  const link = payload.url && env.PUBLIC_BASE_URL ? `\n\nОткрыть Credit Tracker: ${env.PUBLIC_BASE_URL.replace(/\/$/, '')}${payload.url}` : '';
+  try { await callTelegram('sendMessage', { chat_id: user.telegramChatId, text: `${payload.title}\n${payload.body}${link}`, disable_web_page_preview: true }); }
   catch (error) { console.error('[telegram] delivery failed:', (error as Error).message); }
 }
 const sendChat = (chatId: number | string, text: string) => callTelegram('sendMessage', { chat_id: chatId, text, disable_web_page_preview: true });
 
 async function redeemCode(chatId: string, code: string): Promise<string> {
-  if (!/^\\d{8}$/.test(code)) return 'Код должен состоять из 8 цифр. Создай новый код в приложении Credit Tracker.';
+  if (!/^\d{8}$/.test(code)) return 'Код должен состоять из 8 цифр. Создай новый код в приложении Credit Tracker.';
   try {
     const user = await prisma.$transaction(async (tx) => {
       const link = await tx.telegramLinkCode.findFirst({ where: { codeHash: hashCode(code), usedAt: null, expiresAt: { gt: new Date() } }, select: { id: true, userId: true } });
@@ -37,7 +37,7 @@ async function redeemCode(chatId: string, code: string): Promise<string> {
       if (claimed.count !== 1) throw new AppError(400, 'Код уже использован. Создай новый код.');
       return tx.user.update({ where: { id: link.userId }, data: { telegramChatId: chatId }, select: { name: true, email: true } });
     });
-    return `Готово! Telegram подключён к ${user.name || user.email}.\\n/summary — сводка\\n/payments — платежи текущего месяца\\n/unlink — отключить.`;
+    return `Готово! Telegram подключён к ${user.name || user.email}.\n/summary — сводка\n/payments — платежи текущего месяца\n/unlink — отключить.`;
   } catch (error) {
     if ((error as { code?: string }).code === 'P2002') return 'Этот Telegram уже привязан к другому аккаунту Credit Tracker.';
     if (error instanceof AppError) return error.message;
@@ -50,7 +50,7 @@ async function summaryText(userId: string): Promise<string> {
   const money = (n: number | null) => n === null ? 'не задан' : `${n.toLocaleString('ru-RU')} ₽`;
   const lines = ['💳 Credit Tracker — сводка', `Активных долгов: ${s.activeCount}`, `Остаток долга: ${money(s.outstandingSum)}`, `Платежи текущего месяца: ${money(s.monthlyPayments)}`, `Свободно (доход − плановые платежи): ${money(s.freeMoney)}`];
   if (s.graceReplenishTotal > 0) lines.push(`Отдельно для сохранения грейса: ${money(s.graceReplenishTotal)}`);
-  return lines.join('\\n');
+  return lines.join('\n');
 }
 
 async function paymentsText(userId: string): Promise<string> {
@@ -68,18 +68,18 @@ async function paymentsText(userId: string): Promise<string> {
   const grace = await prisma.credit.findMany({ where: { userId, status: 'ACTIVE', frozen: true, graceReplenishSum: { not: null } }, select: { name: true, graceReplenishSum: true, nextFreezeCheckAt: true } });
   const graceItems = grace.filter((c) => Number(c.graceReplenishSum) > 0);
   if (graceItems.length) { lines.push('', '⚠️ Отдельно для сохранения грейса (не входит в обязательные платежи):'); for (const c of graceItems) lines.push(`• ${c.name}: ${Number(c.graceReplenishSum).toLocaleString('ru-RU')} ₽${c.nextFreezeCheckAt ? ` — до ${c.nextFreezeCheckAt.toISOString().slice(0, 10)}` : ''}`); }
-  return lines.join('\\n');
+  return lines.join('\n');
 }
 
 async function handleMessage(message: TgMessage): Promise<void> {
   const chat = message.chat;
   if (!chat?.id || chat.type !== 'private' || !message.text) return;
-  const [rawCommand, ...args] = message.text.trim().split(/\\s+/);
+  const [rawCommand, ...args] = message.text.trim().split(/\s+/);
   const command = rawCommand.split('@')[0].toLowerCase();
   const chatId = String(chat.id);
   if (command === '/start' || command === '/help') {
     const linked = await prisma.user.findUnique({ where: { telegramChatId: chatId }, select: { id: true } });
-    await sendChat(chat.id, linked ? 'Credit Tracker подключён.\\n/summary — сводка\\n/payments — платежи текущего месяца\\n/unlink — отключить' : 'Привет! Чтобы подключить аккаунт, создай одноразовый код в приложении Credit Tracker и отправь: /link 12345678. Код действует 10 минут.'); return;
+    await sendChat(chat.id, linked ? 'Credit Tracker подключён.\n/summary — сводка\n/payments — платежи текущего месяца\n/unlink — отключить' : 'Привет! Чтобы подключить аккаунт, создай одноразовый код в приложении Credit Tracker и отправь: /link 12345678. Код действует 10 минут.'); return;
   }
   if (command === '/link') { await sendChat(chat.id, await redeemCode(chatId, args[0] ?? '')); return; }
   const user = await prisma.user.findUnique({ where: { telegramChatId: chatId }, select: { id: true } });
