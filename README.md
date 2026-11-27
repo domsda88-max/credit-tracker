@@ -96,3 +96,22 @@ client/src/
 ├── types/         # общие типы, зеркалят DTO бэкенда
 └── sw.ts          # Service Worker: precache + push + notificationclick
 ```
+
+
+## Telegram Bot
+
+Telegram integration is optional. Configure all three variables on the API service:
+- `TELEGRAM_BOT_TOKEN` — token from BotFather (keep it in Render Secrets only)
+- `TELEGRAM_WEBHOOK_SECRET` — random secret, at least 16 characters
+- `PUBLIC_BASE_URL` — public API origin, e.g. `https://credit-tracker-api.onrender.com`
+
+On startup the API registers the webhook and Telegram command menu. The webhook accepts only Telegram requests carrying the configured secret header.
+
+In Settings → Telegram, create a one-time 16-character linking code and send `/link CODE` to [@MyCreditTrackerBot](https://t.me/MyCreditTrackerBot). Codes expire after 10 minutes and only their SHA-256 hashes are stored.
+
+Commands:
+- `/summary` — current debt, current-month planned payments, free money and separate grace-cycle amount
+- `/payments` — unpaid installments in the current calendar month, with grace-cycle amounts shown separately
+- `/unlink` — disconnect the Telegram chat
+
+Existing reminder and motivation notifications are also delivered to linked Telegram chats. The bot does not change balances or payment schedules.
