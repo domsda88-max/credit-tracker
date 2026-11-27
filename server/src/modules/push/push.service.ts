@@ -2,6 +2,7 @@ import webpush from 'web-push';
 import { prisma } from '../../config/prisma';
 import { ensureVapidConfigured, getVapidPublicKey } from '../../config/vapid';
 import type { SubscribeDto } from './push.schemas';
+import { sendTelegramToUser } from '../telegram/telegram.service';
 
 /** Полезная нагрузка push-уведомления (формат, который читает Service Worker). */
 export interface PushPayload {
@@ -93,5 +94,6 @@ export async function sendUniquePush(
   }
 
   await pushService.sendToUser(userId, payload);
+  await sendTelegramToUser(userId, payload);
   return true;
 }
