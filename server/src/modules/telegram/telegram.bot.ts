@@ -186,6 +186,11 @@ function currentUtcMonth(): { start: Date; end: Date } {
   return { start, end };
 }
 
+function utcToday(): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
 async function showPayments(api: TelegramApi, chatId: number, userId: string): Promise<void> {
   const { start, end } = currentUtcMonth();
   const installments = await prisma.paymentSchedule.findMany({
@@ -236,6 +241,9 @@ async function showPayments(api: TelegramApi, chatId: number, userId: string): P
     }]),
   };
 
+  const graceReady = graceCredits.filter(
+    (credit) => credit.nextFreezeCheckAt !== null && credit.nextFreezeCheckAt <= utcToday(),
+  );
   const graceLines = graceCredits.map((credit) => (
     '🧊 <b>' + escapeHtml(credit.name) + '</b> — ' +
     formatMoney(credit.graceReplenishSum) + ' · до ' + formatDate(credit.nextFreezeCheckAt)
@@ -248,7 +256,7 @@ async function showPayments(api: TelegramApi, chatId: number, userId: string): P
     graceLines.length ? '\n\n<b>Обновление грейс-периода — отдельно от обязательств:</b>\n' + graceLines.join('\n') : '',
   ].join('\n');
 
-  keyboard.inline_keyboard.push(...graceCredits.slice(0, 10).map((credit) => [{
+  keyboard.inline_keyboard.push(...graceReady.slice(0, 10).map((credit) => [{
     text: 'Обновить грейс: ' + credit.name.slice(0, 22),
     callback_data: 'grace:' + credit.id,
   }]));
