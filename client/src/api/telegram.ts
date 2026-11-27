@@ -1,7 +1,7 @@
 import { api } from './client';
 
 export const telegramApi = {
-  async status(): Promise<{ linked: boolean }> {
+  async status(): Promise<{ linked: boolean; configured: boolean }> {
     const { data } = await api.get<{ linked: boolean }>('/telegram/status');
     return data;
   },
