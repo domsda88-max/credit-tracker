@@ -622,6 +622,35 @@ async function handleMessage(api: TelegramApi, message: TelegramMessage): Promis
   if (command === '/debts') return showDebts(api, chatId, user.id);
   if (command === '/payments') return showPayments(api, chatId, user.id);
   if (command === '/add') return startAddWizard(api, chatId);
+  if (command === '/income') {
+    const value = text.split(/\\s+/, 2)[1];
+    if (value) {
+      const amount = parsePositiveNumber(value);
+      if (amount === null || amount > 1_000_000_000) {
+        await send(api, chatId, 'Введи доход больше нуля, например /income 150000.', mainMenu());
+        return;
+      }
+      await prisma.user.update({ where: { id: user.id }, data: { monthlyIncome: amount } });
+      incomePendingChats.delete(chatId);
+      await send(api, chatId, '✅ Месячный доход сохранён: <b>' + formatMoney(amount) + '</b>.', mainMenu());
+      return;
+    }
+    incomePendingChats.add(chatId);
+    await send(api, chatId, 'Укажи ежемесячный доход на руки в рублях. Например: 150000.');
+    return;
+  }
+
+  if (incomePendingChats.has(chatId)) {
+    const amount = parsePositiveNumber(text);
+    if (amount === null || amount > 1_000_000_000) {
+      await send(api, chatId, 'Введи положительную сумму, например 150000 или 150 000,50. Для отмены — /cancel.');
+      return;
+    }
+    await prisma.user.update({ where: { id: user.id }, data: { monthlyIncome: amount } });
+    incomePendingChats.delete(chatId);
+    await send(api, chatId, '✅ Месячный доход сохранён: <b>' + formatMoney(amount) + '</b>. Теперь показатель «Свободно» будет рассчитываться в обзоре.', mainMenu());
+    return;
+  }
 
   if (await handleWizardText(api, chatId, user.id, text)) return;
   await send(api, chatId, 'Не понял команду. Используй меню или /help.', mainMenu());
