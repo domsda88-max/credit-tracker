@@ -16,6 +16,7 @@ const envSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().min(1, 'VAPID_PRIVATE_KEY обязателен (npm run vapid:gen)'),
   VAPID_SUBJECT: z.string().default('mailto:admin@example.com'),
   CLIENT_ORIGIN: z.string().default('*'),
+  TELEGRAM_BOT_TOKEN: z.string().min(1).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
