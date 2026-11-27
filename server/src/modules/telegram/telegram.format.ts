@@ -11,7 +11,7 @@ export function escapeHtml(value: string): string {
   });
 }
 
-export function formatMoney(value: number | string | null | undefined): string {
+export function formatMoney(value: number | string | null | undefined | { toString(): string }): string {
   const amount = Number(value ?? 0);
   if (!Number.isFinite(amount)) return '—';
   return (
@@ -29,11 +29,21 @@ export function formatDate(value: Date | string | null | undefined): string {
   return date.toLocaleDateString('ru-RU', { timeZone: 'UTC' });
 }
 
-export function parsePositiveNumber(input: string): number | null {
+function parseDecimal(input: string): number | null {
   const normalized = input.replace(/\s/g, '').replace(/₽/gi, '').replace(',', '.');
   if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return null;
   const value = Number(normalized);
-  return Number.isFinite(value) && value > 0 ? Math.round(value * 100) / 100 : null;
+  return Number.isFinite(value) ? Math.round(value * 100) / 100 : null;
+}
+
+export function parsePositiveNumber(input: string): number | null {
+  const value = parseDecimal(input);
+  return value !== null && value > 0 ? value : null;
+}
+
+export function parseNonNegativeNumber(input: string): number | null {
+  const value = parseDecimal(input);
+  return value !== null && value >= 0 ? value : null;
 }
 
 export function parseIntegerInRange(input: string, min: number, max: number): number | null {
