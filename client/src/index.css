@@ -241,14 +241,14 @@ input[type='range'] {
   cursor: pointer;
 }
 
-/* Safe-area padding для мобильных устройств */
+/* Safe-area для нижней системной области задаётся один раз на flex-контейнере Layout. */
 .safe-area-bottom {
-  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Нижний отступ контента: панель навигации + комфортный зазор */
+/* Небольшой отступ после последнего элемента; навигация больше не перекрывает scroll-area. */
 .page {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 112px);
+  padding-bottom: 16px;
   padding-top: 8px;
 }
 
