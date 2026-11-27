@@ -34,7 +34,7 @@ export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
   return (
     <nav
       aria-label="Основная навигация"
-      className="glass-bar floating-nav relative z-[60] mx-auto mb-2 w-[302px] max-w-[calc(100vw-32px)] shrink-0 rounded-[20px] border px-2 py-1.5 shadow-nav"
+      className="glass-bar floating-nav relative z-[60] mx-auto mb-2 w-full max-w-[302px] shrink-0 rounded-[20px] border px-2 py-1.5 shadow-nav"
     >
       <div className="floating-nav__items relative grid grid-cols-4 gap-1">
         <span
