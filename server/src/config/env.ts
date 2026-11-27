@@ -16,6 +16,12 @@ const envSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().min(1, 'VAPID_PRIVATE_KEY обязателен (npm run vapid:gen)'),
   VAPID_SUBJECT: z.string().default('mailto:admin@example.com'),
   CLIENT_ORIGIN: z.string().default('*'),
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_WEBHOOK_SECRET: z.string().min(16).optional(),
+  PUBLIC_BASE_URL: z.string().url().optional(),
+}).superRefine((value, ctx) => {
+  const values = [value.TELEGRAM_BOT_TOKEN, value.TELEGRAM_WEBHOOK_SECRET, value.PUBLIC_BASE_URL];
+  if (values.some(Boolean) && !values.every(Boolean)) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Telegram requires TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET and PUBLIC_BASE_URL together' });
 });
 
 const parsed = envSchema.safeParse(process.env);
