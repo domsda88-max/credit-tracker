@@ -41,8 +41,8 @@ export function Layout() {
   return (
     <>
       <OfflineBanner />
-      <div className="relative mx-auto flex h-[100dvh] w-full max-w-2xl flex-col overflow-hidden px-5 sm:px-6">
-        {/* Только безопасный отступ под системную строку состояния; действия перенесены в разделы. */}
+      <div className="relative mx-auto flex h-[100dvh] min-h-0 w-full max-w-2xl flex-col overflow-hidden px-5 pb-[env(safe-area-inset-bottom,0px)] sm:px-6">
+        {/* Верхняя safe-area учитывается здесь; нижняя — внешним padding контейнера. */}
         <div
           aria-hidden="true"
           className="shrink-0"
@@ -52,18 +52,19 @@ export function Layout() {
           }}
         />
 
+        {/* Единственная прокручиваемая область; нижняя навигация занимает отдельный flex-слот. */}
         <main className="page min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
           <div key={location.pathname} className="route-enter min-h-full">
             <Outlet />
           </div>
         </main>
 
-        {/* Scrim под статус-баром (только на устройствах с вырезом) */}
+        {/* Scrim под статус-баром (только на устройствах с вырезом). */}
         <div
           className="pointer-events-none fixed left-0 right-0 top-0 z-[58]"
           style={{
             height: 'env(safe-area-inset-top, 0px)',
-            background: `linear-gradient(to bottom, var(--color-bg), transparent)`,
+            background: 'linear-gradient(to bottom, var(--color-bg), transparent)',
           }}
         />
 
