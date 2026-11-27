@@ -4,13 +4,14 @@ import { telegramApi } from '../api/telegram';
 
 export function TelegramSettings() {
   const [linked, setLinked] = useState(false);
+  const [configured, setConfigured] = useState(false);
   const [code, setCode] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
-    telegramApi.status().then((result) => { if (active) setLinked(result.linked); })
+    telegramApi.status().then((result) => { if (active) { setLinked(result.linked); setConfigured(result.configured); } })
       .catch((e: unknown) => { if (active) setError(extractErrorMessage(e)); })
       .finally(() => { if (active) setBusy(false); });
     return () => { active = false; };
@@ -34,6 +35,7 @@ export function TelegramSettings() {
         <p className="mt-1 text-xs text-t3">Бот отправляет напоминания о платежах и мотивационные сообщения. Команды /summary и /payments показывают данные твоего аккаунта.</p>
       </div>
       {busy && <p className="text-xs text-t3">Проверяем подключение…</p>}
+      {!busy && !configured && <p className="text-xs text-warning-fg">Бот ещё не настроен на сервере. Сначала добавь токен и webhook secret в Render Secrets.</p>}
       {!busy && linked && <p className="text-sm text-success-fg">Telegram подключён к аккаунту.</p>}
       {!busy && !linked && <p className="text-sm text-t2">Telegram пока не подключён.</p>}
       {code && <div className="rounded-control border border-line bg-surface2 p-3">
@@ -45,7 +47,7 @@ export function TelegramSettings() {
       {error && <p role="alert" className="text-xs text-danger-fg">{error}</p>}
       <div className="flex flex-wrap gap-2">
         <a className="btn btn-secondary flex-1 text-center text-sm" href="https://t.me/MyCreditTrackerBot" target="_blank" rel="noreferrer">Открыть бота</a>
-        {!linked && <button type="button" className="btn btn-primary flex-1 text-sm" disabled={busy} onClick={() => void createCode()}>Создать код</button>}
+        {!linked && <button type="button" className="btn btn-primary flex-1 text-sm" disabled={busy || !configured} onClick={() => void createCode()}>Создать код</button>}
         {linked && <button type="button" className="btn btn-danger flex-1 text-sm" disabled={busy} onClick={() => void unlink()}>Отключить</button>}
       </div>
     </div>
