@@ -5,6 +5,7 @@ import { ensureVapidConfigured } from './config/vapid';
 import { runMotivationJob } from './cron/jobs/motivation.job';
 import { runReminderJob } from './cron/jobs/reminder.job';
 import { registerCronJobs } from './cron/scheduler';
+import { startTelegramBot } from './modules/telegram/telegram.bot';
 
 async function bootstrap(): Promise<void> {
   await prisma.$connect();
@@ -15,6 +16,13 @@ async function bootstrap(): Promise<void> {
     console.log(`✅ API запущен: http://localhost:${env.PORT}`);
     console.log(`   Режим: ${env.NODE_ENV}`);
   });
+
+  const stopTelegramBot = env.TELEGRAM_BOT_TOKEN
+    ? startTelegramBot(env.TELEGRAM_BOT_TOKEN)
+    : () => undefined;
+  if (!env.TELEGRAM_BOT_TOKEN) {
+    console.log('[telegram] TELEGRAM_BOT_TOKEN не задан — бот выключен');
+  }
 
   registerCronJobs();
 
@@ -31,6 +39,7 @@ async function bootstrap(): Promise<void> {
 
   const shutdown = async (signal: string): Promise<void> => {
     console.log(`\n${signal}: останавливаю сервер...`);
+    stopTelegramBot();
     server.close();
     await prisma.$disconnect();
     process.exit(0);
