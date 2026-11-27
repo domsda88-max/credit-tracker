@@ -49,6 +49,7 @@ interface AddDebtWizard {
 }
 
 const wizards = new Map<number, AddDebtWizard>();
+const incomePendingChats = new Set<number>();
 
 function mainMenu(): InlineKeyboardMarkup {
   return {
@@ -59,6 +60,7 @@ function mainMenu(): InlineKeyboardMarkup {
       ],
       [{ text: '📅 Платежи этого месяца', callback_data: 'menu:payments' }],
       [{ text: '➕ Добавить долг', callback_data: 'menu:add' }],
+      [{ text: '💰 Указать месячный доход', callback_data: 'menu:income' }],
     ],
   };
 }
@@ -506,6 +508,10 @@ async function handleCallback(
     if (action === 'debts') return showDebts(api, chatId, user.id);
     if (action === 'payments') return showPayments(api, chatId, user.id);
     if (action === 'add') return startAddWizard(api, chatId);
+    if (action === 'income') {
+      incomePendingChats.add(chatId);
+      return send(api, chatId, 'Укажи ежемесячный доход на руки в рублях. Например: 150000. Его можно будет изменить командой /income.');
+    }
     return send(api, chatId, 'Неизвестное действие', mainMenu());
   }
 
@@ -608,6 +614,7 @@ async function handleMessage(api: TelegramApi, message: TelegramMessage): Promis
   const user = await getOrCreateTelegramUser(message.from);
   if (command === '/cancel') {
     wizards.delete(chatId);
+    incomePendingChats.delete(chatId);
     await send(api, chatId, 'Добавление долга отменено.', mainMenu());
     return;
   }
