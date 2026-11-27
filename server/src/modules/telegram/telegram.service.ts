@@ -102,7 +102,7 @@ export const telegramService = {
     }
     throw new AppError(503, 'Не удалось создать код привязки. Попробуй ещё раз.');
   },
-  async getStatus(userId: string): Promise<{ linked: boolean }> { const user = await prisma.user.findUnique({ where: { id: userId }, select: { telegramChatId: true } }); return { linked: Boolean(user?.telegramChatId) }; },
+  async getStatus(userId: string): Promise<{ linked: boolean; configured: boolean }> { const user = await prisma.user.findUnique({ where: { id: userId }, select: { telegramChatId: true } }); return { linked: Boolean(user?.telegramChatId), configured: Boolean(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_WEBHOOK_SECRET && env.PUBLIC_BASE_URL) }; },
   async unlink(userId: string): Promise<void> { await prisma.user.update({ where: { id: userId }, data: { telegramChatId: null } }); await prisma.telegramLinkCode.deleteMany({ where: { userId } }); },
   async webhook(req: Request, res: Response): Promise<void> {
     const supplied = req.header('x-telegram-bot-api-secret-token') ?? '';
