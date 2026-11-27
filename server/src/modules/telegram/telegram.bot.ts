@@ -18,6 +18,7 @@ import {
   formatDate,
   formatMoney,
   parseIntegerInRange,
+  parseNonNegativeNumber,
   parsePositiveNumber,
 } from './telegram.format';
 
@@ -406,9 +407,9 @@ async function handleWizardText(
       wizard.step = 'rate';
     }
   } else if (wizard.step === 'rate') {
-    const rate = parsePositiveNumber(text);
+    const rate = parseNonNegativeNumber(text);
     if (rate === null || rate > 100) {
-      await send(api, chatId, 'Введи ставку от 0,01 до 100%.');
+      await send(api, chatId, 'Введи ставку от 0 до 100%.');
       return true;
     }
     wizard.annualRate = rate;
@@ -480,6 +481,10 @@ async function handleCallback(
   const chatId = callback.message?.chat.id;
   if (!chatId) {
     await api.answerCallbackQuery(callback.id, 'Не удалось определить чат');
+    return;
+  }
+  if (callback.message?.chat.type !== 'private') {
+    await api.answerCallbackQuery(callback.id, 'Финансовые данные доступны только в личном чате с ботом');
     return;
   }
 
@@ -576,6 +581,10 @@ async function handleMessage(api: TelegramApi, message: TelegramMessage): Promis
   const chatId = message.chat.id;
   const text = message.text?.trim();
   if (!text || !message.from || message.from.is_bot) return;
+  if (message.chat.type !== 'private') {
+    await send(api, chatId, 'Для защиты финансовых данных используй бота только в личном чате.');
+    return;
+  }
 
   const command = text.split(/\s+/, 1)[0].split('@', 1)[0].toLowerCase();
   if (command === '/start' || command === '/menu' || command === '/help') {
