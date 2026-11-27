@@ -5,6 +5,7 @@ import {
   formatDate,
   formatMoney,
   parseIntegerInRange,
+  parseNonNegativeNumber,
   parsePositiveNumber,
 } from './telegram.format';
 
@@ -15,6 +16,12 @@ describe('Telegram formatting helpers', () => {
     expect(parsePositiveNumber('0')).toBeNull();
     expect(parsePositiveNumber('-10')).toBeNull();
     expect(parsePositiveNumber('12,345')).toBeNull();
+  });
+
+  it('allows a zero interest rate but rejects invalid negative values', () => {
+    expect(parseNonNegativeNumber('0')).toBe(0);
+    expect(parseNonNegativeNumber('24,9')).toBe(24.9);
+    expect(parseNonNegativeNumber('-1')).toBeNull();
   });
 
   it('validates integer day and term inputs', () => {
