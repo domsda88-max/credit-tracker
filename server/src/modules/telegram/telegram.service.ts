@@ -28,7 +28,7 @@ export async function sendTelegramToUser(userId: string, payload: { title: strin
 const sendChat = (chatId: number | string, text: string) => callTelegram('sendMessage', { chat_id: chatId, text, disable_web_page_preview: true });
 
 async function redeemCode(chatId: string, code: string): Promise<string> {
-  if (!/^\d{8}$/.test(code)) return 'Код должен состоять из 16 символов a–f и 0–9. Создай новый код в приложении Credit Tracker.';
+  if (!/^[a-f0-9]{16}$/.test(code)) return 'Код должен состоять из 16 символов a–f и 0–9. Создай новый код в приложении Credit Tracker.';
   try {
     const user = await prisma.$transaction(async (tx) => {
       const link = await tx.telegramLinkCode.findFirst({ where: { codeHash: hashCode(code), usedAt: null, expiresAt: { gt: new Date() } }, select: { id: true, userId: true } });
