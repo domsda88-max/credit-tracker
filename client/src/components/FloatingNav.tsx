@@ -19,7 +19,6 @@ interface FloatingNavProps {
 }
 
 export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
-  // Все хуки вызываются безусловно, до раннего return (Rules of Hooks).
   const location = useLocation();
   const navigate = useNavigate();
   const pathname = location.pathname;
@@ -35,7 +34,7 @@ export function FloatingNav({ offlineCount = 0 }: FloatingNavProps = {}) {
   return (
     <nav
       aria-label="Основная навигация"
-      className="glass-bar floating-nav fixed bottom-[calc(env(safe-area-inset-bottom,0px)+8px)] left-1/2 z-[60] w-[302px] max-w-[calc(100vw-32px)] -translate-x-1/2 rounded-[20px] border px-2 py-1.5 shadow-nav"
+      className="glass-bar floating-nav relative z-[60] mx-auto mb-2 w-[302px] max-w-[calc(100vw-32px)] shrink-0 rounded-[20px] border px-2 py-1.5 shadow-nav"
     >
       <div className="floating-nav__items relative grid grid-cols-4 gap-1">
         <span
