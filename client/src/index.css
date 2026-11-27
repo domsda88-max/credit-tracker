@@ -241,9 +241,9 @@ input[type='range'] {
   cursor: pointer;
 }
 
-/* Safe-area для нижней системной области задаётся один раз на flex-контейнере Layout. */
+/* Safe-area utility for standalone bottom sheets. */
 .safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 
 /* Небольшой отступ после последнего элемента; навигация больше не перекрывает scroll-area. */
