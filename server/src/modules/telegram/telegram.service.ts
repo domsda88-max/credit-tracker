@@ -21,7 +21,8 @@ async function callTelegram(method: string, payload: Record<string, unknown>): P
 export async function sendTelegramToUser(userId: string, payload: { title: string; body: string; url?: string }): Promise<void> {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { telegramChatId: true } });
   if (!user?.telegramChatId || !env.TELEGRAM_BOT_TOKEN) return;
-  const link = payload.url && env.PUBLIC_BASE_URL ? `\n\nОткрыть Credit Tracker: ${env.PUBLIC_BASE_URL.replace(/\/$/, '')}${payload.url}` : '';
+  const baseUrl = env.PUBLIC_BASE_URL ? (env.PUBLIC_BASE_URL.endsWith('/') ? env.PUBLIC_BASE_URL.slice(0, -1) : env.PUBLIC_BASE_URL) : '';
+  const link = payload.url && baseUrl ? `\n\nОткрыть Credit Tracker: ${baseUrl}${payload.url}` : '';
   try { await callTelegram('sendMessage', { chat_id: user.telegramChatId, text: `${payload.title}\n${payload.body}${link}`, disable_web_page_preview: true }); }
   catch (error) { console.error('[telegram] delivery failed:', (error as Error).message); }
 }
@@ -113,7 +114,8 @@ export const telegramService = {
   },
   async configureWebhook(): Promise<void> {
     if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_WEBHOOK_SECRET || !env.PUBLIC_BASE_URL) return;
-    await callTelegram('setWebhook', { url: `${env.PUBLIC_BASE_URL.replace(/\\/$/, '')}/api/telegram/webhook`, secret_token: env.TELEGRAM_WEBHOOK_SECRET, allowed_updates: ['message'], drop_pending_updates: false });
+    const baseUrl = env.PUBLIC_BASE_URL.endsWith('/') ? env.PUBLIC_BASE_URL.slice(0, -1) : env.PUBLIC_BASE_URL;
+    await callTelegram('setWebhook', { url: `${baseUrl}/api/telegram/webhook`, secret_token: env.TELEGRAM_WEBHOOK_SECRET, allowed_updates: ['message'], drop_pending_updates: false });
     console.log('[telegram] webhook configured');
   },
 };
