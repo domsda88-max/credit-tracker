@@ -1,4 +1,4 @@
-import { createHash, randomInt, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { Request, Response } from 'express';
 import { prisma } from '../../config/prisma';
 import { env } from '../../config/env';
@@ -28,7 +28,7 @@ export async function sendTelegramToUser(userId: string, payload: { title: strin
 const sendChat = (chatId: number | string, text: string) => callTelegram('sendMessage', { chat_id: chatId, text, disable_web_page_preview: true });
 
 async function redeemCode(chatId: string, code: string): Promise<string> {
-  if (!/^\d{8}$/.test(code)) return 'Код должен состоять из 8 цифр. Создай новый код в приложении Credit Tracker.';
+  if (!/^\d{8}$/.test(code)) return 'Код должен состоять из 16 символов a–f и 0–9. Создай новый код в приложении Credit Tracker.';
   try {
     const user = await prisma.$transaction(async (tx) => {
       const link = await tx.telegramLinkCode.findFirst({ where: { codeHash: hashCode(code), usedAt: null, expiresAt: { gt: new Date() } }, select: { id: true, userId: true } });
@@ -79,12 +79,12 @@ async function handleMessage(message: TgMessage): Promise<void> {
   const chatId = String(chat.id);
   if (command === '/start' || command === '/help') {
     const linked = await prisma.user.findUnique({ where: { telegramChatId: chatId }, select: { id: true } });
-    await sendChat(chat.id, linked ? 'Credit Tracker подключён.\n/summary — сводка\n/payments — платежи текущего месяца\n/unlink — отключить' : 'Привет! Чтобы подключить аккаунт, создай одноразовый код в приложении Credit Tracker и отправь: /link 12345678. Код действует 10 минут.'); return;
+    await sendChat(chat.id, linked ? 'Credit Tracker подключён.\n/summary — сводка\n/payments — платежи текущего месяца\n/unlink — отключить' : 'Привет! Чтобы подключить аккаунт, создай одноразовый код в приложении Credit Tracker и отправь: /link <16-символьный-код>. Код действует 10 минут.'); return;
   }
   if (command === '/link') { await sendChat(chat.id, await redeemCode(chatId, args[0] ?? '')); return; }
   const user = await prisma.user.findUnique({ where: { telegramChatId: chatId }, select: { id: true } });
   if (command === '/unlink') { if (user) await prisma.user.update({ where: { id: user.id }, data: { telegramChatId: null } }); await sendChat(chat.id, user ? 'Telegram отключён от Credit Tracker.' : 'Этот чат не привязан.'); return; }
-  if (!user) { await sendChat(chat.id, 'Сначала подключи аккаунт через код: /link 12345678.'); return; }
+  if (!user) { await sendChat(chat.id, 'Сначала подключи аккаунт через код: /link <16-символьный-код>.'); return; }
   if (command === '/summary') { await sendChat(chat.id, await summaryText(user.id)); return; }
   if (command === '/payments') { await sendChat(chat.id, await paymentsText(user.id)); return; }
   await sendChat(chat.id, 'Неизвестная команда. Доступно: /summary, /payments, /unlink, /help.');
@@ -94,13 +94,14 @@ export const telegramService = {
   async createLinkCode(userId: string): Promise<{ code: string; expiresAt: Date }> {
     await prisma.telegramLinkCode.deleteMany({ where: { userId } });
     for (let i = 0; i < 5; i++) {
-      const code = String(randomInt(10_000_000, 99_999_999));
+      const code = randomBytes(8).toString('hex');
       const expiresAt = new Date(Date.now() + 10 * 60_000);
       try { await prisma.telegramLinkCode.create({ data: { userId, codeHash: hashCode(code), expiresAt } }); return { code, expiresAt }; }
       catch (error) { if ((error as { code?: string }).code !== 'P2002') throw error; }
     }
     throw new AppError(503, 'Не удалось создать код привязки. Попробуй ещё раз.');
   },
+  async getStatus(userId: string): Promise<{ linked: boolean }> { const user = await prisma.user.findUnique({ where: { id: userId }, select: { telegramChatId: true } }); return { linked: Boolean(user?.telegramChatId) }; },
   async unlink(userId: string): Promise<void> { await prisma.user.update({ where: { id: userId }, data: { telegramChatId: null } }); await prisma.telegramLinkCode.deleteMany({ where: { userId } }); },
   async webhook(req: Request, res: Response): Promise<void> {
     const supplied = req.header('x-telegram-bot-api-secret-token') ?? '';
