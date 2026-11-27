@@ -623,7 +623,7 @@ async function handleMessage(api: TelegramApi, message: TelegramMessage): Promis
   if (command === '/payments') return showPayments(api, chatId, user.id);
   if (command === '/add') return startAddWizard(api, chatId);
   if (command === '/income') {
-    const value = text.split(/\\s+/, 2)[1];
+    const value = text.split(/\s+/, 2)[1];
     if (value) {
       const amount = parsePositiveNumber(value);
       if (amount === null || amount > 1_000_000_000) {
