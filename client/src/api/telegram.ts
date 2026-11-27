@@ -2,7 +2,7 @@ import { api } from './client';
 
 export const telegramApi = {
   async status(): Promise<{ linked: boolean; configured: boolean }> {
-    const { data } = await api.get<{ linked: boolean }>('/telegram/status');
+    const { data } = await api.get<{ linked: boolean; configured: boolean }>('/telegram/status');
     return data;
   },
   async createLinkCode(): Promise<{ code: string; expiresAt: string }> {
