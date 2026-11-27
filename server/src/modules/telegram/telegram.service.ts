@@ -24,8 +24,8 @@ export async function sendTelegramToUser(userId: string, payload: { title: strin
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { telegramChatId: true } });
     if (!user?.telegramChatId) return;
     const baseUrl = env.PUBLIC_BASE_URL ? (env.PUBLIC_BASE_URL.endsWith('/') ? env.PUBLIC_BASE_URL.slice(0, -1) : env.PUBLIC_BASE_URL) : '';
-    const link = payload.url && baseUrl ? `\\n\\nОткрыть Credit Tracker: ${baseUrl}${payload.url}` : '';
-    await callTelegram('sendMessage', { chat_id: user.telegramChatId, text: `${payload.title}\\n${payload.body}${link}`, disable_web_page_preview: true });
+    const link = payload.url && baseUrl ? `\n\nОткрыть Credit Tracker: ${baseUrl}${payload.url}` : '';
+    await callTelegram('sendMessage', { chat_id: user.telegramChatId, text: `${payload.title}\n${payload.body}${link}`, disable_web_page_preview: true });
   } catch (error) {
     // Telegram must never break the existing push/cron delivery pipeline.
     console.error('[telegram] delivery failed:', (error as Error).message);
