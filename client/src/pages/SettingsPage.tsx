@@ -1,4 +1,5 @@
 import { BellRing, ChevronDown, Upload } from 'lucide-react';
+import { TelegramSettings } from '../components/TelegramSettings';
 import { useId, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PushSettings } from '../components/PushSettings';
@@ -243,6 +244,11 @@ export function SettingsPage() {
             </button>
           </div>
         </Accordion>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="section-title">Telegram</h2>
+        <TelegramSettings />
       </section>
 
       <section className="space-y-3">

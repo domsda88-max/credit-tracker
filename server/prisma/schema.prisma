@@ -31,6 +31,8 @@ model User {
   credits       Credit[]
   subscriptions PushSubscription[]
   notifications NotificationLog[]
+  telegramChatId String?             @unique
+  telegramLinkCodes TelegramLinkCode[]
 }
 
 // ————————————————————————— Перечисления —————————————————————————
@@ -221,4 +223,16 @@ model NotificationLog {
 
   @@unique([dedupKey])
   @@index([userId, sentAt])
+}
+
+
+model TelegramLinkCode {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  @@index([userId, expiresAt])
 }

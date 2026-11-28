@@ -5,6 +5,7 @@ import { ensureVapidConfigured } from './config/vapid';
 import { runMotivationJob } from './cron/jobs/motivation.job';
 import { runReminderJob } from './cron/jobs/reminder.job';
 import { registerCronJobs } from './cron/scheduler';
+import { telegramService } from './modules/telegram/telegram.service';
 
 async function bootstrap(): Promise<void> {
   await prisma.$connect();
@@ -17,6 +18,9 @@ async function bootstrap(): Promise<void> {
   });
 
   registerCronJobs();
+
+  // Telegram is optional; a webhook setup failure must not stop the API.
+  void telegramService.configureWebhook().catch((error) => console.error('[telegram] webhook setup failed:', (error as Error).message));
 
   // Free-инстанс Render засыпает и может пропустить плановый запуск в 10:00.
   // Догоняем напоминания сразу при старте; повторную отправку отсекает журнал.
