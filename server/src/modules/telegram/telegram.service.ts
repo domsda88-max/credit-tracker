@@ -4,6 +4,7 @@ import { prisma } from '../../config/prisma';
 import { env } from '../../config/env';
 import { AppError } from '../../middlewares/errorHandler';
 import { creditsService } from '../credits/credits.service';
+import { utcToday } from '../../utils/finance/date';
 
 type TgMessage = { text?: string; chat?: { id?: number | string; type?: string } };
 type TgUpdate = { message?: TgMessage };
@@ -60,20 +61,67 @@ async function summaryText(userId: string): Promise<string> {
 }
 
 async function paymentsText(userId: string): Promise<string> {
-  const now = new Date();
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-  const rows = await prisma.paymentSchedule.findMany({
-    where: { status: { in: ['PENDING', 'PARTIALLY_PAID'] }, dueDate: { gte: start, lt: end }, credit: { userId, status: 'ACTIVE' } },
-    include: { credit: { select: { name: true, type: true, graceReplenishSum: true } } }, orderBy: { dueDate: 'asc' },
+  // Use the same UTC calendar boundary as creditsService.summary().
+  const today = utcToday();
+  const year = today.getUTCFullYear();
+  const month = today.getUTCMonth();
+  const start = new Date(Date.UTC(year, month, 1));
+  const end = new Date(Date.UTC(year, month + 1, 1));
+  const credits = await prisma.credit.findMany({
+    where: { userId, status: 'ACTIVE' },
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      frozen: true,
+      minPayment: true,
+      graceReplenishSum: true,
+      nextFreezeCheckAt: true,
+      schedule: {
+        where: {
+          status: { in: ['PENDING', 'PARTIALLY_PAID'] },
+          dueDate: { gte: start, lt: end },
+        },
+        orderBy: { dueDate: 'asc' },
+        select: { dueDate: true, amount: true, paidAmount: true, interestPart: true },
+      },
+    },
   });
-  const mandatory = rows.filter((r) => !(r.credit.type === 'CREDIT_CARD' && Number(r.interestPart) === 0 && Number(r.amount) === Number(r.credit.graceReplenishSum)));
+
   const lines = ['📅 Платежи текущего месяца'];
-  if (!mandatory.length) lines.push('Обязательных платежей по графику нет.');
-  for (const r of mandatory) lines.push(`• ${r.dueDate.toISOString().slice(0, 10)} — ${r.credit.name}: ${Math.max(0, Number(r.amount) - Number(r.paidAmount ?? 0)).toLocaleString('ru-RU')} ₽`);
-  const grace = await prisma.credit.findMany({ where: { userId, status: 'ACTIVE', frozen: true, graceReplenishSum: { not: null } }, select: { name: true, graceReplenishSum: true, nextFreezeCheckAt: true } });
-  const graceItems = grace.filter((c) => Number(c.graceReplenishSum) > 0);
-  if (graceItems.length) { lines.push('', '⚠️ Отдельно для сохранения грейса (не входит в обязательные платежи):'); for (const c of graceItems) lines.push(`• ${c.name}: ${Number(c.graceReplenishSum).toLocaleString('ru-RU')} ₽${c.nextFreezeCheckAt ? ` — до ${c.nextFreezeCheckAt.toISOString().slice(0, 10)}` : ''}`); }
+  let mandatoryCount = 0;
+  for (const credit of credits) {
+    // Frozen cards do not create monthly obligations. Their grace-cycle
+    // replenishment is displayed separately below and never changes balance.
+    if (credit.type === 'CREDIT_CARD' && credit.frozen) continue;
+    const installments = credit.schedule.filter((item) => !(
+      credit.type === 'CREDIT_CARD' &&
+      Number(item.interestPart) === 0 &&
+      Number(item.amount) === Number(credit.graceReplenishSum)
+    ));
+    for (const item of installments) {
+      mandatoryCount += 1;
+      const remaining = Math.max(0, Number(item.amount) - Number(item.paidAmount ?? 0));
+      lines.push(`• ${item.dueDate.toISOString().slice(0, 10)} — ${credit.name}: ${remaining.toLocaleString('ru-RU')} ₽`);
+    }
+    // Match summary semantics: when a non-frozen credit card has no open
+    // installment in the current month, its minimum payment remains due.
+    if (credit.type === 'CREDIT_CARD' && installments.length === 0 && credit.schedule.length === 0 && Number(credit.minPayment ?? 0) > 0) {
+      mandatoryCount += 1;
+      lines.push(`• ${credit.name}: минимальный платёж ${Number(credit.minPayment).toLocaleString('ru-RU')} ₽`);
+    }
+  }
+  if (mandatoryCount === 0) lines.push('Обязательных платежей по графику нет.');
+
+  const graceItems = credits.filter((credit) => credit.frozen && Number(credit.graceReplenishSum ?? 0) > 0);
+  if (graceItems.length) {
+    lines.push('', '⚠️ Отдельно для сохранения грейса (не входит в обязательные платежи):');
+    for (const credit of graceItems) {
+      const amount = Number(credit.graceReplenishSum);
+      const due = credit.nextFreezeCheckAt ? ` — до ${credit.nextFreezeCheckAt.toISOString().slice(0, 10)}` : '';
+      lines.push(`• ${credit.name}: ${amount.toLocaleString('ru-RU')} ₽${due}`);
+    }
+  }
   return lines.join('\n');
 }
 
@@ -115,7 +163,11 @@ export const telegramService = {
     const valid = supplied.length === expected.length && expected.length >= 16 && timingSafeEqual(Buffer.from(supplied), Buffer.from(expected));
     if (!valid) { res.status(401).json({ error: 'Unauthorized' }); return; }
     try { await handleMessage((req.body as TgUpdate).message ?? {}); res.sendStatus(200); }
-    catch (error) { console.error('[telegram] update processing failed:', (error as Error).message); res.sendStatus(200); }
+    catch (error) {
+      // A 5xx tells Telegram to retry a transiently failed update instead of silently losing it.
+      console.error('[telegram] update processing failed:', (error as Error).message);
+      res.sendStatus(500);
+    }
   },
   async configureWebhook(): Promise<void> {
     if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_WEBHOOK_SECRET || !env.PUBLIC_BASE_URL) return;
