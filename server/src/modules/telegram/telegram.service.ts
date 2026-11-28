@@ -137,7 +137,16 @@ async function handleMessage(message: TgMessage): Promise<void> {
   }
   if (command === '/link') { await sendChat(chat.id, await redeemCode(chatId, args[0] ?? '')); return; }
   const user = await prisma.user.findUnique({ where: { telegramChatId: chatId }, select: { id: true } });
-  if (command === '/unlink') { if (user) await prisma.user.update({ where: { id: user.id }, data: { telegramChatId: null } }); await sendChat(chat.id, user ? 'Telegram отключён от Credit Tracker.' : 'Этот чат не привязан.'); return; }
+  if (command === '/unlink') {
+    if (user) {
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({ where: { id: user.id }, data: { telegramChatId: null } });
+        await tx.telegramLinkCode.deleteMany({ where: { userId: user.id } });
+      });
+    }
+    await sendChat(chat.id, user ? 'Telegram отключён от Credit Tracker.' : 'Этот чат не привязан.');
+    return;
+  }
   if (!user) { await sendChat(chat.id, 'Сначала подключи аккаунт через код: /link <16-символьный-код>.'); return; }
   if (command === '/summary') { await sendChat(chat.id, await summaryText(user.id)); return; }
   if (command === '/payments') { await sendChat(chat.id, await paymentsText(user.id)); return; }
